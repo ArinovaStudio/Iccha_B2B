@@ -408,7 +408,7 @@ model Product {
   wholesalePricePerPiece Decimal @db.Decimal(10, 2)
   piecesPerSet           Int     @default(4)
   wholesalePricePerSet   Decimal @db.Decimal(10, 2)
-  availableSets          Int     @default(0)
+  availableSets          Int     @default(1)
   totalAvailablePieces   Int     @default(0)
 
   sizeCombination String

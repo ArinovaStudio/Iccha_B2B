@@ -14,7 +14,6 @@ export async function POST(
   { params }: { params: Promise<{ sellerOrderId: string }> }
 ) {
   const guard = await requireRetailer(request);
-
   if ("error" in guard) {
     return NextResponse.json(
       { success: false, error: guard.error },
@@ -23,7 +22,6 @@ export async function POST(
   }
 
   const { sellerOrderId } = await params;
-
   if (!sellerOrderId) {
     return NextResponse.json(
       { success: false, error: "Seller order ID is required." },
@@ -37,36 +35,14 @@ export async function POST(
         const sellerOrder = await tx.sellerOrder.findFirst({
           where: {
             id: sellerOrderId,
-            orderEnquiry: {
-              retailerProfileId: guard.retailerProfile.id,
-            },
+            orderEnquiry: { retailerProfileId: guard.retailerProfile.id },
           },
           select: {
             id: true,
             status: true,
             sellerName: true,
             orderEnquiryId: true,
-            orderEnquiry: {
-              select: {
-                id: true,
-                orderNumber: true,
-              },
-            },
-            items: {
-              select: {
-                id: true,
-                productId: true,
-                sets: true,
-                piecesPerSet: true,
-                sizeCombination: true,
-                product: {
-                  select: {
-                    piecesPerSet: true,
-                    category: { select: { requiresSize: true } },
-                  },
-                },
-              },
-            },
+            orderEnquiry: { select: { id: true, orderNumber: true } },
           },
         });
 
@@ -75,57 +51,18 @@ export async function POST(
         }
 
         const alreadyCancelled = sellerOrder.status === "CANCELLED";
-
         if (sellerOrder.status === "DISPATCHED") {
           throw new Error(
             "This seller order can no longer be cancelled after dispatch."
           );
         }
 
-        // Do not restore stock twice when repairing/repeating a cancellation.
         if (!alreadyCancelled) {
-          const restoredProducts = new Set<string>();
-
-          for (const item of sellerOrder.items) {
-            const piecesPerSet =
-              item.piecesPerSet || item.product.piecesPerSet;
-
-            await tx.product.update({
-              where: { id: item.productId },
-              data: {
-                availableSets: { increment: item.sets },
-                totalAvailablePieces: {
-                  increment: item.sets * piecesPerSet,
-                },
-              },
-            });
-
-            if (
-              item.product.category.requiresSize &&
-              item.sizeCombination &&
-              item.sizeCombination.toLowerCase() !== "assorted"
-            ) {
-              await tx.productSize.updateMany({
-                where: {
-                  productId: item.productId,
-                  size: item.sizeCombination,
-                },
-                data: {
-                  availableSets: { increment: item.sets },
-                },
-              });
-            }
-
-            if (!restoredProducts.has(item.productId)) {
-              await tx.stockReservation.deleteMany({
-                where: {
-                  orderEnquiryId: sellerOrder.orderEnquiryId,
-                  productId: item.productId,
-                },
-              });
-              restoredProducts.add(item.productId);
-            }
-          }
+          // Stock is not deducted during order submission, so cancellation must not restore it.
+          // Remove any legacy reservations left by orders created before this change.
+          await tx.stockReservation.deleteMany({
+            where: { orderEnquiryId: sellerOrder.orderEnquiryId },
+          });
 
           await tx.sellerOrder.update({
             where: { id: sellerOrder.id },
@@ -143,7 +80,6 @@ export async function POST(
           });
         }
 
-        // Recalculate ONLY from seller orders that are still active.
         const activeSellerOrders = await tx.sellerOrder.findMany({
           where: {
             orderEnquiryId: sellerOrder.orderEnquiryId,
@@ -184,14 +120,12 @@ export async function POST(
 
         subtotal = roundMoney(subtotal);
         totalGst = roundMoney(totalGst);
-
         const shipping =
           subtotal === 0
             ? 0
             : subtotal > FREE_SHIPPING_THRESHOLD
               ? 0
               : billingEntityIds.size * FLAT_SHIPPING;
-
         const masterTotal = roundMoney(subtotal + totalGst + shipping);
         const masterCancelled = activeSellerOrders.length === 0;
 
@@ -243,10 +177,7 @@ export async function POST(
           totalPieces,
         };
       },
-      {
-        maxWait: 10000,
-        timeout: 15000,
-      }
+      { maxWait: 10000, timeout: 15000 }
     );
 
     return NextResponse.json({
@@ -268,7 +199,6 @@ export async function POST(
     });
   } catch (error) {
     console.error("Cancel retailer seller order error:", error);
-
     return NextResponse.json(
       {
         success: false,

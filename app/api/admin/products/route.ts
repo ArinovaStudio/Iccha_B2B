@@ -7,7 +7,6 @@ import { resolveGstConfigId } from "@/lib/gst-config";
 import { resolveProductBillingEntityId } from "@/lib/billing/entityResolver";
 
 const PAGE_SIZE = 20;
-const MIN_STOCK_SETS = 5;
 
 const productFieldsSchema = z.object({
     sku: z.string().trim().min(1, "SKU is required"),
@@ -22,10 +21,8 @@ const productFieldsSchema = z.object({
     wholesalePricePerPiece: z.number().nonnegative(),
     piecesPerSet: z.number().int().min(1),
     wholesalePricePerSet: z.number().nonnegative(),
-    availableSets: z.number().int().min(
-        MIN_STOCK_SETS,
-        `Minimum stock is ${MIN_STOCK_SETS} sets.`
-    ),
+    // Stock is optional: leaving it empty saves the product with 0 sets.
+    availableSets: z.number().int().min(0, "Stock cannot be negative").default(0),
     minOrderSets: z.number().int().min(1, "Minimum order quantity must be at least 1 set.").default(1),
 
     sizeCombination: z.string().optional(),
@@ -246,17 +243,11 @@ export async function POST(request: NextRequest) {
             availableSets: row.availableSets,
         }));
 
+        // Stock/sizes are optional. Only guard against the same size entered twice.
         if (category.requiresSize) {
-            if (sizeStocks.length === 0) {
-                return NextResponse.json({ success: false, error: "This category requires size-wise stock. Add at least one size." }, { status: 400 });
-            }
             const normalized = sizeStocks.map((row) => row.size.toUpperCase());
             if (new Set(normalized).size !== normalized.length) {
                 return NextResponse.json({ success: false, error: "Each size can be entered only once." }, { status: 400 });
-            }
-            const totalSizeSets = sizeStocks.reduce((sum, row) => sum + row.availableSets, 0);
-            if (totalSizeSets < MIN_STOCK_SETS) {
-                return NextResponse.json({ success: false, error: `Combined size stock must be at least ${MIN_STOCK_SETS} sets.` }, { status: 400 });
             }
         }
 
@@ -321,15 +312,16 @@ export async function POST(request: NextRequest) {
                 vendorId,
                 warehouseId: data.warehouseId ?? null,
 
-                sizes: category.requiresSize
-                    ? {
-                        create: sizeStocks.map((row, index) => ({
-                            size: row.size,
-                            availableSets: row.availableSets,
-                            sortOrder: index,
-                        })),
-                    }
-                    : undefined,
+                sizes:
+                    category.requiresSize && sizeStocks.length > 0
+                        ? {
+                            create: sizeStocks.map((row, index) => ({
+                                size: row.size,
+                                availableSets: row.availableSets,
+                                sortOrder: index,
+                            })),
+                        }
+                        : undefined,
 
                 media: {
                     create: (data.mediaAssetIds ?? []).map(
@@ -423,17 +415,11 @@ export async function PATCH(request: NextRequest) {
             availableSets: row.availableSets,
         }));
 
+        // Stock/sizes are optional. Only guard against the same size entered twice.
         if (category.requiresSize) {
-            if (sizeStocks.length === 0) {
-                return NextResponse.json({ success: false, error: "This category requires size-wise stock. Add at least one size." }, { status: 400 });
-            }
             const normalized = sizeStocks.map((row) => row.size.toUpperCase());
             if (new Set(normalized).size !== normalized.length) {
                 return NextResponse.json({ success: false, error: "Each size can be entered only once." }, { status: 400 });
-            }
-            const totalSizeSets = sizeStocks.reduce((sum, row) => sum + row.availableSets, 0);
-            if (totalSizeSets < MIN_STOCK_SETS) {
-                return NextResponse.json({ success: false, error: `Combined size stock must be at least ${MIN_STOCK_SETS} sets.` }, { status: 400 });
             }
         }
 
@@ -693,7 +679,7 @@ export async function PATCH(request: NextRequest) {
 
                 sizes: {
                     deleteMany: {},
-                    ...(category.requiresSize
+                    ...(category.requiresSize && sizeStocks.length > 0
                         ? {
                             create: sizeStocks.map((row, index) => ({
                                 size: row.size,

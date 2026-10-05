@@ -13,16 +13,15 @@ export async function GET(
     }
 
     const { slug } = await params;
-
     const product = await prisma.product.findUnique({
       where: { slug, isActive: true },
       include: {
-        category: { select: { id: true, name: true, requiresSize: true, gst: true, } },
+        category: { select: { id: true, name: true, requiresSize: true, gst: true } },
         vendor: { select: { id: true, businessName: true } },
+        // Return every size option; stock should not control which sizes retailers can select.
         sizes: {
-          where: { availableSets: { gt: 0 } },
           orderBy: { sortOrder: "asc" },
-          select: { id: true, size: true, availableSets: true, sortOrder: true },
+          select: { id: true, size: true, sortOrder: true },
         },
         gstConfig: {
           select: {
@@ -44,10 +43,6 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
     }
 
-    const gstRate = product.gstConfig
-      ? Number(product.gstConfig.cgstRate) + Number(product.gstConfig.sgstRate)
-      : 5;
-
     const shaped = {
       id: product.id,
       slug: product.slug,
@@ -66,24 +61,21 @@ export async function GET(
       piecesPerSet: product.piecesPerSet,
       wholesalePricePerPiece: Number(product.wholesalePricePerPiece),
       wholesalePricePerSet: Number(product.wholesalePricePerSet),
-      availableSets: product.availableSets,
       // Minimum sets a retailer must add for THIS product in one cart line — separate from,
       // and in addition to, the cart-wide MOQ. Set by the vendor (or admin for house products).
       minOrderSets: product.minOrderSets,
       sizeCombination: product.sizeCombination,
-      sizeStocks: product.sizes.map((row) => ({
-        size: row.size,
-        availableSets: row.availableSets,
-      })),
+      // Keep the existing response shape for clients that use sizeStocks, but do not expose stock counts.
+      sizeStocks: product.sizes.map((row) => ({ size: row.size })),
       sizes: product.sizes.length > 0
         ? product.sizes.map((row) => row.size)
         : product.sizeCombination
-        .split(",")
-        .map((s) => s.trim().split(/[\s(]/)[0])
-        .filter(Boolean),
+            .split(",")
+            .map((s) => s.trim().split(/[\s(]/)[0])
+            .filter(Boolean),
       billingEntityId: product.gstConfig?.billingEntityId ?? null,
       hsn: product.gstConfig?.hsnCode ?? product.hsnCode,
-      gstRate:product.category?.gst ?? "",
+      gstRate: product.category?.gst ?? "",
       media: product.media.map((m) => ({
         id: m.id,
         type: m.mediaType === "VIDEO" ? "video" : "image",

@@ -430,84 +430,19 @@ export default function AdminProductsPage() {
 
     const selectedCategory = categories.find(c => c.id === formData.categoryId);
     const requiresSize = Boolean(selectedCategory?.requiresSize);
-    const totalSizeSets = sizeStocks.reduce((sum, item) => sum + Number(item.availableSets || 0), 0);
-    const isVendorStockAddition = Boolean(editingProduct && currentUserRole === 'VENDOR');
+    const isVendorEdit = Boolean(editingProduct && currentUserRole === 'VENDOR');
 
-    // Existing vendor products use additive inventory fields.
-    // Do not validate the existing stock as if the vendor were entering a new product.
-    if (isVendorStockAddition) {
-      if (requiresSize) {
-        const validAdditions = sizeStockAdditions.filter(
-          item => item.size.trim() && Number(item.availableSets) > 0
-        );
-        const duplicateSizes = validAdditions
-          .map(item => item.size.trim().toUpperCase())
-          .filter((size, index, arr) => arr.indexOf(size) !== index);
+    // Stock is optional now. The only stock-related check left is duplicate sizes.
+    const hasDuplicates = (rows: { size: string }[]) => {
+      const sizes = rows.map(r => r.size.trim().toUpperCase()).filter(Boolean);
+      return new Set(sizes).size !== sizes.length;
+    };
 
-        if (validAdditions.length === 0) {
-          addToast({
-            type: 'error',
-            title: 'Stock required',
-            message: 'Add stock for at least one size.',
-          });
-          return;
-        }
-
-        if (duplicateSizes.length > 0) {
-          addToast({
-            type: 'error',
-            title: 'Duplicate size',
-            message: 'Each size can be entered only once.',
-          });
-          return;
-        }
-      } else if (Number(stockAddition) <= 0) {
-        addToast({
-          type: 'error',
-          title: 'Stock required',
-          message: 'Enter the number of additional sets you want to add.',
-        });
-        return;
-      }
-    } else if (requiresSize) {
-      const validSizeStocks = sizeStocks.filter(
-        item => item.size.trim() && Number(item.availableSets) >= 0
-      );
-      const duplicateSizes = validSizeStocks
-        .map(item => item.size.trim().toUpperCase())
-        .filter((size, index, arr) => arr.indexOf(size) !== index);
-
-      if (validSizeStocks.length === 0) {
-        addToast({
-          type: 'error',
-          title: 'Sizes required',
-          message: 'Add at least one size and its available stock.',
-        });
-        return;
-      }
-
-      if (duplicateSizes.length > 0) {
-        addToast({
-          type: 'error',
-          title: 'Duplicate size',
-          message: 'Each size can be entered only once.',
-        });
-        return;
-      }
-
-      if (totalSizeSets < 5) {
-        addToast({
-          type: 'error',
-          title: 'Minimum stock is 5 sets',
-          message: 'The combined stock across all sizes must be at least 5 sets.',
-        });
-        return;
-      }
-    } else if (Number(formData.availableSets) < 5) {
+    if (requiresSize && hasDuplicates(isVendorEdit ? sizeStockAdditions : sizeStocks)) {
       addToast({
         type: 'error',
-        title: 'Minimum stock is 5 sets',
-        message: 'Please enter at least 5 sets in stock.',
+        title: 'Duplicate size',
+        message: 'Each size can be entered only once.',
       });
       return;
     }
@@ -552,6 +487,11 @@ export default function AdminProductsPage() {
     }
     setUploading(false);
 
+    // Drop blank size rows so they don't fail the API's "Size is required" rule.
+    const cleanSizeStocks = sizeStocks
+      .filter(s => s.size.trim())
+      .map(s => ({ size: s.size.trim(), availableSets: Number(s.availableSets) || 0 }));
+
     const payload: Record<string, unknown> = {
       sku: formData.sku,
       name: formData.name,
@@ -562,9 +502,11 @@ export default function AdminProductsPage() {
       wholesalePricePerPiece: Number(formData.wholesalePricePerPiece),
       piecesPerSet: Number(formData.piecesPerSet),
       wholesalePricePerSet: Number(formData.wholesalePricePerPiece) * Number(formData.piecesPerSet),
-      availableSets: requiresSize ? totalSizeSets : Number(formData.availableSets),
-      sizeCombination: requiresSize ? sizeStocks.map(s => s.size.trim()).filter(Boolean).join(', ') : '',
-      sizeStocks: requiresSize ? sizeStocks.map(s => ({ size: s.size.trim(), availableSets: Number(s.availableSets) })) : [],
+      availableSets: requiresSize
+        ? cleanSizeStocks.reduce((sum, s) => sum + s.availableSets, 0)
+        : Number(formData.availableSets) || 0,
+      sizeCombination: requiresSize ? cleanSizeStocks.map(s => s.size).join(', ') : '',
+      sizeStocks: requiresSize ? cleanSizeStocks : [],
       color: formData.color,
       fabric: formData.fabric,
       workType: formData.workType,
@@ -578,7 +520,7 @@ export default function AdminProductsPage() {
     // Vendor edits are stock additions, not stock replacements.
     // Admin/staff edits continue to use the existing absolute-stock behavior.
     if (editingProduct && currentUserRole === 'VENDOR') {
-      payload.stockAdjustment = requiresSize ? 0 : Math.max(0, Number(stockAddition));
+      payload.stockAdjustment = requiresSize ? 0 : Math.max(0, Number(stockAddition) || 0);
       payload.sizeStockAdjustments = requiresSize
         ? sizeStockAdditions
           .filter(row => row.size.trim() && Number(row.availableSets) > 0)
@@ -654,7 +596,7 @@ export default function AdminProductsPage() {
       wholesalePricePerPiece: Number(product.wholesalePricePerPiece) || 0,
       piecesPerSet: Math.max(1, Number(product.piecesPerSet) || 1),
       sizeCombination: product.sizeCombination || '',
-      availableSets: Math.max(5, Number(product.availableSets) || 5),
+      availableSets: Number(product.availableSets) || 0,
       fabric: product.fabric || '',
       workType: product.workType || '',
       style: product.style || '',
@@ -1334,8 +1276,8 @@ export default function AdminProductsPage() {
                 {categories.find(c => c.id === formData.categoryId)?.requiresSize ? (
                   <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
                     <div>
-                      <label className="block font-bold text-stone-800 mb-1">Available Sizes & Stock *</label>
-                      <p className="text-[10px] text-stone-500">Enter each size and the number of wholesale sets available in that size.</p>
+                      <label className="block font-bold text-stone-800 mb-1">Available Sizes & Stock (optional)</label>
+                      <p className="text-[10px] text-stone-500">Enter each size and the number of wholesale sets available in that size. You can leave this empty and add stock later.</p>
                     </div>
                     {currentUserRole === 'VENDOR' && editingProduct ? (
                       <>
@@ -1395,8 +1337,29 @@ export default function AdminProductsPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-[10px] text-stone-500">
-                    This category does not require size selection. No size inventory will be shown to retailers.
+                  <div>
+                    <label className="block font-bold text-stone-800 mb-1">
+                      {currentUserRole === 'VENDOR' && editingProduct ? 'Add Stock (Sets, optional)' : 'Available Sets (optional)'}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={currentUserRole === 'VENDOR' && editingProduct ? stockAddition : formData.availableSets}
+                      onChange={e =>
+                        currentUserRole === 'VENDOR' && editingProduct
+                          ? setStockAddition(Number(e.target.value))
+                          : setFormData({ ...formData, availableSets: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono focus:outline-none focus:border-rose-900"
+                    />
+                    {currentUserRole === 'VENDOR' && editingProduct && (
+                      <p className="text-[10px] text-stone-400 mt-1">
+                        Current stock: {Number(editingProduct.availableSets) || 0} sets. Enter only the additional sets being added.
+                      </p>
+                    )}
+                    <p className="text-[10px] text-stone-400 mt-1">
+                      This category does not require size selection. No size inventory will be shown to retailers.
+                    </p>
                   </div>
                 )}
 

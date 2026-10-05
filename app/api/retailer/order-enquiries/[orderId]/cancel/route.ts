@@ -2,18 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
 
-const NON_CANCELLABLE_STATUSES = new Set([
-  "DISPATCHED",
-  "COMPLETED",
-  "CANCELLED",
-]);
+const NON_CANCELLABLE_STATUSES = new Set(["DISPATCHED", "COMPLETED", "CANCELLED"]);
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   const guard = await requireRetailer(request);
-
   if ("error" in guard) {
     return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
   }
@@ -37,7 +32,6 @@ export async function POST(
             select: {
               productId: true,
               sets: true,
-              totalPieces: true,
               sizeCombination: true,
               product: {
                 select: {
@@ -51,35 +45,12 @@ export async function POST(
       });
 
       if (!order) throw new Error("Order not found.");
-
       if (NON_CANCELLABLE_STATUSES.has(order.status)) {
         if (order.status === "CANCELLED") throw new Error("This order is already cancelled.");
         throw new Error("This order can no longer be cancelled because it has already been dispatched or completed.");
       }
 
-      // Order creation decrements inventory, so cancellation releases that stock.
-      for (const item of order.items) {
-        if (item.product.category.requiresSize) {
-          const sizeRow = item.product.sizes.find(
-            (size) => size.size.toLowerCase() === item.sizeCombination.toLowerCase()
-          );
-          if (sizeRow) {
-            await tx.productSize.update({
-              where: { id: sizeRow.id },
-              data: { availableSets: { increment: item.sets } },
-            });
-          }
-        }
-
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            availableSets: { increment: item.sets },
-            totalAvailablePieces: { increment: item.totalPieces },
-          },
-        });
-      }
-
+      // No inventory is changed here because order submission no longer deducts stock.
       await tx.stockReservation.deleteMany({ where: { orderEnquiryId: order.id } });
 
       const updatedOrder = await tx.orderEnquiry.update({
@@ -101,12 +72,10 @@ export async function POST(
       // Keep every vendor-side SellerOrder synchronized with the master order.
       for (const sellerOrder of order.sellerOrders) {
         if (sellerOrder.status === "CANCELLED") continue;
-
         await tx.sellerOrder.update({
           where: { id: sellerOrder.id },
           data: { status: "CANCELLED" },
         });
-
         await tx.sellerOrderStatusHistory.create({
           data: {
             sellerOrderId: sellerOrder.id,
@@ -134,6 +103,9 @@ export async function POST(
   } catch (error) {
     console.error("Cancel retailer order error:", error);
     const message = error instanceof Error ? error.message : "Could not cancel this order.";
-    return NextResponse.json({ success: false, error: message }, { status: message === "Order not found." ? 404 : 400 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: message === "Order not found." ? 404 : 400 }
+    );
   }
 }

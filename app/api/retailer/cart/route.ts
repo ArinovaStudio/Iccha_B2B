@@ -7,7 +7,10 @@ import { getOrCreateCart, serializeCartFull } from "@/lib/cart-utils";
 export async function GET(request: NextRequest) {
   const guard = await requireRetailer(request);
   if ("error" in guard) {
-    return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+    return NextResponse.json(
+      { success: false, error: guard.error },
+      { status: guard.status }
+    );
   }
 
   const cart = await getOrCreateCart(guard.retailerProfile.id);
@@ -26,7 +29,10 @@ const addItemSchema = z.object({
 export async function POST(request: NextRequest) {
   const guard = await requireRetailer(request);
   if ("error" in guard) {
-    return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+    return NextResponse.json(
+      { success: false, error: guard.error },
+      { status: guard.status }
+    );
   }
 
   const body = await request.json();
@@ -44,51 +50,69 @@ export async function POST(request: NextRequest) {
     where: { id: productId },
     include: { category: { select: { requiresSize: true } }, sizes: true },
   });
+
   if (!product || !product.isActive) {
-    return NextResponse.json({ success: false, error: "Product not found or unavailable" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "Product not found or unavailable" },
+      { status: 404 }
+    );
   }
 
   const normalizedSize = selectedSize?.trim() || NO_SIZE;
 
+  // Keep size-selection validation, but do not limit cart quantities by stock.
   if (product.category.requiresSize) {
     if (!selectedSize) {
-      return NextResponse.json({ success: false, error: "Please select a size before adding this product." }, { status: 400 });
-    }
-    const sizeRow = product.sizes.find((row) => row.size.toLowerCase() === selectedSize.trim().toLowerCase());
-    if (!sizeRow) {
-      return NextResponse.json({ success: false, error: "Selected size is not available for this product." }, { status: 409 });
-    }
-    if (sets > sizeRow.availableSets) {
-      return NextResponse.json({ success: false, error: `Only ${sizeRow.availableSets} set(s) available in size ${sizeRow.size}` }, { status: 409 });
-    }
-  } else if (selectedSize) {
-    return NextResponse.json({ success: false, error: "This product does not require size selection." }, { status: 400 });
-  } else if (sets > product.availableSets) {
-    return NextResponse.json({ success: false, error: `Only ${product.availableSets} set(s) available` }, { status: 409 });
-  }
-
-  const cart = await getOrCreateCart(guard.retailerProfile.id);
-  const existingItem = cart.items.find((i) => i.productId === productId && i.selectedSize === normalizedSize);
-
-  if (existingItem) {
-    const newSets = existingItem.sets + sets;
-    const maxSets = product.category.requiresSize
-      ? product.sizes.find((row) => row.size.toLowerCase() === normalizedSize.toLowerCase())?.availableSets ?? 0
-      : product.availableSets;
-    if (newSets > maxSets) {
       return NextResponse.json(
-        { success: false, error: `Only ${product.availableSets} set(s) available (you already have ${existingItem.sets} in cart)` },
+        {
+          success: false,
+          error: "Please select a size before adding this product.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const sizeRow = product.sizes.find(
+      (row) =>
+        row.size.toLowerCase() === selectedSize.trim().toLowerCase()
+    );
+
+    if (!sizeRow) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Selected size is not available for this product.",
+        },
         { status: 409 }
       );
     }
+  } else if (selectedSize) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "This product does not require size selection.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const cart = await getOrCreateCart(guard.retailerProfile.id);
+  const existingItem = cart.items.find(
+    (item) =>
+      item.productId === productId &&
+      item.selectedSize === normalizedSize
+  );
+
+  if (existingItem) {
+    // Allow increasing the quantity without checking available stock.
+    const newSets = existingItem.sets + sets;
+
     await prisma.cartItem.update({
       where: { id: existingItem.id },
       data: { sets: newSets },
     });
   } else {
-    // A brand-new line for this product (+ size) must meet the product's own
-    // per-product minimum, set by the vendor (or admin for house products) —
-    // separate from, and in addition to, the cart-wide MOQ.
+    // Preserve the vendor/admin-defined minimum for each new product line.
     if (sets < product.minOrderSets) {
       return NextResponse.json(
         {
@@ -98,8 +122,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
     await prisma.cartItem.create({
-      data: { cartId: cart.id, productId, sets, selectedSize: normalizedSize },
+      data: {
+        cartId: cart.id,
+        productId,
+        sets,
+        selectedSize: normalizedSize,
+      },
     });
   }
 
@@ -110,20 +140,31 @@ export async function POST(request: NextRequest) {
   });
 
   const updatedCart = await getOrCreateCart(guard.retailerProfile.id);
-  const data = await serializeCartFull(updatedCart, guard.retailerProfile.id);
+  const data = await serializeCartFull(
+    updatedCart,
+    guard.retailerProfile.id
+  );
+
   return NextResponse.json({ success: true, data }, { status: 201 });
 }
 
 export async function DELETE(request: NextRequest) {
   const guard = await requireRetailer(request);
   if ("error" in guard) {
-    return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+    return NextResponse.json(
+      { success: false, error: guard.error },
+      { status: guard.status }
+    );
   }
 
   const cart = await getOrCreateCart(guard.retailerProfile.id);
   await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
   const updatedCart = await getOrCreateCart(guard.retailerProfile.id);
-  const data = await serializeCartFull(updatedCart, guard.retailerProfile.id);
+  const data = await serializeCartFull(
+    updatedCart,
+    guard.retailerProfile.id
+  );
+
   return NextResponse.json({ success: true, data });
 }

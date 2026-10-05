@@ -7,7 +7,10 @@ import { getOrCreateCart, serializeCartFull } from "@/lib/cart-utils";
 const NO_SIZE = "__NO_SIZE__";
 
 const updateSchema = z.object({
-  sets: z.number().int().min(1, "Must have at least 1 set — use DELETE to remove the item"),
+  sets: z
+    .number()
+    .int()
+    .min(1, "Must have at least 1 set — use DELETE to remove the item"),
   selectedSize: z.string().trim().optional(),
 });
 
@@ -17,7 +20,10 @@ export async function PATCH(
 ) {
   const guard = await requireRetailer(request);
   if ("error" in guard) {
-    return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+    return NextResponse.json(
+      { success: false, error: guard.error },
+      { status: guard.status }
+    );
   }
 
   const { productId } = await params;
@@ -39,20 +45,33 @@ export async function PATCH(
   });
 
   if (!cart) {
-    return NextResponse.json({ success: false, error: "Cart is empty" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "Cart is empty" },
+      { status: 404 }
+    );
   }
 
   const item = await prisma.cartItem.findFirst({
     where: { cartId: cart.id, productId, selectedSize },
-    include: { product: { include: { category: { select: { requiresSize: true } }, sizes: true } } },
+    include: {
+      product: {
+        include: {
+          category: { select: { requiresSize: true } },
+          sizes: true,
+        },
+      },
+    },
   });
 
   if (!item) {
-    return NextResponse.json({ success: false, error: "Item not found in your cart" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "Item not found in your cart" },
+      { status: 404 }
+    );
   }
 
-  // Per-product minimum, set by the vendor (or admin for house products). A retailer can
-  // remove the line entirely (DELETE) but can't shrink it below this floor.
+  // Preserve the vendor/admin-defined per-product minimum order quantity.
+  // Retailers can remove the line entirely through DELETE.
   if (sets < item.product.minOrderSets) {
     return NextResponse.json(
       {
@@ -63,17 +82,8 @@ export async function PATCH(
     );
   }
 
-  const maxSets = item.product.category.requiresSize
-    ? item.product.sizes.find((row) => row.size.toLowerCase() === selectedSize.toLowerCase())?.availableSets ?? 0
-    : item.product.availableSets;
-
-  if (sets > maxSets) {
-    return NextResponse.json(
-      { success: false, error: item.product.category.requiresSize ? `Only ${maxSets} set(s) available in size ${selectedSize}` : `Only ${maxSets} set(s) available` },
-      { status: 409 }
-    );
-  }
-
+  // Intentionally do not validate the requested quantity against stock.
+  // Stock limits are not enforced when changing cart quantities.
   await prisma.cartItem.update({
     where: { id: item.id },
     data: { sets },
@@ -86,7 +96,11 @@ export async function PATCH(
   });
 
   const updatedCart = await getOrCreateCart(guard.retailerProfile.id);
-  const data = await serializeCartFull(updatedCart, guard.retailerProfile.id);
+  const data = await serializeCartFull(
+    updatedCart,
+    guard.retailerProfile.id
+  );
+
   return NextResponse.json({ success: true, data });
 }
 
@@ -96,7 +110,10 @@ export async function DELETE(
 ) {
   const guard = await requireRetailer(request);
   if ("error" in guard) {
-    return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+    return NextResponse.json(
+      { success: false, error: guard.error },
+      { status: guard.status }
+    );
   }
 
   const { productId } = await params;
@@ -108,7 +125,10 @@ export async function DELETE(
   });
 
   if (!cart) {
-    return NextResponse.json({ success: false, error: "Cart is empty" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "Cart is empty" },
+      { status: 404 }
+    );
   }
 
   const item = await prisma.cartItem.findFirst({
@@ -116,12 +136,19 @@ export async function DELETE(
   });
 
   if (!item) {
-    return NextResponse.json({ success: false, error: "Item not found in your cart" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "Item not found in your cart" },
+      { status: 404 }
+    );
   }
 
   await prisma.cartItem.delete({ where: { id: item.id } });
 
   const updatedCart = await getOrCreateCart(guard.retailerProfile.id);
-  const data = await serializeCartFull(updatedCart, guard.retailerProfile.id);
+  const data = await serializeCartFull(
+    updatedCart,
+    guard.retailerProfile.id
+  );
+
   return NextResponse.json({ success: true, data });
 }
