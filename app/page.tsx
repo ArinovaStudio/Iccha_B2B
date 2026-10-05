@@ -14,7 +14,7 @@ import RevealInit from '@/components/ui/RevealInit';
 import Showcase from '@/components/hero/Showcase';
 import HomeElements from '@/components/hero/Main';
 
-
+export const dynamic = 'force-dynamic';
 const btnFill =
   'inline-flex items-center justify-center gap-2 rounded-full bg-black text-white px-8 py-3.5 text-sm font-medium tracking-wide transition-colors duration-200 hover:bg-neutral-800';
 const btnOutline =
