@@ -10,7 +10,8 @@ export interface RailVendor {
   location: string;
   productCount: number;
   image: string;
-  products?: []
+  products?: [];
+  description: string | null;
  }
 
 interface VendorRailProps {
@@ -81,12 +82,11 @@ export default function VendorRail({ vendors }: VendorRailProps) {
                         <span className="truncate">{vendor.location}</span>
                       </span>
                     )}
-                    <span className="ml-auto shrink-0 tabular-nums">
-                      <span className="font-serif text-[15px] text-[#D9AE68] lg:text-[17px]">
-                        {vendor.productCount}
-                      </span>{' '}
-                      design{vendor.productCount === 1 ? '' : 's'}
-                    </span>
+                    {vendor.description?.trim() && (
+  <span className="ml-auto min-w-0 max-w-[65%] text-right text-[11px] leading-relaxed text-white/85 sm:text-xs lg:text-sm line-clamp-2">
+    {vendor.description}
+  </span>
+)}
                   </div>
                 </div>
               </div>

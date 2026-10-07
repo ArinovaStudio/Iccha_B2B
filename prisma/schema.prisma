@@ -51,6 +51,7 @@ model VendorProfile {
   ifsc           String?
   branch         String?
   upiId          String?
+  description    String?                @db.Text
   invoicePrefix  String                 @default("INV-VEN-")
   defaultGstRate Decimal                @default(5.0) @db.Decimal(5, 2)
   isActive       Boolean                @default(true)
@@ -1052,4 +1053,10 @@ model SiteSetting {
   updatedAt   DateTime @updatedAt
 
   @@index([key])
+}
+model StoreSettings {
+  id          String   @id @default("main")
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

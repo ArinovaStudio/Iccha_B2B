@@ -15,33 +15,33 @@ import Showcase from '@/components/hero/Showcase';
 import HomeElements from '@/components/hero/Main';
 
 export const dynamic = 'force-dynamic';
+
 const btnFill =
   'inline-flex items-center justify-center gap-2 rounded-full bg-black text-white px-8 py-3.5 text-sm font-medium tracking-wide transition-colors duration-200 hover:bg-neutral-800';
+
 const btnOutline =
   'inline-flex items-center justify-center gap-2 rounded-full border border-black text-black px-8 py-3.5 text-sm font-medium tracking-wide transition-colors duration-200 hover:bg-black hover:text-white';
+
 const btnOnDark =
   'inline-flex items-center justify-center gap-2 rounded-full border border-white/40 text-white px-6 py-3.5 text-sm font-medium tracking-wide transition-colors duration-200 hover:bg-white hover:text-black hover:border-white';
 
 export default async function HomePage() {
-
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <RevealInit />
       <PublicHeader />
 
       <main className="flex-1">
-
-        <HeroSection /> 
+        <HeroSection />
         <HomeElements />
+
         <section className="py-24 sm:py-32 bg-white border-t border-neutral-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
             <h2 className="reveal font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-black tracking-tight leading-[1.05] max-w-3xl mb-16">
               Built for margin, not just volume
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 border-t border-l border-neutral-200">
-
               {[
                 {
                   icon: Scissors,
@@ -53,9 +53,9 @@ export default async function HomePage() {
                 {
                   icon: Building2,
                   tier: 'border-t-neutral-500',
-                  title: 'Two GST entities, one order',
+                  title: 'Custom Piece of Fabric',
                   body:
-                    'Direct billing from Surat (Chanderi, muslin and festive silk 3-piece sets) and Jaipur (60x60 cambric cotton, hand-block and 2-piece sets) for clean input tax credit.',
+                    'Discover a versatile range of fabrics tailored to your designs and business needs. Choose from different materials, textures, colours and prints to create distinctive collections that match your customers’ preferences.',
                 },
                 {
                   icon: Lock,
@@ -68,31 +68,34 @@ export default async function HomePage() {
                 <div
                   key={item.title}
                   className={`reveal group border-r border-b border-neutral-200 border-t-2 ${item.tier} p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-50`}
-                  style={{ '--reveal-delay': `${idx * 100}ms` } as React.CSSProperties}
+                  style={
+                    {
+                      '--reveal-delay': `${idx * 100}ms`,
+                    } as React.CSSProperties
+                  }
                 >
                   <div className="flex items-center gap-3 mb-6">
-                    <item.icon className="w-5 h-5 text-black" strokeWidth={1.75} />
+                    <item.icon
+                      className="w-5 h-5 text-black"
+                      strokeWidth={1.75}
+                    />
                     <h3 className="font-serif text-xl font-medium text-black">
                       {item.title}
                     </h3>
                   </div>
+
                   <p className="text-[15px] text-neutral-500 leading-relaxed">
                     {item.body}
                   </p>
                 </div>
               ))}
-
             </div>
-
           </div>
         </section>
 
-        {/* ========================================================================= */}
         {/* 6. CRAFT, FACTORY VIDEO & REELS */}
-        {/* ========================================================================= */}
         <section className="relative bg-black text-white overflow-hidden border-t border-white/10">
-
-          {/* Full-bleed photo hero: image IS the background, copy + CTA sit on top of it */}
+          {/* Full-bleed photo hero */}
           <Showcase />
 
           {/* Instagram / Lookbooks Gallery Strip */}
@@ -101,48 +104,79 @@ export default async function HomePage() {
               <div className="reveal flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <Instagram className="w-4 h-4 text-white/70" />
-                  <span className="font-serif text-lg text-white">Recent lookbooks</span>
+                  <span className="font-serif text-lg text-white">
+                    Recent lookbooks
+                  </span>
                 </div>
-                <span className="text-sm text-white/50">@icchastore.official</span>
+
+                <span className="text-sm text-white/50">
+                  @icchastore.official
+                </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { img: 'https://images.unsplash.com/photo-1752653425039-cf1ff22d61bc?&w=1287', tag: 'Alia cut lot' },
-                  { img: 'https://images.unsplash.com/photo-1683600209750-e01db74c47ca?w=1227', tag: 'Jaipuri cotton' },
-                  { img: 'https://assets0.mirraw.com/images/12933692/IMG-20241028-WA0005_(1)_zoom.jpg?1730135586', tag: 'Nayra cut sets' },
-                  { img: 'https://cult91.com/cdn/shop/files/beburst_gen_1781952084070_0.png?v=1782193810&width=1696', tag: 'Chikankari set' },
+                  {
+                    img: 'https://images.unsplash.com/photo-1752653425039-cf1ff22d61bc?&w=1287',
+                    tag: 'Alia cut lot',
+                    link:
+                      'https://www.instagram.com/iccha_by_prime?stkn=MWV4ZW1paHVhdzJ6OA==',
+                  },
+                  {
+                    img: 'https://images.unsplash.com/photo-1683600209750-e01db74c47ca?w=1227',
+                    tag: 'Jaipuri cotton',
+                    link:
+                      'https://www.instagram.com/primefashion.bangalore?stkn=MTEwYW92bjJqbm1kYw==',
+                  },
+                  {
+                    img: 'https://assets0.mirraw.com/images/12933692/IMG-20241028-WA0005_(1)_zoom.jpg?1730135586',
+                    tag: 'Nayra cut sets',
+                    link:
+                      'https://www.instagram.com/prime.fabric?stkn=MXBwZmhsMTcyNG00MA==',
+                  },
+                  {
+                    img: 'https://cult91.com/cdn/shop/files/beburst_gen_1781952084070_0.png?v=1782193810&width=1696',
+                    tag: 'Chikankari set',
+                    link:
+                      'https://www.instagram.com/iccha_by_prime?stkn=MWV4ZW1paHVhdzJ6OA==',
+                  },
                 ].map((reel, idx) => (
-                  <div
-                    key={idx}
-                    className="reveal relative aspect-[9/16] overflow-hidden bg-white/5 border border-white/10 group"
-                    style={{ '--reveal-delay': `${idx * 70}ms` } as React.CSSProperties}
+                  <Link
+                    key={reel.tag}
+                    href={reel.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`View ${reel.tag} on Instagram`}
+                    className="reveal relative aspect-[9/16] overflow-hidden bg-white/5 border border-white/10 group block"
+                    style={
+                      {
+                        '--reveal-delay': `${idx * 70}ms`,
+                      } as React.CSSProperties
+                    }
                   >
                     <img
                       src={reel.img}
                       alt={reel.tag}
-                      // fill
-                      className="object-cover w-full h-full absolute inset-0 transition-all duration-300 ease-out opacity-70 group-hover:opacity-100"
+                      className="object-cover w-full h-full absolute inset-0 transition-all duration-300 ease-out opacity-70 group-hover:opacity-100 group-hover:scale-105"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-                    <div className="absolute bottom-3 left-3 text-sm font-medium text-white">
-                      {reel.tag}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
+
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 text-sm font-medium text-white pointer-events-none">
+                      <span>{reel.tag}</span>
+                      <Instagram className="w-4 h-4 shrink-0 opacity-80" />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
           </div>
-
         </section>
 
-        {/* ========================================================================= */}
         {/* 7. RETAILER REGISTRATION CTA */}
-        {/* ========================================================================= */}
         <section className="py-28 sm:py-36 bg-white border-t border-neutral-200">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-
             <div className="reveal w-11 h-11 rounded-full bg-black text-white flex items-center justify-center font-serif text-xl mx-auto mb-8">
               इ
             </div>
@@ -152,29 +186,33 @@ export default async function HomePage() {
             </h2>
 
             <p className="reveal text-base text-neutral-500 max-w-lg mx-auto leading-relaxed mb-10">
-              Join boutique owners and garment retailers across India already sourcing
-              from us. Submit your GSTIN for prompt access.
+              Join boutique owners and garment retailers across India already
+              sourcing from us. Submit your GSTIN for prompt access.
             </p>
 
             <div className="reveal flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-              <Link href="/register" className={`${btnFill} w-full sm:w-auto`}>
+              <Link
+                href="/register"
+                className={`${btnFill} w-full sm:w-auto`}
+              >
                 Apply as a retailer
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
 
-              <Link href="/login" className={`${btnOutline} w-full sm:w-auto`}>
+              <Link
+                href="/login"
+                className={`${btnOutline} w-full sm:w-auto`}
+              >
                 Retailer login
               </Link>
             </div>
 
             <p className="reveal text-sm text-neutral-400">
-              Registration requires a GSTIN or valid Shop and Establishment proof.
-              Verification takes about 24 business hours.
+              Registration requires a GSTIN or valid Shop and Establishment
+              proof. Verification takes about 24 business hours.
             </p>
-
           </div>
         </section>
-
       </main>
 
       <Footer />

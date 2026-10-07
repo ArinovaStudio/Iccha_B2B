@@ -11,7 +11,7 @@ import {
   Edit3, 
   Copy, 
   Eye, 
-  Archive, 
+  Trash2, 
   CheckCircle2, 
   Clock, 
   Layers, 
@@ -60,7 +60,7 @@ export default function AdminHeroManagementPage() {
           if (!prev && heroRes.data.length > 0) return heroRes.data[0];
           if (prev) {
             const updated = heroRes.data.find((s: HeroSlide) => s.id === prev.id);
-            return updated || prev;
+            return updated || heroRes.data[0] || null;
           }
           return null;
         });
@@ -92,7 +92,7 @@ export default function AdminHeroManagementPage() {
             if (!prev && heroRes.data.length > 0) return heroRes.data[0];
             if (prev) {
               const updated = heroRes.data.find((s: HeroSlide) => s.id === prev.id);
-              return updated || prev;
+              return updated || heroRes.data[0] || null;
             }
             return null;
           });
@@ -157,17 +157,33 @@ export default function AdminHeroManagementPage() {
     }
   };
 
-  const handleArchive = async (id: string) => {
-    if (!confirm('Are you sure you want to archive this slide? It will be removed from the active campaign.')) return;
+  const handleDelete = async (id: string) => {
+    if (
+      !confirm(
+        'Are you sure you want to permanently delete this slide? This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/admin/hero/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/hero/${id}`, {
+        method: 'DELETE',
+      });
+
       const json = await res.json();
+
       if (json.success) {
-        showNotification('Slide archived safely.', 'success');
-        fetchSlides();
+        showNotification('Hero slide permanently deleted.', 'success');
+        await fetchSlides();
+      } else {
+        showNotification(
+          json.error?.message || 'Failed to delete slide',
+          'error'
+        );
       }
     } catch {
-      showNotification('Failed to archive slide', 'error');
+      showNotification('Failed to delete slide', 'error');
     }
   };
 
@@ -581,12 +597,12 @@ export default function AdminHeroManagementPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleArchive(slide.id);
+                              handleDelete(slide.id);
                             }}
                             className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                            title="Archive Slide"
+                            title="Delete Slide"
                           >
-                            <Archive className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
 

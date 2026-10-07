@@ -9,6 +9,13 @@ const updateProfileSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   mobile: z.string().trim().optional().or(z.literal("")),
 
+  mainStoreDescription: z
+    .string()
+    .trim()
+    .max(2000, "Description must be 2,000 characters or fewer")
+    .optional()
+    .or(z.literal("")),
+
   bankName: z.string().trim().optional().or(z.literal("")),
   accountHolder: z.string().trim().optional().or(z.literal("")),
   accountNumber: z.string().trim().optional().or(z.literal("")),
@@ -28,19 +35,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const bankDetails = await prisma.staffBankDetails.findUnique({
-      where: {
-        userId: auth.user.id,
-      },
-      select: {
-        bankName: true,
-        accountHolder: true,
-        accountNumber: true,
-        ifsc: true,
-        branch: true,
-        upiId: true,
-      },
-    });
+    const [bankDetails, storeSettings] = await Promise.all([
+      prisma.staffBankDetails.findUnique({
+        where: {
+          userId: auth.user.id,
+        },
+        select: {
+          bankName: true,
+          accountHolder: true,
+          accountNumber: true,
+          ifsc: true,
+          branch: true,
+          upiId: true,
+        },
+      }),
+      prisma.storeSettings.findUnique({
+        where: { id: "main" },
+        select: {
+          description: true,
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -52,6 +67,7 @@ export async function GET(request: NextRequest) {
         createdAt: auth.user.createdAt,
         lastLoginAt: auth.user.lastLoginAt,
         bankDetails,
+        mainStoreDescription: storeSettings?.description ?? "",
       },
     });
   } catch (error) {
@@ -96,6 +112,7 @@ export async function PATCH(request: NextRequest) {
       name,
       email,
       mobile,
+      mainStoreDescription,
       bankName,
       accountHolder,
       accountNumber,
@@ -121,6 +138,20 @@ export async function PATCH(request: NextRequest) {
           role: true,
           createdAt: true,
           lastLoginAt: true,
+        },
+      });
+
+      const storeSettings = await tx.storeSettings.upsert({
+        where: { id: "main" },
+        create: {
+          id: "main",
+          description: mainStoreDescription || null,
+        },
+        update: {
+          description: mainStoreDescription || null,
+        },
+        select: {
+          description: true,
         },
       });
 
@@ -184,6 +215,7 @@ export async function PATCH(request: NextRequest) {
       return {
         ...user,
         bankDetails,
+        mainStoreDescription: storeSettings.description ?? "",
       };
     });
 

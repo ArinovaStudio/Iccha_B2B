@@ -21,11 +21,7 @@ type DbProduct = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
 function toProduct(p: DbProduct): Product {
   const availableSets = p.availableSets;
   const status: Product["status"] =
-    availableSets === 0
-      ? "out_of_stock"
-      : availableSets <= 5
-        ? "low_stock"
-        : "available";
+    availableSets === 0 ? "out_of_stock" : availableSets <= 5 ? "low_stock" : "available";
 
   return {
     id: p.id,
@@ -71,104 +67,100 @@ function toProduct(p: DbProduct): Product {
 const vendorSelect = {
   id: true,
   businessName: true,
+  description: true,
   city: true,
   state: true,
   bannerAsset: { select: { publicUrl: true } },
   _count: { select: { products: { where: { isActive: true } } } },
   products: {
-    where: {
-      isActive: true,
-    },
-    take: 8,
+    where: { isActive: true },
+    take: 4,
     orderBy: { createdAt: "desc" },
-    include: {
-      media: {
-        take: 1,
-        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
-        select: { mediaAsset: { select: { publicUrl: true } } },
-      },
-    },
+    include: productInclude,
   },
 } satisfies Prisma.VendorProfileSelect;
 
 type DbVendor = Prisma.VendorProfileGetPayload<{ select: typeof vendorSelect }>;
 
 function toVendor(v: DbVendor) {
-  const images = v.products
-    .map((p) => p.media[0]?.mediaAsset.publicUrl)
+  const products = v.products.map(toProduct);
+  const images = products
+    .map((product) => product.media[0]?.url)
     .filter((url): url is string => Boolean(url));
 
   return {
     id: v.id,
     name: v.businessName,
+    description: v.description,
     location: [v.city, v.state].filter(Boolean).join(", "),
     productCount: v._count.products,
     images,
-    products: v.products,
-    // uploaded banner -> latest product photo -> placeholder
+    products,
     image: v.bannerAsset?.publicUrl ?? images[0] ?? FALLBACK_IMAGE,
   };
 }
 
 export async function GET(req: NextRequest) {
-  const params = req.nextUrl.searchParams;
-  const getCatSlug = params.get("catSlug");
-  const adminProducts = params.get("adminProducts");
+  try {
+    const params = req.nextUrl.searchParams;
+    const getCatSlug = params.get("catSlug");
+    const adminProducts = params.get("adminProducts");
 
-  if (getCatSlug) {
-    const data = await prisma.category.findMany({
-      include: {
-        products: true,
+    if (getCatSlug) {
+      const data = await prisma.category.findMany({ include: { products: true } });
+      return NextResponse.json({ data }, { status: 200 });
+    }
+
+    if (adminProducts) {
+      const [products, storeSettings] = await Promise.all([
+        prisma.product.findMany({
+          where: { vendorId: null, isActive: true },
+          include: productInclude,
+          take: 4,
+          orderBy: { createdAt: "asc" },
+        }),
+        prisma.storeSettings.findUnique({
+          where: { id: "main" },
+          select: { description: true },
+        }),
+      ]);
+
+      return NextResponse.json(
+        {
+          products: products.map(toProduct),
+          description: storeSettings?.description ?? null,
+        },
+        { status: 200 },
+      );
+    }
+
+    const rawLimit = Number(params.get("limit") || 6);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 10) : 6;
+    const cursor = params.get("cursor");
+
+    const vendors = await prisma.vendorProfile.findMany({
+      where: {
+        isActive: true,
+        user: {
+          OR: [{ role: "VENDOR" }, { role: "ADMIN" }, { role: "SUPER_ADMIN" }],
+        },
       },
+      orderBy: [{ businessName: "asc" }, { id: "asc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: limit + 1,
+      select: vendorSelect,
     });
+
+    const hasMore = vendors.length > limit;
+    const pageVendors = hasMore ? vendors.slice(0, limit) : vendors;
+    const nextCursor = hasMore ? pageVendors[pageVendors.length - 1]?.id ?? null : null;
+
     return NextResponse.json(
-      {
-        data,
-      },
+      { vendors: pageVendors.map(toVendor), nextCursor },
       { status: 200 },
     );
+  } catch (error) {
+    console.error("Home API error:", error);
+    return NextResponse.json({ error: "Failed to fetch homepage data" }, { status: 500 });
   }
-
-  if (adminProducts) {
-    const products = await prisma.product.findMany({
-      where: { vendorId: null },
-      include: productInclude,
-      take: 8,
-      orderBy: { createdAt: "asc" },
-    });
-    return NextResponse.json(
-      {
-        products: products.map(toProduct),
-      },
-      { status: 200 },
-    );
-  }
-
-  const vendors = await prisma.vendorProfile.findMany({
-    where: {
-      isActive: true,
-      user: {
-        OR: [
-          {
-            role: "VENDOR",
-          },
-          {
-            role: "ADMIN",
-          },
-          {
-            role: "SUPER_ADMIN",
-          },
-        ],
-      },
-    },
-    orderBy: { businessName: "asc" },
-    select: vendorSelect,
-  });
-
-  return NextResponse.json(
-    {
-      vendors: vendors.map(toVendor),
-    },
-    { status: 200 },
-  );
 }

@@ -6,27 +6,16 @@ import { requireStaff } from "@/lib/auth/guard";
 
 const updateHeroSlideSchema = z.object({
   internalName: z.string().optional(),
-
   slideNumber: z.string().optional(),
-
   eyebrow: z.string().optional(),
-
   title: z.string().optional(),
-
   description: z.string().optional(),
-
   desktopImage: z.string().url().optional(),
-
   mobileImage: z.string().url().optional(),
-
   imageAlt: z.string().optional(),
-
   primaryCtaLabel: z.string().optional(),
-
   primaryCtaUrl: z.string().optional(),
-
   secondaryCtaLabel: z.string().optional(),
-
   secondaryCtaUrl: z.string().optional(),
 
   contentPosition: z
@@ -38,13 +27,9 @@ const updateHeroSlideSchema = z.object({
     .optional(),
 
   desktopImagePosition: z.string().optional(),
-
   mobileImagePosition: z.string().optional(),
-
   productId: z.string().optional(),
-
   categoryId: z.string().optional(),
-
   collectionId: z.string().optional(),
 
   fabricTags: z
@@ -52,20 +37,19 @@ const updateHeroSlideSchema = z.object({
     .optional(),
 
   editorialBadge: z.string().optional(),
-
   navLabel: z.string().optional(),
-
   sortOrder: z.number().int().optional(),
 
-  status: z.enum([
-    "PUBLISHED",
-    "DRAFT",
-    "SCHEDULED",
-    "ARCHIVED",
-  ]).optional(),
+  status: z
+    .enum([
+      "PUBLISHED",
+      "DRAFT",
+      "SCHEDULED",
+      "ARCHIVED",
+    ])
+    .optional(),
 
   startAt: z.string().optional(),
-
   endAt: z.string().optional(),
 });
 
@@ -142,7 +126,6 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-
     const body = await request.json();
 
     const validated = updateHeroSlideSchema.parse(body);
@@ -219,7 +202,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: Context 
+  { params }: Context
 ) {
   const auth = await requireStaff(request);
 
@@ -236,39 +219,61 @@ export async function DELETE(
     );
   }
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const archived = await HeroService.archiveSlide(
-    id,
-    {
-      id: auth.user.id,
-      email: auth.user.email,
-      role: auth.user.role,
+    // Permanently delete the hero slide instead of archiving it.
+    const deleted = await HeroService.deleteSlide(
+      id,
+      {
+        id: auth.user.id,
+        email: auth.user.email,
+        role: auth.user.role,
+      }
+    );
+
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          success: false,
+          data: null,
+          error: {
+            code: "HERO_SLIDE_NOT_FOUND",
+            message: "Hero slide not found",
+          },
+        },
+        {
+          status: 404,
+        }
+      );
     }
-  );
 
-  if (!archived) {
+    return NextResponse.json({
+      success: true,
+      data: {
+        id,
+        deleted: true,
+      },
+      error: null,
+    });
+  } catch (error) {
+    console.error("Hero deletion error:", error);
+
     return NextResponse.json(
       {
         success: false,
         data: null,
         error: {
-          code: "HERO_SLIDE_NOT_FOUND",
-          message: "Hero slide not found",
+          code: "HERO_DELETE_FAILED",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete hero slide",
         },
       },
       {
-        status: 404,
+        status: 500,
       }
     );
   }
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      id,
-      archived: true,
-    },
-    error: null,
-  });
 }

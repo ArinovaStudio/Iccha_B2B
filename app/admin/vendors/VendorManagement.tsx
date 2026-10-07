@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Search, ArrowDownCircle, Trash2, Store, Loader2, Eye, ImagePlus } from "lucide-react";
+import { Search, ArrowDownCircle, Trash2, Loader2, Eye, ImagePlus } from "lucide-react";
 import Image from "next/image";
 import AdminSidebar from "@/components/layout/AdminSidebar";
+import CreateVendorButton from "@/components/admin/vendors/CreateVendorButton";
 import { useApp } from "@/lib/context/AppContext";
 
 interface Vendor {
@@ -207,6 +208,10 @@ export default function VendorManagement() {
     <div className="flex min-h-screen bg-[#faf8f5]">
       <AdminSidebar activeTab="vendors" />
       <main className="flex-1 p-6 lg:p-10 space-y-6 overflow-y-auto">
+        <div className="flex justify-end">
+          <CreateVendorButton onCreated={() => fetchVendors(null, search)} />
+        </div>
+
         <div className="border-b border-stone-200 pb-6">
           <span className="text-xs uppercase font-bold tracking-widest text-[#831843]">Vendor Management</span>
           <h1 className="font-serif text-3xl font-bold text-stone-900 mt-1">Vendors</h1>

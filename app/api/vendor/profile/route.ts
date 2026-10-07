@@ -18,6 +18,7 @@ const updateProfileSchema = z.object({
     ifsc: z.string().trim().optional().or(z.literal("")),
     branch: z.string().trim().optional().or(z.literal("")),
     upiId: z.string().trim().optional().or(z.literal("")),
+    description: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 
 export async function GET(request: NextRequest) {
@@ -85,6 +86,7 @@ export async function PATCH(request: NextRequest) {
                     ifsc: data.ifsc || null,
                     branch: data.branch || null,
                     upiId: data.upiId || null,
+                    description: data.description?.trim() || null,
                 },
             });
 
