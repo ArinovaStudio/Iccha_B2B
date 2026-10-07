@@ -118,9 +118,11 @@ export default function LoginPage() {
 
           {/* Header */}
           <div className="text-center mb-8 space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center font-serif text-2xl font-bold shadow-lg mx-auto">
-              इ
-            </div>
+            <img
+              src="/brand/iccha-logo-dark.png"
+              alt="Iccha - The Women's Label"
+              className="h-40 w-auto mx-auto"
+            />
             <h1 className="font-serif text-2xl font-bold text-stone-900">
               Retailer Secure Login
             </h1>

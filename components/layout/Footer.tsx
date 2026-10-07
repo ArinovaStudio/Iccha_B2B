@@ -11,7 +11,6 @@ import {
   Lock,
   ArrowUpRight,
 } from 'lucide-react';
-
 export default function Footer() {
   const quickLinks = [
     { label: 'Home', href: '/' },
@@ -21,7 +20,6 @@ export default function Footer() {
     { label: 'About Us', href: '/about' },
     { label: 'Contact Us', href: '/contact' },
   ];
-
   const retailerLinks = [
     { label: 'Apply as Retailer', href: '/register' },
     { label: 'Submit KYC', href: '/register/kyc' },
@@ -29,7 +27,6 @@ export default function Footer() {
     { label: 'Terms & Conditions', href: '/terms' },
     { label: 'Privacy Policy', href: '/privacy-policy' },
   ];
-
   const categories = [
     { label: '2-Piece Kurtis', href: '/products?category=2-piece-kurtis' },
     { label: '3-Piece Sets', href: '/products?category=3-piece-sets' },
@@ -109,22 +106,13 @@ export default function Footer() {
           {/* BRAND */}
           <div className="lg:col-span-4">
 
-            <Link href="/" className="inline-flex items-center gap-3 group">
+            <Link href="/" className="inline-flex items-center" aria-label="Iccha - The Women's Label">
 
-              <div className="w-11 h-11 rounded-lg bg-white text-[#171717] flex items-center justify-center font-serif text-xl font-bold transition-transform duration-300 group-hover:scale-105">
-                इ
-              </div>
-
-              <div>
-                <span className="font-serif italic text-[26px] tracking-tight text-white font-normal block leading-none">
-                  Iccha
-                  <span className="font-bold not-italic">Store.</span>
-                </span>
-
-                <span className="text-[8px] tracking-[0.32em] uppercase text-stone-500 font-semibold block mt-1.5">
-                  B2B Women's Ethnic Archive
-                </span>
-              </div>
+              <img
+                src="/brand/iccha-logo-compact-light.png"
+                alt="Iccha - The Women's Label"
+                className="h-28 w-auto"
+              />
 
             </Link>
 

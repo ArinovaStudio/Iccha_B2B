@@ -177,9 +177,11 @@ export default async function HomePage() {
         {/* 7. RETAILER REGISTRATION CTA */}
         <section className="py-28 sm:py-36 bg-white border-t border-neutral-200">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="reveal w-11 h-11 rounded-full bg-black text-white flex items-center justify-center font-serif text-xl mx-auto mb-8">
-              इ
-            </div>
+            <img
+              src="/brand/iccha-logo-dark.png"
+              alt="Iccha - The Women's Label"
+              className="reveal h-36 w-auto mx-auto mb-8"
+            />
 
             <h2 className="reveal font-serif text-5xl sm:text-6xl lg:text-8xl font-normal text-black tracking-tight leading-[1.02] mb-6">
               Ready to stock

@@ -222,20 +222,14 @@ export default function RetailerHeader() {
           {/* LOGO */}
           <Link
             href="/retailer/catalogue"
-            className={`group flex shrink-0 items-center gap-3 justify-self-start rounded-sm ${focusRing}`}
+            aria-label="Iccha - The Women's Label"
+            className={`flex shrink-0 items-center justify-self-start rounded-sm ${focusRing}`}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-amber-400/30 bg-gradient-to-br from-amber-400/[0.12] to-amber-400/[0.03] font-serif text-lg text-amber-300 transition-all duration-300 group-hover:border-amber-300/60 group-hover:shadow-[0_0_20px_rgba(252,211,77,0.15)]">
-              इ
-            </div>
-
-            <div className="hidden leading-none sm:block">
-              <div className="font-serif text-[15px] font-semibold tracking-[0.14em] text-[#f9f7f2]">
-                ICCHA<span className="ml-1 text-amber-300">STORE</span>
-              </div>
-              <div className="mt-1.5 text-[7px] font-medium tracking-[0.3em] text-stone-500">
-                B2B ARCHIVE
-              </div>
-            </div>
+            <img
+              src="/brand/iccha-symbol-light.png"
+              alt="Iccha - The Women's Label"
+              className="h-11 w-auto"
+            />
           </Link>
 
           {/* DESKTOP NAV, centred */}

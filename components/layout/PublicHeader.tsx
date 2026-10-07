@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Menu, 
-  X, 
-  Sparkles, 
-  Lock, 
+import {
+  Menu,
+  X,
+  Sparkles,
+  Lock,
   ChevronRight,
   LayoutDashboard
 } from 'lucide-react';
@@ -44,7 +44,7 @@ export default function PublicHeader() {
           });
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (!cancelled) setAuthChecked(true);
       });
@@ -67,18 +67,21 @@ export default function PublicHeader() {
       {/* Main Header Bar — logo, nav, and the two primary CTAs, all on one line */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          
-          {/* Brand Logo — single line, tagline dropped (already stated in bar above) */}
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 bg-[#1a1a1a] text-[#f9f7f2] flex items-center justify-center font-serif text-lg font-bold border border-black/10 group-hover:bg-black transition">
-              इ
-            </div>
+
+          {/* Brand Logo */}
+          {/* Brand Logo */}
+          <Link href="/" className="flex items-center gap-3 shrink-0" aria-label="Iccha - The Women's Label">
+            <img
+              src="/brand/iccha-symbol-dark.png"
+              alt=""
+              className="h-12 w-auto"
+            />
             <div className="leading-none">
-              <span className="font-serif italic text-xl tracking-tighter text-[#1a1a1a] font-normal whitespace-nowrap block">
-                Iccha<span className="font-bold not-italic">Store.</span>
+              <span className="font-serif text-[26px] tracking-[0.12em] text-[#1a1a1a] block">
+                ICCHA
               </span>
-              <span className="text-[9px] tracking-[0.3em] uppercase text-[var(--text-subtle)] font-bold whitespace-nowrap block mt-1">
-                Wholesale Manufacturing &bull; Vol. 26
+              <span className="text-[9px] tracking-[0.3em] uppercase text-[var(--text-subtle)] font-semibold whitespace-nowrap block mt-1.5">
+                The Women&apos;s Label
               </span>
             </div>
           </Link>
@@ -91,9 +94,8 @@ export default function PublicHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`whitespace-nowrap transition-all hover:opacity-100 py-1 border-b-2 ${
-                    isActive ? 'border-black opacity-100' : 'border-transparent opacity-50 hover:border-black/30'
-                  }`}
+                  className={`whitespace-nowrap transition-all hover:opacity-100 py-1 border-b-2 ${isActive ? 'border-black opacity-100' : 'border-transparent opacity-50 hover:border-black/30'
+                    }`}
                 >
                   {link.label}
                 </Link>
@@ -151,9 +153,8 @@ export default function PublicHeader() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between py-2 text-xs font-bold uppercase tracking-[0.2em] border-b border-black/5 ${
-                  pathname === link.href ? 'text-[#1a1a1a] font-bold' : 'text-stone-600'
-                }`}
+                className={`flex items-center justify-between py-2 text-xs font-bold uppercase tracking-[0.2em] border-b border-black/5 ${pathname === link.href ? 'text-[#1a1a1a] font-bold' : 'text-stone-600'
+                  }`}
               >
                 <span>{link.label}</span>
                 <ChevronRight className="w-4 h-4 text-stone-400" />

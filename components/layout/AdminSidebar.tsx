@@ -234,9 +234,11 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
               href={isVendor ? '/admin/products' : '/admin'}
               className="flex items-center gap-3 min-w-0"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 text-white flex items-center justify-center font-serif text-xl font-bold shadow-lg shrink-0">
-                इ
-              </div>
+              <img
+                src="/brand/iccha-symbol-light.png"
+                alt="Iccha"
+                className="h-10 w-auto shrink-0"
+              />
 
               <div className="min-w-0">
                 <span className="font-serif text-lg tracking-tight text-white font-bold block leading-none truncate">

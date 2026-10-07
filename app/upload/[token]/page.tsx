@@ -167,9 +167,12 @@ export default function MobileUploadPage() {
   return (
     <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-center px-6 py-10 text-center">
       <div className="w-full max-w-sm">
-        <div className="w-12 h-12 bg-[#1a1a1a] text-[#f9f7f2] flex items-center justify-center font-serif text-xl font-bold mx-auto mb-6 rounded-lg">
-          इ
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/iccha-logo-dark.png"
+          alt="Iccha - The Women's Label"
+          className="h-32 w-auto mx-auto mb-6"
+        />
 
         {state === 'loading' && (
           <div className="flex flex-col items-center gap-3 text-stone-500">
