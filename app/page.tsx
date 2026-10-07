@@ -114,31 +114,25 @@ export default async function HomePage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {[
                   {
-                    img: 'https://images.unsplash.com/photo-1752653425039-cf1ff22d61bc?&w=1287',
-                    tag: 'Alia cut lot',
+                    img: '/images/lookbook3.jpg',
+                    tag: 'iccha_by_prime',
                     link:
                       'https://www.instagram.com/iccha_by_prime?stkn=MWV4ZW1paHVhdzJ6OA==',
                   },
                   {
-                    img: 'https://images.unsplash.com/photo-1683600209750-e01db74c47ca?w=1227',
-                    tag: 'Jaipuri cotton',
+                    img: '/images/lookbook2.jpg',
+                    tag: 'primefashion.bangalore',
                     link:
                       'https://www.instagram.com/primefashion.bangalore?stkn=MTEwYW92bjJqbm1kYw==',
                   },
                   {
-                    img: 'https://assets0.mirraw.com/images/12933692/IMG-20241028-WA0005_(1)_zoom.jpg?1730135586',
-                    tag: 'Nayra cut sets',
+                    img: '/images/lookbook1.jpg',
+                    tag: 'prime.fabric',
                     link:
                       'https://www.instagram.com/prime.fabric?stkn=MXBwZmhsMTcyNG00MA==',
-                  },
-                  {
-                    img: 'https://cult91.com/cdn/shop/files/beburst_gen_1781952084070_0.png?v=1782193810&width=1696',
-                    tag: 'Chikankari set',
-                    link:
-                      'https://www.instagram.com/iccha_by_prime?stkn=MWV4ZW1paHVhdzJ6OA==',
                   },
                 ].map((reel, idx) => (
                   <Link
@@ -147,7 +141,13 @@ export default async function HomePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`View ${reel.tag} on Instagram`}
-                    className="reveal relative aspect-[9/16] overflow-hidden bg-white/5 border border-white/10 group block"
+                    className={`reveal relative aspect-[9/16] overflow-hidden border border-white/10 group block ${
+                      idx === 0
+                        ? 'bg-black'
+                        : idx === 1
+                          ? 'bg-[#E8E4F2]'
+                          : 'bg-[#292929]'
+                    }`}
                     style={
                       {
                         '--reveal-delay': `${idx * 70}ms`,
@@ -157,7 +157,7 @@ export default async function HomePage() {
                     <img
                       src={reel.img}
                       alt={reel.tag}
-                      className="object-cover w-full h-full absolute inset-0 transition-all duration-300 ease-out opacity-70 group-hover:opacity-100 group-hover:scale-105"
+                      className="object-contain w-full h-full absolute inset-0 p-2 transition-all duration-300 ease-out opacity-70 group-hover:opacity-100 group-hover:scale-105"
                       referrerPolicy="no-referrer"
                     />
 
