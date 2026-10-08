@@ -71,6 +71,19 @@ export default function WarehousesPage() {
   }, []);
 
   const isStaff = role !== null && role !== 'VENDOR';
+
+  // ?vendorId=<id>&vendorName=<name> (set by the product form's "Create" link):
+  // staff then view and create warehouses for that vendor instead of the admin pool.
+  const [scopeVendorId, setScopeVendorId] = useState<string | null>(null);
+  const [scopeVendorName, setScopeVendorName] = useState<string | null>(null);
+  const [scopeReady, setScopeReady] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setScopeVendorId(params.get('vendorId'));
+    setScopeVendorName(params.get('vendorName'));
+    setScopeReady(true);
+  }, []);
   const portalLabel = isStaff ? 'Admin Console' : 'Vendor Portal';
 
   // ============================================================
@@ -82,7 +95,11 @@ export default function WarehousesPage() {
       setLoading(true);
       setError('');
 
-      const res = await fetch('/api/vendor/warehouses');
+      const res = await fetch(
+        scopeVendorId
+          ? `/api/vendor/warehouses?vendorId=${encodeURIComponent(scopeVendorId)}`
+          : '/api/vendor/warehouses'
+      );
 
       const json = await res.json();
 
@@ -99,8 +116,10 @@ export default function WarehousesPage() {
   };
 
   useEffect(() => {
+    if (!scopeReady) return;
     loadWarehouses();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeReady, scopeVendorId]);
 
   // ============================================================
   // OPEN ADD MODAL
@@ -153,7 +172,11 @@ export default function WarehousesPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(
+            !editingWarehouse && scopeVendorId
+              ? { ...formData, vendorId: scopeVendorId }
+              : formData
+          ),
         }
       );
 
@@ -246,9 +269,11 @@ export default function WarehousesPage() {
             </h1>
 
             <p className="text-xs text-stone-500 mt-0.5">
-              {isStaff
-                ? 'Manage platform warehouses and view every vendor\u2019s dispatch centers.'
-                : 'Manage the warehouses where your products are stored.'}
+              {isStaff && scopeVendorId
+                ? `Showing and creating warehouses for ${scopeVendorName || 'the selected vendor'} only.`
+                : isStaff
+                  ? 'Manage platform warehouses and view every vendor\u2019s dispatch centers.'
+                  : 'Manage the warehouses where your products are stored.'}
             </p>
           </div>
 

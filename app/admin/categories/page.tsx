@@ -159,6 +159,10 @@ export default function AdminCategoriesPage() {
   };
 
   useEffect(() => {
+    // ?vendorId=<id> (set by the product form's "Create" link) preselects that vendor.
+    const presetVendorId = new URLSearchParams(window.location.search).get("vendorId");
+    if (presetVendorId) setSelectedOwner(presetVendorId);
+
     loadVendors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -224,7 +224,13 @@ export default function AdminProductsPage() {
       try {
         setCategoriesLoading(true);
 
-        const res = await fetch('/api/admin/categories', { cache: 'no-store' });
+        // Admin/staff: scope to the selected vendor's categories, or to the
+        // admin-owned ones when adding IcchaStore's own product. Vendors are
+        // scoped server-side to their own categories (params are ignored).
+        const qs = selectedVendor?.id
+          ? `?vendorId=${encodeURIComponent(selectedVendor.id)}`
+          : '?owner=admin';
+        const res = await fetch(`/api/admin/categories${qs}`, { cache: 'no-store' });
         const json = await res.json();
 
         if (json.success) {
@@ -248,13 +254,16 @@ export default function AdminProductsPage() {
         setCategoriesLoading(false);
       }
     },
-    [addToast]
+    [addToast, selectedVendor?.id]
   );
 
+  // Reload when the admin switches vendor so the dropdown never shows
+  // another vendor's (or the admin's) categories.
   useEffect(() => {
+    setCategories([]);
     loadCategories({ silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedVendor?.id]);
 
   // --- Load warehouses ---
   // Vendors see only their own warehouses; admin/staff see the platform pool.
@@ -266,7 +275,13 @@ export default function AdminProductsPage() {
       try {
         setWarehousesLoading(true);
 
-        const res = await fetch('/api/vendor/warehouses', { cache: 'no-store' });
+        // Admin/staff: scope to the selected vendor's warehouses (or the
+        // platform pool when adding IcchaStore's own product). Vendors are
+        // scoped server-side to their own warehouses.
+        const qs = selectedVendor?.id
+          ? `?vendorId=${encodeURIComponent(selectedVendor.id)}`
+          : '';
+        const res = await fetch(`/api/vendor/warehouses${qs}`, { cache: 'no-store' });
         const json = await res.json();
 
         if (json.success) {
@@ -290,14 +305,17 @@ export default function AdminProductsPage() {
         setWarehousesLoading(false);
       }
     },
-    [addToast]
+    [addToast, selectedVendor?.id]
   );
 
+  // Reload whenever the role is known or the admin switches to a different vendor,
+  // so the dropdown never shows another vendor's (or the admin's) warehouses.
   useEffect(() => {
     if (!currentUserRole) return;
+    setWarehouses([]);
     loadWarehouses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserRole]);
+  }, [currentUserRole, selectedVendor?.id]);
 
   // Auto-refresh when the user comes back to this tab while the form is open.
   useEffect(() => {
@@ -1188,7 +1206,11 @@ export default function AdminProductsPage() {
                     </label>
                     <div className="flex items-center gap-2">
                       <a
-                        href="/admin/warehouses"
+                        href={
+                          selectedVendor
+                            ? `/admin/warehouses?vendorId=${encodeURIComponent(selectedVendor.id)}&vendorName=${encodeURIComponent(selectedVendor.businessName)}`
+                            : '/admin/warehouses'
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-rose-900 border border-rose-900/30 rounded-lg hover:bg-rose-50"
@@ -1274,7 +1296,11 @@ export default function AdminProductsPage() {
                     <label className="block font-bold text-stone-800">Category *</label>
                     <div className="flex items-center gap-2">
                       <a
-                        href="/admin/categories"
+                        href={
+                          selectedVendor
+                            ? `/admin/categories?vendorId=${encodeURIComponent(selectedVendor.id)}`
+                            : '/admin/categories'
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-rose-900 border border-rose-900/30 rounded-lg hover:bg-rose-50"

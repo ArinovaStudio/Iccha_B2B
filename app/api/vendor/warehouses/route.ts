@@ -9,6 +9,8 @@ const createWarehouseSchema = z.object({
     city: z.string().trim().optional().or(z.literal("")),
     state: z.string().trim().optional().or(z.literal("")),
     pincode: z.string().trim().optional().or(z.literal("")),
+    // Staff only: create the warehouse on behalf of this vendor. Ignored for vendors.
+    vendorId: z.string().trim().optional().or(z.literal("")),
 });
 
 async function authenticateEither(request: NextRequest) {
@@ -41,13 +43,18 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Each side only sees warehouses they own: vendors see their own,
-        // staff see the platform-owned pool (vendorId = null).
+        // Each side only sees warehouses they own: vendors always see their own.
+        // Staff see the platform-owned pool (vendorId = null) by default, or a
+        // specific vendor's warehouses when ?vendorId=<id> is passed (used when
+        // an admin creates/edits a product on behalf of that vendor).
+        const requestedVendorId =
+            request.nextUrl.searchParams.get("vendorId")?.trim() || null;
+
         const warehouses = await prisma.warehouse.findMany({
             where:
                 auth.kind === "vendor"
                     ? { vendorId: auth.vendorProfile.id }
-                    : { vendorId: null },
+                    : { vendorId: requestedVendorId },
             orderBy: { createdAt: "desc" },
         });
 
@@ -108,9 +115,31 @@ export async function POST(request: NextRequest) {
 
         const data = parsed.data;
 
+        // Vendors always own what they create. Staff create platform warehouses
+        // unless a vendorId is given, in which case it is created for that vendor.
+        let ownerVendorId: string | null = null;
+
+        if (auth.kind === "vendor") {
+            ownerVendorId = auth.vendorProfile.id;
+        } else if (data.vendorId) {
+            const vendor = await prisma.vendorProfile.findUnique({
+                where: { id: data.vendorId },
+                select: { id: true },
+            });
+
+            if (!vendor) {
+                return NextResponse.json(
+                    { success: false, error: "Vendor not found." },
+                    { status: 400 }
+                );
+            }
+
+            ownerVendorId = vendor.id;
+        }
+
         const warehouse = await prisma.warehouse.create({
             data: {
-                vendorId: auth.kind === "vendor" ? auth.vendorProfile.id : null,
+                vendorId: ownerVendorId,
                 name: data.name,
                 address: data.address || null,
                 city: data.city || null,

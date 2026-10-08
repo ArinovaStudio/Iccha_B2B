@@ -60,7 +60,7 @@ export async function PATCH(
         const owns =
             auth.kind === "vendor"
                 ? warehouse.vendorId === auth.vendorProfile.id
-                : warehouse.vendorId === null;
+                : true; // staff can manage platform and vendor warehouses
 
         if (!owns) {
             return NextResponse.json(
@@ -139,7 +139,7 @@ export async function DELETE(
         const owns =
             auth.kind === "vendor"
                 ? warehouse.vendorId === auth.vendorProfile.id
-                : warehouse.vendorId === null;
+                : true; // staff can manage platform and vendor warehouses
 
         if (!owns) {
             return NextResponse.json(
