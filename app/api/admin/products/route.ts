@@ -8,6 +8,110 @@ import { resolveProductBillingEntityId } from "@/lib/billing/entityResolver";
 
 const PAGE_SIZE = 20;
 
+// Turns a zod issue into "Field name: message" so the user knows which field to fix.
+function formatZodIssue(issue: z.ZodIssue): string {
+    const labels: Record<string, string> = {
+        sku: "SKU",
+        designNumber: "Design number",
+        name: "Design title",
+        slug: "Slug",
+        categoryId: "Category",
+        warehouseId: "Warehouse",
+        wholesalePricePerPiece: "Piece rate",
+        piecesPerSet: "Pieces per set",
+        wholesalePricePerSet: "Set rate",
+        availableSets: "Available sets",
+        minOrderSets: "Minimum order quantity",
+        sizeStocks: "Size stock",
+        sizeStockAdjustments: "Size stock addition",
+        color: "Color",
+        fabric: "Fabric",
+        workType: "Work / embroidery",
+        style: "Style",
+        clothingType: "Clothing type",
+        hsnCode: "HSN code",
+        mediaAssetIds: "Product photos",
+    };
+    const key = String(issue.path[0] ?? "");
+    const label = labels[key] ?? key;
+    const msg = issue.message;
+    // Custom messages already read well on their own ("SKU is required").
+    if (!label || msg.toLowerCase().startsWith(label.toLowerCase())) return msg;
+    if (/^(invalid input|required|expected)/i.test(msg)) {
+        return `${label}: ${msg.replace(/^invalid input:?\s*/i, "")}`.replace(/:\s*$/, " is invalid or missing");
+    }
+    return `${label}: ${msg}`;
+}
+
+// Maps any error thrown while creating/updating a product to a status + a message the
+// user can act on. The raw error is always logged server-side; `detail` is only sent
+// outside production, to help while developing.
+function productErrorResponse(error: unknown, logLabel: string) {
+    console.error(`${logLabel}:`, error);
+
+    let status = 500;
+    let message = "Something went wrong while saving the product. Please try again.";
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        const target = error.meta?.target;
+        const targetText = (Array.isArray(target) ? target.join(",") : String(target ?? "")).toLowerCase();
+        const fieldText = String(error.meta?.field_name ?? error.meta?.constraint ?? "").toLowerCase();
+
+        switch (error.code) {
+            case "P2002":
+                status = 409;
+                if (targetText.includes("sku")) {
+                    message = "A product with this SKU already exists. Please use a different SKU.";
+                } else if (targetText.includes("slug")) {
+                    message = "A product with this title already exists. Please change the Design Title slightly.";
+                } else {
+                    message = `A product with the same ${targetText || "value"} already exists.`;
+                }
+                break;
+            case "P2003":
+                status = 400;
+                if (fieldText.includes("warehouse")) message = "The selected warehouse no longer exists. Click Refresh next to Warehouse and pick again.";
+                else if (fieldText.includes("category")) message = "The selected category no longer exists. Click Refresh next to Category and pick again.";
+                else if (fieldText.includes("vendor")) message = "The selected vendor could not be found.";
+                else if (fieldText.includes("media")) message = "One of the uploaded photos could not be found. Please upload the photos again.";
+                else if (fieldText.includes("gst")) message = "The GST configuration for this product is missing. Please contact support.";
+                else message = "A linked record (category, warehouse, vendor or photo) no longer exists. Refresh the lists and try again.";
+                break;
+            case "P2000":
+                status = 400;
+                message = "One of the values is too long. Please shorten the text fields and try again.";
+                break;
+            case "P2011":
+            case "P2012":
+                status = 400;
+                message = "A required field is missing. Please fill in all fields marked with *.";
+                break;
+            case "P2025":
+                status = 404;
+                message = "The record you are trying to save was not found. It may have been deleted.";
+                break;
+            case "P2021":
+            case "P2022":
+                message = "The database is out of date with the app (missing table/column). Run the pending Prisma migrations.";
+                break;
+        }
+    } else if (error instanceof Prisma.PrismaClientValidationError) {
+        status = 400;
+        message = "Some values have the wrong format (for example text in a number field). Please check the form and try again.";
+    } else if (
+        error instanceof Error &&
+        /^(Vendor not found|Platform billing entity|Invalid or inactive billing entity)/.test(error.message)
+    ) {
+        message = error.message;
+    }
+
+    const body: { success: false; error: string; detail?: string } = { success: false, error: message };
+    if (process.env.NODE_ENV !== "production" && error instanceof Error) {
+        body.detail = error.message.split("\n").filter(Boolean).slice(-3).join(" ");
+    }
+    return NextResponse.json(body, { status });
+}
+
 const productFieldsSchema = z.object({
     sku: z.string().trim().min(1, "SKU is required"),
     designNumber: z.string().trim().min(1, "Design number is required"),
@@ -221,7 +325,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     success: false,
-                    error: parsed.error.issues[0].message,
+                    error: formatZodIssue(parsed.error.issues[0]),
                 },
                 { status: 400 }
             );
@@ -344,34 +448,7 @@ export async function POST(request: NextRequest) {
             { status: 201 }
         );
     } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2002"
-        ) {
-            const field =
-                (error.meta?.target as string[] | undefined)?.[0] ??
-                "field";
-
-            const message =
-                field === "sku"
-                    ? "A product with this SKU already exists. Please use a different SKU."
-                    : `A product with this ${field} already exists. Please try again.`;
-
-            return NextResponse.json(
-                { success: false, error: message },
-                { status: 409 }
-            );
-        }
-
-        console.error("Create product error:", error);
-
-        return NextResponse.json(
-            {
-                success: false,
-                error: "Something went wrong. Please try again.",
-            },
-            { status: 500 }
-        );
+        return productErrorResponse(error, "Create product error");
     }
 }
 
@@ -393,7 +470,7 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json(
                 {
                     success: false,
-                    error: parsed.error.issues[0].message,
+                    error: formatZodIssue(parsed.error.issues[0]),
                 },
                 { status: 400 }
             );
@@ -717,37 +794,9 @@ export async function PATCH(request: NextRequest) {
             data: product,
         });
     } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2002"
-        ) {
-            const field =
-                (error.meta?.target as string[] | undefined)?.[0] ??
-                "field";
-
-            const message =
-                field === "sku"
-                    ? "A product with this SKU already exists. Please use a different SKU."
-                    : `A product with this ${field} already exists. Please try again.`;
-
-            return NextResponse.json(
-                { success: false, error: message },
-                { status: 409 }
-            );
-        }
-
-        console.error("Update product error:", error);
-
-        return NextResponse.json(
-            {
-                success: false,
-                error: "Something went wrong. Please try again.",
-            },
-            { status: 500 }
-        );
+        return productErrorResponse(error, "Update product error");
     }
 }
-
 
 export async function DELETE(request: NextRequest) {
     try {

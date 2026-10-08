@@ -12,7 +12,8 @@ import {
   Building2,
   ChevronLeft,
   Loader2,
-  QrCode
+  QrCode,
+  RefreshCw
 } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { useApp } from '@/lib/context/AppContext';
@@ -212,34 +213,65 @@ export default function AdminProductsPage() {
     loadVendors(vendorSearch);
   };
 
-  // --- Load categories (once) ---
+  // --- Load categories ---
+  // Loaded on mount (so existing categories show without clicking refresh), and
+  // re-fetched on Refresh or when the tab regains focus (e.g. after creating a
+  // category in the other tab).
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+  const loadCategories = useCallback(
+    async (opts: { silent?: boolean } = {}) => {
+      try {
+        setCategoriesLoading(true);
+
+        const res = await fetch('/api/admin/categories', { cache: 'no-store' });
+        const json = await res.json();
+
+        if (json.success) {
+          setCategories(json.data);
+        } else if (!opts.silent) {
+          addToast({
+            type: 'error',
+            title: 'Failed to load categories',
+            message: json.error || 'Could not load categories.',
+          });
+        }
+      } catch {
+        if (!opts.silent) {
+          addToast({
+            type: 'error',
+            title: 'Network error',
+            message: 'Could not load categories.',
+          });
+        }
+      } finally {
+        setCategoriesLoading(false);
+      }
+    },
+    [addToast]
+  );
+
   useEffect(() => {
-    fetch('/api/admin/categories')
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setCategories(json.data);
-      })
-      .catch(() => {
-        // Category dropdown will just be empty; product creation will fail validation until this exists.
-      });
+    loadCategories({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Load warehouses ---
-  // Vendors see only their own warehouses.
-  // Admin/staff can select from all active warehouses.
-  useEffect(() => {
-    if (!currentUserRole) return;
-
-    const loadWarehouses = async () => {
+  // Vendors see only their own warehouses; admin/staff see the platform pool.
+  // Loaded as soon as the role is known (so existing warehouses show without
+  // clicking refresh), and re-fetched on Refresh or when the tab regains focus
+  // (e.g. after creating a warehouse in the other tab).
+  const loadWarehouses = useCallback(
+    async (opts: { silent?: boolean } = {}) => {
       try {
         setWarehousesLoading(true);
 
-        const res = await fetch('/api/vendor/warehouses');
+        const res = await fetch('/api/vendor/warehouses', { cache: 'no-store' });
         const json = await res.json();
 
         if (json.success) {
           setWarehouses(json.data);
-        } else {
+        } else if (!opts.silent) {
           addToast({
             type: 'error',
             title: 'Failed to load warehouses',
@@ -247,18 +279,45 @@ export default function AdminProductsPage() {
           });
         }
       } catch {
-        addToast({
-          type: 'error',
-          title: 'Network error',
-          message: 'Could not load warehouses.',
-        });
+        if (!opts.silent) {
+          addToast({
+            type: 'error',
+            title: 'Network error',
+            message: 'Could not load warehouses.',
+          });
+        }
       } finally {
         setWarehousesLoading(false);
       }
+    },
+    [addToast]
+  );
+
+  useEffect(() => {
+    if (!currentUserRole) return;
+    loadWarehouses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserRole]);
+
+  // Auto-refresh when the user comes back to this tab while the form is open.
+  useEffect(() => {
+    if (!currentUserRole || !isModalOpen) return;
+
+    const refetch = () => {
+      if (document.visibilityState === 'visible') {
+        loadWarehouses({ silent: true });
+        loadCategories({ silent: true });
+      }
     };
 
-    loadWarehouses();
-  }, [currentUserRole, addToast]);
+    window.addEventListener('focus', refetch);
+    document.addEventListener('visibilitychange', refetch);
+    return () => {
+      window.removeEventListener('focus', refetch);
+      document.removeEventListener('visibilitychange', refetch);
+    };
+  }, [currentUserRole, isModalOpen, loadWarehouses, loadCategories]);
+
   // --- Load products for a selected vendor (or house products if vendor is null) ---
   const loadProducts = useCallback(async (
     vendorId: string | null,
@@ -552,7 +611,21 @@ export default function AdminProductsPage() {
         body: JSON.stringify(payload)
       });
 
-      const json = await res.json();
+      // The server may answer with a non-JSON body (e.g. 413 payload too large, 502 from a
+      // proxy). Don't let that surface as a misleading "Network error".
+      let json: { success?: boolean; error?: string; detail?: string } = {};
+      try {
+        json = await res.json();
+      } catch {
+        json = {
+          success: false,
+          error:
+            res.status === 413
+              ? 'The request was too large. Try fewer or smaller photos.'
+              : `The server returned an unexpected response (HTTP ${res.status}). Please try again.`,
+        };
+      }
+      if (!json.success && json.detail) console.error('Product save failed:', json.detail);
 
       if (json.success) {
         addToast({
@@ -1109,9 +1182,29 @@ export default function AdminProductsPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">
-                    Warehouse{currentUserRole === 'VENDOR' ? ' *' : ''}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-stone-800">
+                      Warehouse{currentUserRole === 'VENDOR' ? ' *' : ''}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="/admin/warehouses"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-rose-900 border border-rose-900/30 rounded-lg hover:bg-rose-50"
+                      >
+                        <Plus className="w-3 h-3" /> Create
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => loadWarehouses()}
+                        disabled={warehousesLoading}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-stone-700 border border-stone-300 rounded-lg hover:bg-stone-100 disabled:opacity-60"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${warehousesLoading ? 'animate-spin' : ''}`} /> Refresh
+                      </button>
+                    </div>
+                  </div>
 
                   <select
                     required={currentUserRole === 'VENDOR'}
@@ -1177,9 +1270,30 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">Category *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-stone-800">Category *</label>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="/admin/categories"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-rose-900 border border-rose-900/30 rounded-lg hover:bg-rose-50"
+                      >
+                        <Plus className="w-3 h-3" /> Create
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => loadCategories()}
+                        disabled={categoriesLoading}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-stone-700 border border-stone-300 rounded-lg hover:bg-stone-100 disabled:opacity-60"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${categoriesLoading ? 'animate-spin' : ''}`} /> Refresh
+                      </button>
+                    </div>
+                  </div>
                   <select
                     required
+                    disabled={categoriesLoading && categories.length === 0}
                     value={formData.categoryId}
                     onChange={e => {
                       const categoryId = e.target.value;
@@ -1194,9 +1308,9 @@ export default function AdminProductsPage() {
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
-                  {categories.length === 0 && (
+                  {!categoriesLoading && categories.length === 0 && (
                     <p className="text-[10px] text-amber-700 mt-1">
-                      No categories loaded — the categories API may not exist yet.
+                      No categories available yet. Click Create to add one, then Refresh.
                     </p>
                   )}
                 </div>
