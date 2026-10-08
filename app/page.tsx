@@ -11,7 +11,7 @@ import PublicHeader from '@/components/layout/PublicHeader';
 import Footer from '@/components/layout/Footer';
 import HeroSection from '@/components/hero/HeroSection';
 import RevealInit from '@/components/ui/RevealInit';
-import Showcase from '@/components/hero/Showcase';
+//import Showcase from '@/components/hero/Showcase';
 import HomeElements from '@/components/hero/Main';
 
 export const dynamic = 'force-dynamic';
@@ -96,7 +96,7 @@ export default async function HomePage() {
         {/* 6. CRAFT, FACTORY VIDEO & REELS */}
         <section className="relative bg-black text-white overflow-hidden border-t border-white/10">
           {/* Full-bleed photo hero */}
-          <Showcase />
+          {/*<Showcase />*/}
 
           {/* Instagram / Lookbooks Gallery Strip */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">

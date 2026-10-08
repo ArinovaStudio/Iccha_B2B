@@ -6,7 +6,7 @@ import { ArrowRight, Lock } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import PublicProductCard from "@/components/product/PublicProductCard";
 import VendorRail, { RailVendor } from "@/components/vendor/VendorRail";
-import Craft from "./Craft";
+//import Craft from "./Craft";
 import { Product } from "@/lib/types";
 
 const BATCH_SIZE = 6;
@@ -171,9 +171,9 @@ export default function HomeElements() {
         </div>
       </section>
 
-      <Craft />
+      {/*<Craft >*/}
 
-      <section className="border-t border-neutral-200 bg-neutral-50 py-24 sm:py-32">
+   {/*  <section className="border-t border-neutral-200 bg-neutral-50 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-3xl">
@@ -230,7 +230,7 @@ export default function HomeElements() {
             </>
           )}
         </div>
-      </section>
+      </section>*/}
     </>
   );
 }

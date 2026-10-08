@@ -119,7 +119,7 @@ export default function VendorManagement() {
   };
 
   const handleDelete = async (vendor: Vendor) => {
-    if (!window.confirm(`Permanently delete ${vendor.businessName}? This cannot be undone.`)) return;
+    if (!window.confirm(`Permanently delete ${vendor.businessName}? This also deletes ALL of their products, categories, warehouses and orders (including pending ones). This cannot be undone.`)) return;
     setActionId(vendor.id);
 
     try {

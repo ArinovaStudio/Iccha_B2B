@@ -662,8 +662,9 @@ export default function WarehousesPage() {
               </div>
 
               <p className="text-stone-600">
-                This can't be undone. If any products are still assigned to this warehouse,
-                deletion will be blocked until they're reassigned.
+                This can't be undone. Every product assigned to this warehouse will also be
+                permanently deleted, including products that have pending orders (their
+                order line items are removed too).
               </p>
 
               {deleteError && (

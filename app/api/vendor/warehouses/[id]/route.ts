@@ -148,25 +148,19 @@ export async function DELETE(
             );
         }
 
+        // Products in this warehouse are deleted with it (Product.warehouse is
+        // onDelete: Cascade), including their order line items, so report the count.
         const productCount = await prisma.product.count({
             where: { warehouseId: id },
         });
 
-        if (productCount > 0) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: `Cannot delete: ${productCount} product${
-                        productCount === 1 ? " is" : "s are"
-                    } still assigned to this warehouse. Reassign or remove them first.`,
-                },
-                { status: 409 }
-            );
-        }
-
         await prisma.warehouse.delete({ where: { id } });
 
-        return NextResponse.json({ success: true, message: "Warehouse deleted" });
+        return NextResponse.json({
+            success: true,
+            message: "Warehouse deleted",
+            deletedProducts: productCount,
+        });
     } catch (error) {
         console.error("Delete warehouse error:", error);
 

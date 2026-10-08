@@ -1,4 +1,3 @@
-// Prisma Schema for IcchaStore B2B Women's Kurta & Ethnicwear Platform
 // Supports PostgreSQL with full relational integrity, dual-GST billing entities, MOQ engine, and Dynamic WebGL Hero CMS.
 
 generator client {
@@ -453,9 +452,9 @@ model Product {
   sellerRequests    SellerContactRequest[]
   heroSlides        HeroSlide[]
   vendorId          String?
-  vendor            VendorProfile?         @relation(fields: [vendorId], references: [id])
+  vendor            VendorProfile?         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   warehouseId       String?
-  warehouse         Warehouse?             @relation(fields: [warehouseId], references: [id])
+  warehouse         Warehouse?             @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
 
   @@index([sku])
   @@index([designNumber])
@@ -759,7 +758,7 @@ model SellerOrder {
   updatedAt DateTime @updatedAt
 
   orderEnquiry OrderEnquiry               @relation(fields: [orderEnquiryId], references: [id], onDelete: Cascade)
-  vendor       VendorProfile?             @relation(fields: [vendorId], references: [id])
+  vendor       VendorProfile?             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   items        OrderItem[]
   history      SellerOrderStatusHistory[]
 
