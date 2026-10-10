@@ -308,13 +308,13 @@ export default function RetailerCheckoutPage() {
                         required
                         value={shippingAddress.state}
                         onChange={e => {
-                        const state = e.target.value;
-                        setShippingAddress({
-                          ...shippingAddress,
-                          state,
-                          stateCode: INDIAN_STATE_CODES[state.trim().toLowerCase()] || '',
-                        });
-                      }}
+                          const state = e.target.value;
+                          setShippingAddress({
+                            ...shippingAddress,
+                            state,
+                            stateCode: INDIAN_STATE_CODES[state.trim().toLowerCase()] || '',
+                          });
+                        }}
                         className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-medium focus:outline-none focus:border-rose-900"
                       />
                     </div>
@@ -434,26 +434,32 @@ export default function RetailerCheckoutPage() {
                     <span className="font-mono font-semibold">₹{cart.subtotal.toLocaleString('en-IN')}</span>
                   </div>
                   {gstBreakdown.map((gst) => (
-                      <div
-                        key={`${gst.name}-${gst.rate}`}
-                        className="flex justify-between text-[11px]"
-                      >
-                        <span>
-                          {gst.name} (GST {gst.rate}%)
-                        </span>
-                        <span className="font-mono">
-                          ₹{gst.amount.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                    ))}
+                    <div
+                      key={`${gst.name}-${gst.rate}`}
+                      className="flex justify-between text-[11px]"
+                    >
+                      <span>
+                        {gst.name} (GST {gst.rate}%)
+                      </span>
+                      <span className="font-mono">
+                        ₹{gst.amount.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  ))}
 
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
-                    <Truck className="w-4 h-4 text-[#9a3412] mt-0.5 shrink-0" />
-                    <div className="space-y-1">
-                      <p className="font-bold text-stone-900">Shipping &amp; Transport</p>
-                      <p className="text-[11px] leading-relaxed text-stone-600">
-                        Shipping charges will be calculated based on the selected mode of transport or courier after the vendor&apos;s final confirmation of the order.
-                      </p>
+                  <div className="mt-8 mb-10 rounded-xl border border-gray-200 bg-gray-50/60 px-6 py-6">
+                    <div className="flex items-start gap-4">
+                      <Truck className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-600">
+                          Shipping & Transport
+                        </h4>
+                        <p className="text-sm leading-7 text-gray-500">
+                          Shipping charges will be calculated based on the selected
+                          mode of transport or courier after the vendor&apos;s final
+                          confirmation of the order.
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-between items-baseline pt-2 border-t border-stone-200 text-stone-900">
