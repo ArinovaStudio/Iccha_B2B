@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { evaluateMoq } from "@/lib/moq";
-
 const CART_ITEM_INCLUDE = {
     product: {
         include: {
@@ -30,15 +29,12 @@ const CART_ITEM_INCLUDE = {
         },
     },
 } satisfies Prisma.CartItemInclude;
-
 type CartWithItems = Prisma.CartGetPayload<{
     include: { items: { include: typeof CART_ITEM_INCLUDE } };
 }>;
-
 const CART_INCLUDE = {
     items: { include: CART_ITEM_INCLUDE, orderBy: { createdAt: "asc" } },
 } satisfies Prisma.CartInclude;
-
 export async function getOrCreateCart(retailerProfileId: string): Promise<CartWithItems> {
     // "join" = ONE SQL query for the whole cart -> items -> product -> media/vendor/sizes tree.
     // The default strategy issues a separate query per relation level, and each one is a
@@ -49,10 +45,8 @@ export async function getOrCreateCart(retailerProfileId: string): Promise<CartWi
             include: CART_INCLUDE,
             relationLoadStrategy: "join",
         });
-
     const existing = await find();
     if (existing) return existing;
-
     try {
         return await prisma.cart.create({
             data: { retailerProfileId },
@@ -68,10 +62,6 @@ export async function getOrCreateCart(retailerProfileId: string): Promise<CartWi
         throw err;
     }
 }
-
-const FREE_SHIPPING_THRESHOLD = 20000;
-const FLAT_SHIPPING = 350;
-
 // Field names below intentionally mirror the legacy mock `Cart`/`CartItem`/
 // `EntityCartSummary` shapes (lib/types) so existing cart UI components
 // (GSTEntityBreakdown, MOQProgressBar) keep working unmodified once
@@ -90,7 +80,6 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
         const entityCode = p.vendor?.vendorCode
             ? `vendor:${p.vendor.vendorCode}`
             : (process.env.PLATFORM_BILLING_ENTITY_CODE || "platform");
-
         return {
             productId: item.productId,
             selectedSets: item.sets,
@@ -114,18 +103,16 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
                 minOrderSets: p.minOrderSets,
                 isActive: p.isActive,
                 vendorName: p.vendor?.businessName || "IcchaStore",
-                gstRate: rate,
+                gstRate,
                 hsn: p.gstConfig?.hsnCode ?? p.hsnCode,
                 media: [{ url: p.media[0]?.mediaAsset?.publicUrl || null }],
             },
         };
     });
-
     const totalDesigns = new Set(rawItems.map((i) => i.productId)).size;
     const totalSets = rawItems.reduce((sum, i) => sum + i.selectedSets, 0);
     const totalPieces = rawItems.reduce((sum, i) => sum + i.totalPieces, 0);
     const subtotal = rawItems.reduce((sum, i) => sum + i.lineSubtotal, 0);
-
     // Seller-owned GST: vendor products use the vendor's current legal/GST data. That data is
     // already loaded with each cart item (CART_ITEM_INCLUDE), so no extra vendor query is needed.
     // Only IcchaStore-owned products (vendorId = null) use the platform entity.
@@ -136,7 +123,6 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
         if (v?.vendorCode) vendorByCode.set(v.vendorCode, v);
     }
     const hasPlatformItems = cart.items.some((item) => !item.product.vendor?.vendorCode);
-
     // The three lookups below are independent of each other, so run them concurrently
     // (one round-trip of waiting instead of three in a row).
     const [address, platform, moq] = await Promise.all([
@@ -169,7 +155,6 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
             subtotal,
         }),
     ]);
-
     const entitySummaries = Array.from(
         new Set(rawItems.map((item) => item.billingEntityId))
     ).map((entityId) => {
@@ -181,13 +166,11 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
             (s, i) => s + Math.round((i.lineSubtotal * i.product.gstRate) / 100),
             0
         );
-        const entShipping = subtotal > FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
-
+        const entShipping = 0;
         const vendorCode = entityId.startsWith("vendor:")
             ? entityId.slice("vendor:".length)
             : null;
         const vendor = vendorCode ? vendorByCode.get(vendorCode) : undefined;
-
         const entity = vendor
             ? {
                 id: vendor.id,
@@ -204,12 +187,10 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
             : entityId === platformCode && platform
                 ? platform
                 : null;
-
         const isInterState = !!entity && !!address && address.stateCode !== entity.stateCode;
         const cgst = isInterState ? 0 : Math.round(entGst / 2);
         const sgst = isInterState ? 0 : Math.round(entGst / 2);
         const igst = isInterState ? entGst : 0;
-
         return {
             entityId,
             entity,
@@ -222,13 +203,12 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
             igst,
             totalGst: entGst,
             shipping: entShipping,
-            total: entSubtotal + entGst + entShipping,
+            total: entSubtotal + entGst,
         };
     });
-
     const estimatedGst = entitySummaries.reduce((sum, e) => sum + e.totalGst, 0);
-    const shippingEstimate = entitySummaries.reduce((sum, e) => sum + e.shipping, 0);
-    const estimatedTotal = subtotal + estimatedGst + shippingEstimate;
+    const shippingEstimate = 0;
+    const estimatedTotal = subtotal + estimatedGst;
     return {
         id: cart.id,
         items: rawItems,
