@@ -1,7 +1,5 @@
 'use client';
 
-
-
 import React, { useState, useEffect, useRef } from 'react';
 
 import AdminSidebar from '@/components/layout/AdminSidebar';
@@ -46,11 +44,11 @@ import {
 
   ImagePlus,
 
-  Trash2
+  Trash2,
+
+  Instagram
 
 } from 'lucide-react';
-
-
 
 interface VendorProfileData {
 
@@ -95,16 +93,13 @@ interface VendorProfileData {
   bannerAsset: { publicUrl: string } | null;
 
   description: string | null;
+  instagramUrl: string | null;
 
 }
-
-
 
 export default function ProfilePage() {
 
   const role = useAdminRole();
-
-
 
   // VENDOR_ALLOWED_ADMIN_PATHS lets vendors reach /admin/profile too (shared area),
 
@@ -116,19 +111,13 @@ export default function ProfilePage() {
 
   }
 
-
-
   return <StaffProfilePage />;
 
 }
 
-
-
 const BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const BANNER_MAX_BYTES = 8 * 1024 * 1024;
-
-
 
 function VendorProfilePage() {
 
@@ -186,11 +175,11 @@ function VendorProfilePage() {
 
     upiId: '',
 
-    description: ''
+    description: '',
+
+    instagramUrl: ''
 
   });
-
-
 
   const buildFormFromProfile = (data: VendorProfileData) => ({
 
@@ -217,11 +206,12 @@ function VendorProfilePage() {
     branch: data.branch || '',
 
     upiId: data.upiId || '',
+
     description: data.description || '',
 
+    instagramUrl: data.instagramUrl || '',
+
   });
-
-
 
   const loadProfile = async () => {
 
@@ -257,8 +247,6 @@ function VendorProfilePage() {
 
   };
 
-
-
   useEffect(() => {
 
     loadProfile();
@@ -267,15 +255,11 @@ function VendorProfilePage() {
 
   }, []);
 
-
-
   const handleEdit = () => {
 
     setIsEditing(true);
 
   };
-
-
 
   const handleCancel = () => {
 
@@ -284,8 +268,6 @@ function VendorProfilePage() {
     setIsEditing(false);
 
   };
-
-
 
   const handleSave = async (e: React.FormEvent) => {
 
@@ -333,8 +315,6 @@ function VendorProfilePage() {
 
   };
 
-
-
   const handleBannerSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
     const file = e.target.files?.[0];
@@ -342,8 +322,6 @@ function VendorProfilePage() {
     e.target.value = ''; // lets the vendor re-pick the same file later
 
     if (!file) return;
-
-
 
     if (!BANNER_TYPES.includes(file.type)) {
 
@@ -360,8 +338,6 @@ function VendorProfilePage() {
       return;
 
     }
-
-
 
     setBannerBusy(true);
 
@@ -401,8 +377,6 @@ function VendorProfilePage() {
 
   };
 
-
-
   const handleBannerRemove = async () => {
 
     if (!window.confirm('Remove your banner? Your latest product photo will be shown instead.')) return;
@@ -439,8 +413,6 @@ function VendorProfilePage() {
 
   };
 
-
-
   if (loading || !profile) {
 
     return (
@@ -461,8 +433,6 @@ function VendorProfilePage() {
 
   }
 
-
-
   const fieldClass = (editable: boolean) =>
 
     `w-full px-3 py-2 rounded-xl border focus:outline-none transition ${editable
@@ -473,13 +443,9 @@ function VendorProfilePage() {
 
     }`;
 
-
-
   const handleChangePassword = async (e: React.FormEvent) => {
 
     e.preventDefault();
-
-
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
 
@@ -488,8 +454,6 @@ function VendorProfilePage() {
       return;
 
     }
-
-
 
     setChangingPassword(true);
 
@@ -506,8 +470,6 @@ function VendorProfilePage() {
       });
 
       const json = await res.json();
-
-
 
       if (json.success) {
 
@@ -535,8 +497,6 @@ function VendorProfilePage() {
 
   };
 
-
-
   const handleCancelPasswordChange = () => {
 
     setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
@@ -545,21 +505,15 @@ function VendorProfilePage() {
 
   };
 
-
-
   return (
 
     <div className="flex min-h-screen bg-[#faf8f5]">
 
       <AdminSidebar activeTab="profile" />
 
-
-
       <main className="flex-1 min-w-0 p-6 lg:p-10 overflow-y-auto">
 
         <div className="w-full max-w-4xl space-y-6">
-
-
 
         <div className="flex items-start justify-between gap-4 border-b border-stone-200 pb-6">
 
@@ -585,8 +539,6 @@ function VendorProfilePage() {
 
           </div>
 
-
-
           {!isEditing && (
 
             <button
@@ -608,8 +560,6 @@ function VendorProfilePage() {
           )}
 
         </div>
-
-
 
         {/* Locked / staff-only fields, always read-only */}
 
@@ -677,8 +627,6 @@ function VendorProfilePage() {
 
         </div>
 
-
-
         {/* Storefront banner: the background of your tile on the homepage vendor rail */}
 
         <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm text-xs">
@@ -688,8 +636,6 @@ function VendorProfilePage() {
             <ImagePlus className="w-4 h-4" /> Storefront Banner
 
           </h3>
-
-
 
           <div className="mt-4 flex flex-col sm:flex-row gap-5">
 
@@ -725,8 +671,6 @@ function VendorProfilePage() {
 
             </div>
 
-
-
             <div className="flex-1 min-w-0 space-y-3">
 
               <p className="text-stone-600 leading-relaxed">
@@ -739,8 +683,6 @@ function VendorProfilePage() {
 
               </p>
 
-
-
               <ul className="text-stone-500 space-y-1 list-disc pl-4">
 
                 <li>JPG, PNG or WebP, up to 8 MB</li>
@@ -750,8 +692,6 @@ function VendorProfilePage() {
                 <li>Keep the subject in the upper two-thirds; your name panel covers the bottom</li>
 
               </ul>
-
-
 
               <div className="flex flex-wrap gap-2 pt-1">
 
@@ -787,8 +727,6 @@ function VendorProfilePage() {
 
                 </button>
 
-
-
                 {profile.bannerAsset && (
 
                   <button
@@ -819,11 +757,7 @@ function VendorProfilePage() {
 
         </div>
 
-
-
         <form onSubmit={handleSave} className="space-y-6 text-xs">
-
-
 
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
 
@@ -879,7 +813,41 @@ function VendorProfilePage() {
 
           </div>
 
+          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
 
+            <h3 className="font-serif text-base font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
+
+              <Instagram className="w-4 h-4" /> Social Media
+
+            </h3>
+
+            <div>
+
+              <label htmlFor="instagramUrl" className="block font-semibold text-stone-700 mb-1">Instagram Profile URL</label>
+
+              <input
+
+                id="instagramUrl"
+
+                type="url"
+
+                disabled={!isEditing}
+
+                value={form.instagramUrl}
+
+                onChange={e => setForm({ ...form, instagramUrl: e.target.value })}
+
+                placeholder="https://www.instagram.com/your-business/"
+
+                className={fieldClass(isEditing)}
+
+              />
+
+              <p className="mt-1 text-[11px] text-stone-500">Add your business Instagram link to display it on your homepage vendor card.</p>
+
+            </div>
+
+          </div>
 
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
 
@@ -980,8 +948,6 @@ function VendorProfilePage() {
             </div>
 
           </div>
-
-
 
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
 
@@ -1119,8 +1085,6 @@ function VendorProfilePage() {
 
           </div>
 
-
-
           {isEditing && (
 
             <div className="flex gap-3">
@@ -1195,8 +1159,6 @@ function VendorProfilePage() {
 
           </div>
 
-
-
           {isChangingPassword ? (
 
             <>
@@ -1269,8 +1231,6 @@ function VendorProfilePage() {
 
               </div>
 
-
-
               <div className="flex gap-3 pt-1">
 
                 <button
@@ -1325,8 +1285,6 @@ function VendorProfilePage() {
 
 }
 
-
-
 interface StaffBankDetails {
 
   bankName: string;
@@ -1342,8 +1300,6 @@ interface StaffBankDetails {
   upiId: string | null;
 
 }
-
-
 
 interface StaffProfileData {
 
@@ -1367,8 +1323,6 @@ interface StaffProfileData {
 
 }
 
-
-
 function getInitials(name: string) {
 
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -1380,8 +1334,6 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 
 }
-
-
 
 function formatRoleLabel(role: string) {
 
@@ -1396,8 +1348,6 @@ function formatRoleLabel(role: string) {
     .join(' ');
 
 }
-
-
 
 function roleBadgeClass(role: string) {
 
@@ -1423,8 +1373,6 @@ function roleBadgeClass(role: string) {
 
 }
 
-
-
 function daysSince(dateStr: string) {
 
   const then = new Date(dateStr).getTime();
@@ -1436,8 +1384,6 @@ function daysSince(dateStr: string) {
   return days;
 
 }
-
-
 
 function formatTenure(dateStr: string) {
 
@@ -1459,8 +1405,6 @@ function formatTenure(dateStr: string) {
 
 }
 
-
-
 function StaffProfilePage() {
 
   const { addToast } = useApp();
@@ -1477,8 +1421,6 @@ function StaffProfilePage() {
 
   const [changingPassword, setChangingPassword] = useState(false);
 
-
-
   const [passwordForm, setPasswordForm] = useState({
 
     oldPassword: '',
@@ -1488,8 +1430,6 @@ function StaffProfilePage() {
     confirmPassword: '',
 
   });
-
-
 
   const [form, setForm] = useState({
 
@@ -1515,8 +1455,6 @@ function StaffProfilePage() {
 
   });
 
-
-
   const buildFormFromProfile = (data: StaffProfileData) => ({
 
     name: data.name || '',
@@ -1541,21 +1479,15 @@ function StaffProfilePage() {
 
   });
 
-
-
   const loadProfile = async () => {
 
     setLoading(true);
-
-
 
     try {
 
       const res = await fetch('/api/admin/profile');
 
       const json = await res.json();
-
-
 
       if (json.success) {
 
@@ -1597,8 +1529,6 @@ function StaffProfilePage() {
 
   };
 
-
-
   useEffect(() => {
 
     loadProfile();
@@ -1607,11 +1537,7 @@ function StaffProfilePage() {
 
   }, []);
 
-
-
   const handleEdit = () => setIsEditing(true);
-
-
 
   const handleCancel = () => {
 
@@ -1625,15 +1551,11 @@ function StaffProfilePage() {
 
   };
 
-
-
   const handleSave = async (e: React.FormEvent) => {
 
     e.preventDefault();
 
     setSaving(true);
-
-
 
     try {
 
@@ -1647,11 +1569,7 @@ function StaffProfilePage() {
 
       });
 
-
-
       const json = await res.json();
-
-
 
       if (json.success) {
 
@@ -1664,8 +1582,6 @@ function StaffProfilePage() {
           message: 'Your details have been saved.',
 
         });
-
-
 
         await loadProfile();
 
@@ -1705,13 +1621,9 @@ function StaffProfilePage() {
 
   };
 
-
-
   const handleChangePassword = async (e: React.FormEvent) => {
 
     e.preventDefault();
-
-
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
 
@@ -1729,11 +1641,7 @@ function StaffProfilePage() {
 
     }
 
-
-
     setChangingPassword(true);
-
-
 
     try {
 
@@ -1747,11 +1655,7 @@ function StaffProfilePage() {
 
       });
 
-
-
       const json = await res.json();
-
-
 
       if (json.success) {
 
@@ -1764,8 +1668,6 @@ function StaffProfilePage() {
           message: 'Use your new password next time you log in.',
 
         });
-
-
 
         setPasswordForm({
 
@@ -1813,8 +1715,6 @@ function StaffProfilePage() {
 
   };
 
-
-
   const handleCancelPasswordChange = () => {
 
     setPasswordForm({
@@ -1830,8 +1730,6 @@ function StaffProfilePage() {
     setIsChangingPassword(false);
 
   };
-
-
 
   if (loading || !profile) {
 
@@ -1859,8 +1757,6 @@ function StaffProfilePage() {
 
   }
 
-
-
   const fieldClass = (editable: boolean) =>
 
     `w-full px-3 py-2 rounded-xl border focus:outline-none transition ${
@@ -1873,11 +1769,7 @@ function StaffProfilePage() {
 
     }`;
 
-
-
   const isActive = profile.isActive !== false;
-
-
 
   return (
 
@@ -1885,21 +1777,15 @@ function StaffProfilePage() {
 
       <AdminSidebar activeTab="profile" />
 
-
-
       <main className="flex-1 min-w-0 p-6 lg:p-10 overflow-y-auto">
 
         <div className="w-full max-w-3xl space-y-6">
-
-
 
           {/* Identity header */}
 
           <div className="relative overflow-hidden rounded-3xl border border-stone-200 shadow-sm">
 
             <div className="h-20 bg-gradient-to-r from-[#831843] via-rose-900 to-[#831843]" />
-
-
 
             <div className="bg-white px-6 pb-6">
 
@@ -1913,8 +1799,6 @@ function StaffProfilePage() {
 
                   </div>
 
-
-
                   <div className="pb-1">
 
                     <h1 className="font-serif text-2xl font-bold text-stone-900 leading-tight">
@@ -1922,8 +1806,6 @@ function StaffProfilePage() {
                       {profile.name}
 
                     </h1>
-
-
 
                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
 
@@ -1936,8 +1818,6 @@ function StaffProfilePage() {
                         {formatRoleLabel(profile.role)}
 
                       </span>
-
-
 
                       <span
 
@@ -1973,8 +1853,6 @@ function StaffProfilePage() {
 
                 </div>
 
-
-
                 {!isEditing && (
 
                   <button
@@ -2001,8 +1879,6 @@ function StaffProfilePage() {
 
           </div>
 
-
-
           {/* Quick stats */}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
@@ -2014,8 +1890,6 @@ function StaffProfilePage() {
                 <CalendarClock className="w-4 h-4 text-[#831843]" />
 
               </div>
-
-
 
               <div>
 
@@ -2045,8 +1919,6 @@ function StaffProfilePage() {
 
             </div>
 
-
-
             <div className="bg-white rounded-2xl border border-stone-200 p-4 flex items-start gap-3">
 
               <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
@@ -2054,8 +1926,6 @@ function StaffProfilePage() {
                 <Clock className="w-4 h-4 text-[#831843]" />
 
               </div>
-
-
 
               <div>
 
@@ -2085,8 +1955,6 @@ function StaffProfilePage() {
 
             </div>
 
-
-
             <div className="bg-white rounded-2xl border border-stone-200 p-4 flex items-start gap-3 col-span-2 sm:col-span-1">
 
               <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
@@ -2094,8 +1962,6 @@ function StaffProfilePage() {
                 <Shield className="w-4 h-4 text-[#831843]" />
 
               </div>
-
-
 
               <div>
 
@@ -2117,8 +1983,6 @@ function StaffProfilePage() {
 
           </div>
 
-
-
           {/* Editable personal details */}
 
           <form
@@ -2134,8 +1998,6 @@ function StaffProfilePage() {
               <User className="w-4 h-4" /> Personal Details
 
             </h3>
-
-
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -2165,8 +2027,6 @@ function StaffProfilePage() {
 
               </div>
 
-
-
               <div>
 
                 <label className="block font-semibold text-stone-700 mb-1">
@@ -2192,8 +2052,6 @@ function StaffProfilePage() {
                 />
 
               </div>
-
-
 
               <div>
 
@@ -2221,8 +2079,6 @@ function StaffProfilePage() {
 
             </div>
 
-
-
             {isEditing && (
 
               <div className="flex gap-3 pt-2">
@@ -2243,8 +2099,6 @@ function StaffProfilePage() {
 
                 </button>
 
-
-
                 <button
 
                   type="button"
@@ -2269,59 +2123,102 @@ function StaffProfilePage() {
 
           </form>
 
-
-
           {/* Iccha Main Store description */}
+
           <form
+
             onSubmit={handleSave}
+
             className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4 text-xs"
+
           >
+
             <h3 className="font-serif text-base font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
+
               <Building2 className="w-4 h-4" /> Iccha Main Store
+
             </h3>
 
             <div>
+
               <label className="block font-semibold text-stone-700 mb-1">
-                Description shown in &quot;A sample of what we make&quot;
+
+                Description shown in "A sample of what we make"
+
               </label>
+
               <textarea
+
                 rows={5}
+
                 maxLength={2000}
+
                 disabled={!isEditing}
+
                 value={form.mainStoreDescription}
+
                 onChange={e =>
+
                   setForm({ ...form, mainStoreDescription: e.target.value })
+
                 }
+
                 placeholder="Describe what Iccha Main Store makes, the designs, materials, craftsmanship, or manufacturing speciality..."
+
                 className={`${fieldClass(isEditing)} resize-y min-h-[130px]`}
+
               />
+
               <p className="mt-1.5 text-[11px] text-stone-400">
+
                 Up to 2,000 characters. This appears directly below Iccha Main Store on the homepage.
+
               </p>
+
             </div>
 
             {isEditing && (
+
               <div className="flex gap-3 pt-2">
+
                 <button
+
                   type="submit"
+
                   disabled={saving}
+
                   className="flex-1 py-3.5 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold shadow transition flex items-center justify-center gap-2 disabled:opacity-60"
+
                 >
+
                   <Save className="w-4 h-4" />
+
                   <span>{saving ? 'Saving...' : 'Save Store Description'}</span>
+
                 </button>
 
                 <button
+
                   type="button"
+
                   onClick={handleCancel}
+
                   disabled={saving}
+
                   className="px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+
                 >
+
                   <X className="w-4 h-4" />
+
                   <span>Cancel</span>
+
                 </button>
+
               </div>
+
             )}
+
           </form>
 
           {/* Individual staff bank details */}
@@ -2339,8 +2236,6 @@ function StaffProfilePage() {
               <CreditCard className="w-4 h-4" /> Bank Details
 
             </h3>
-
-
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -2367,8 +2262,6 @@ function StaffProfilePage() {
                 />
 
               </div>
-
-
 
               <div>
 
@@ -2398,8 +2291,6 @@ function StaffProfilePage() {
 
               </div>
 
-
-
               <div>
 
                 <label className="block font-semibold text-stone-700 mb-1">
@@ -2427,8 +2318,6 @@ function StaffProfilePage() {
                 />
 
               </div>
-
-
 
               <div>
 
@@ -2460,8 +2349,6 @@ function StaffProfilePage() {
 
               </div>
 
-
-
               <div>
 
                 <label className="block font-semibold text-stone-700 mb-1">
@@ -2485,8 +2372,6 @@ function StaffProfilePage() {
                 />
 
               </div>
-
-
 
               <div>
 
@@ -2514,8 +2399,6 @@ function StaffProfilePage() {
 
             </div>
 
-
-
             {isEditing && (
 
               <>
@@ -2527,8 +2410,6 @@ function StaffProfilePage() {
                   separate from the company billing entity.
 
                 </div>
-
-
 
                 <div className="flex gap-3 pt-2">
 
@@ -2547,8 +2428,6 @@ function StaffProfilePage() {
                     <span>{saving ? 'Saving...' : 'Save Bank Details'}</span>
 
                   </button>
-
-
 
                   <button
 
@@ -2576,8 +2455,6 @@ function StaffProfilePage() {
 
           </form>
 
-
-
           {/* Password */}
 
           <form
@@ -2595,8 +2472,6 @@ function StaffProfilePage() {
                 <Lock className="w-4 h-4" /> Login Password
 
               </h3>
-
-
 
               {!isChangingPassword && (
 
@@ -2617,8 +2492,6 @@ function StaffProfilePage() {
               )}
 
             </div>
-
-
 
             {isChangingPassword ? (
 
@@ -2657,8 +2530,6 @@ function StaffProfilePage() {
                   />
 
                 </div>
-
-
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -2700,8 +2571,6 @@ function StaffProfilePage() {
 
                   </div>
 
-
-
                   <div>
 
                     <label className="block font-semibold text-stone-700 mb-1">
@@ -2738,8 +2607,6 @@ function StaffProfilePage() {
 
                 </div>
 
-
-
                 <div className="flex gap-3 pt-1">
 
                   <button
@@ -2755,8 +2622,6 @@ function StaffProfilePage() {
                     {changingPassword ? 'Updating...' : 'Update Password'}
 
                   </button>
-
-
 
                   <button
 
@@ -2799,5 +2664,4 @@ function StaffProfilePage() {
   );
 
 }
-
 

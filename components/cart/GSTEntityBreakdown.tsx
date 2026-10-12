@@ -22,6 +22,25 @@ interface GSTEntityBreakdownProps {
   isEditable?: boolean;
 }
 
+// Flipkart-style grouping: one card per product (and size); each colour is a line inside it.
+function groupItemsByProduct(items: CartItem[]) {
+  const map = new Map<string, CartItem[]>();
+  for (const item of items) {
+    const key = `${item.productId}|${item.selectedSize ?? ''}`;
+    const list = map.get(key);
+    if (list) list.push(item);
+    else map.set(key, [item]);
+  }
+  return Array.from(map, ([key, lines]) => ({
+    key,
+    lines,
+    first: lines[0],
+    totalSets: lines.reduce((sum, l) => sum + l.selectedSets, 0),
+    totalPieces: lines.reduce((sum, l) => sum + l.totalPieces, 0),
+    subtotal: lines.reduce((sum, l) => sum + l.lineSubtotal, 0),
+  }));
+}
+
 export default function GSTEntityBreakdown({ summaries, isEditable = true }: GSTEntityBreakdownProps) {
   const { updateCartItemSets, removeFromCart } = useApp();
 
@@ -113,105 +132,141 @@ export default function GSTEntityBreakdown({ summaries, isEditable = true }: GST
               </div>
             </div>
 
-            {/* List of items in this entity */}
+            {/* List of products in this entity - one card per product, colours listed inside */}
             <div className="divide-y divide-stone-100">
-              {group.items.map((item) => (
-                <div key={`${item.productId}-${item.selectedSize || 'no-size'}`} className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-
-                  {/* Left: Thumbnail & Info */}
-                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                    <div className="relative w-16 h-20 rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
-                      <Image
-                        src={item.product.media[0]?.url || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400'}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover object-top"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 text-[11px] text-stone-500 mb-0.5">
-                        <span className="font-mono text-rose-900 font-semibold">{item.product.sku}</span>
-                        <span>&bull;</span>
-                        <span>Design {item.product.designNumber}</span>
-                        <span>&bull;</span>
-                        <span className="font-mono text-stone-600">HSN {item.product.hsn}</span>
-                      </div>
-                      <h5 className="font-semibold text-stone-900 text-sm truncate">
-                        {item.product.name}
-                      </h5>
-                      <p className="text-xs text-stone-500 mt-0.5">
-                        {item.product.fabric} &bull; {item.product.requiresSize && item.selectedSize ? `Size: ${item.selectedSize}` : `Size: Not Required`}
-                      </p>
-                      <div className="text-[11px] text-stone-600 font-medium mt-1">
-                        Rate: <strong className="text-stone-900">₹{item.unitPrice}/pc</strong> &bull; Set Rate: ₹{item.setPrice.toLocaleString('en-IN')} ({item.piecesPerSet} pcs/set)
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Quantity Controls & Subtotal */}
-                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100">
-                    {isEditable ? (
-                      <div className="flex items-center border border-stone-300 rounded-lg bg-white overflow-hidden shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => updateCartItemSets(item.productId, item.selectedSets - 1, item.selectedSize)}
-                          disabled={item.selectedSets <= item.product.minOrderSets}
-                          className="p-2 hover:bg-stone-100 text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition"
-                          aria-label="Decrease sets"
-                          title={
-                            item.selectedSets <= item.product.minOrderSets
-                              ? `Minimum order for this design is ${item.product.minOrderSets} sets — remove it instead if you need fewer`
-                              : undefined
-                          }
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="px-3 text-xs font-bold text-stone-800 text-center min-w-[55px]">
-                          <div>{item.selectedSets} Sets</div>
-                          <div className="text-[9px] text-stone-400 font-normal">{item.totalPieces} pcs</div>
-                          {item.product.minOrderSets > 1 && (
-                            <div className="text-[9px] text-stone-400 font-normal">Min {item.product.minOrderSets}</div>
-                          )}
+              {groupItemsByProduct(group.items).map((g) => {
+                const item = g.first;
+                return (
+                  <div key={g.key} className="p-4 sm:p-5 space-y-3">
+                    {/* Product header */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                        <div className="relative w-16 h-20 rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
+                          <Image
+                            src={item.product.media[0]?.url || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400'}
+                            alt={item.product.name}
+                            fill
+                            className="object-cover object-top"
+                            referrerPolicy="no-referrer"
+                          />
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => updateCartItemSets(item.productId, item.selectedSets + 1, item.selectedSize)}
-                          className="p-2 hover:bg-stone-100 text-stone-600 transition"
-                          aria-label="Increase sets"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 text-[11px] text-stone-500 mb-0.5">
+                            <span className="font-mono text-rose-900 font-semibold">{item.product.sku}</span>
+                            <span>&bull;</span>
+                            <span>Design {item.product.designNumber}</span>
+                            <span>&bull;</span>
+                            <span className="font-mono text-stone-600">HSN {item.product.hsn}</span>
+                          </div>
+                          <h5 className="font-semibold text-stone-900 text-sm truncate">
+                            {item.product.name}
+                          </h5>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            {item.product.fabric} &bull; {item.product.requiresSize && item.selectedSize ? `Size: ${item.selectedSize}` : `Size: Not Required`}
+                          </p>
+                          <div className="text-[11px] text-stone-600 font-medium mt-1">
+                            Rate: <strong className="text-stone-900">₹{item.unitPrice}/pc</strong> &bull; Set Rate: ₹{item.setPrice.toLocaleString('en-IN')} ({item.piecesPerSet} pcs/set)
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-xs font-bold text-stone-800">
-                        {item.selectedSets} Sets ({item.totalPieces} pcs)
-                      </div>
-                    )}
 
-                    {/* Subtotal */}
-                    <div className="text-right min-w-[100px]">
-                      <span className="text-[10px] uppercase font-semibold text-stone-400 block">Subtotal</span>
-                      <span className="text-sm font-bold text-stone-900">
-                        ₹{item.lineSubtotal.toLocaleString('en-IN')}
-                      </span>
-                      <span className="text-[10px] text-stone-400 block">+ GST {item.product.gstRate}%</span>
+                      {/* Product total across all its colours */}
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] uppercase font-semibold text-stone-400 block">Subtotal</span>
+                        <span className="text-sm font-bold text-stone-900">
+                          ₹{g.subtotal.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[10px] text-stone-400 block">+ GST {item.product.gstRate}%</span>
+                        <span className="text-[10px] text-stone-500 block mt-0.5">
+                          {g.totalSets} Sets &bull; {g.totalPieces} pcs
+                        </span>
+                      </div>
                     </div>
 
-                    {isEditable && (
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(item.productId, item.selectedSize)}
-                        className="p-2 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
-                        title="Remove product"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    {/* One line per colour */}
+                    <div className="rounded-xl border border-stone-200 bg-stone-50/60 divide-y divide-stone-200">
+                      {g.lines.map((line) => (
+                        <div
+                          key={`${line.productId}-${line.selectedSize || 'no-size'}-${line.selectedColor || 'no-color'}`}
+                          className="flex items-center justify-between gap-3 px-3 py-2.5"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {line.selectedColor ? (
+                              <>
+                                <span
+                                  className="w-5 h-5 rounded-full border border-stone-300 shrink-0"
+                                  style={{ backgroundColor: line.selectedColorHex || 'transparent' }}
+                                />
+                                <span className="text-xs font-semibold text-stone-800 truncate">{line.selectedColor}</span>
+                              </>
+                            ) : (
+                              <span className="text-xs font-semibold text-stone-800">Quantity</span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-4 shrink-0">
+                            {isEditable ? (
+                              <div className="flex items-center border border-stone-300 rounded-lg bg-white overflow-hidden shadow-sm">
+                                <button
+                                  type="button"
+                                  onClick={() => updateCartItemSets(line.productId, line.selectedSets - 1, line.selectedSize, line.selectedColor)}
+                                  disabled={line.selectedSets <= 1 || line.designSets - 1 < line.product.minOrderSets}
+                                  className="p-2 hover:bg-stone-100 text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition"
+                                  aria-label={`Decrease ${line.selectedColor || ''} sets`}
+                                  title={
+                                    line.designSets - 1 < line.product.minOrderSets
+                                      ? `Minimum order for this design is ${line.product.minOrderSets} sets across all colours — remove it instead if you need fewer`
+                                      : undefined
+                                  }
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <div className="px-3 text-xs font-bold text-stone-800 text-center min-w-[55px]">
+                                  <div>{line.selectedSets} Sets</div>
+                                  <div className="text-[9px] text-stone-400 font-normal">{line.totalPieces} pcs</div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => updateCartItemSets(line.productId, line.selectedSets + 1, line.selectedSize, line.selectedColor)}
+                                  className="p-2 hover:bg-stone-100 text-stone-600 transition"
+                                  aria-label={`Increase ${line.selectedColor || ''} sets`}
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="text-xs font-bold text-stone-800">
+                                {line.selectedSets} Sets ({line.totalPieces} pcs)
+                              </div>
+                            )}
+
+                            <div className="text-right min-w-[70px] text-xs font-bold text-stone-900">
+                              ₹{line.lineSubtotal.toLocaleString('en-IN')}
+                            </div>
+
+                            {isEditable && (
+                              <button
+                                type="button"
+                                onClick={() => removeFromCart(line.productId, line.selectedSize, line.selectedColor)}
+                                className="p-2 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
+                                title={line.selectedColor ? `Remove ${line.selectedColor}` : 'Remove product'}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {item.product.minOrderSets > 1 && (
+                      <p className={`text-[11px] ${g.totalSets >= item.product.minOrderSets ? 'text-emerald-700' : 'text-rose-700'}`}>
+                        Design total: <strong>{g.totalSets}</strong> / {item.product.minOrderSets} sets minimum (all colours combined)
+                      </p>
                     )}
                   </div>
-
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Entity Summary Footer */}

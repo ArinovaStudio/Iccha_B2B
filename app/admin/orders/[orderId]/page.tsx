@@ -8,7 +8,7 @@ import { useApp } from "@/lib/context/AppContext";
 import SellerOrderStatusControl from "@/components/order/SellerOrderStatusControl";
 
 type Item = {
-  id: string; productName: string; sku: string; designNumber: string;
+  id: string; productId?: string | null; productName: string; sku: string; designNumber: string;
   categoryName: string; sets: number; totalPieces: number;
   piecesPerSet?: number; pieceRate?: number; setRate?: number;
   gstRate?: number; hsn?: string | null; color?: string | null;
@@ -75,6 +75,23 @@ function AddressLines({ address }: { address: Address | null }) {
       {address.landmark && <p className="text-stone-500">Landmark: {address.landmark}</p>}
     </div>
   );
+}
+
+// Each colour of a product is stored as its own order line; group them so a product shows once,
+// with its colours listed inside.
+function groupItems(items: Item[]) {
+  const map = new Map<string, { key: string; first: Item; lines: Item[]; sets: number; pieces: number; gst: number; total: number }>();
+  for (const it of items) {
+    const key = `${it.productId ?? it.designNumber}|${it.sizeCombination ?? ""}`;
+    const g = map.get(key) ?? { key, first: it, lines: [], sets: 0, pieces: 0, gst: 0, total: 0 };
+    g.lines.push(it);
+    g.sets += it.sets;
+    g.pieces += it.totalPieces;
+    g.gst += it.gstAmount;
+    g.total += it.totalWithGst;
+    map.set(key, g);
+  }
+  return Array.from(map.values());
 }
 
 function label(v: string) {
@@ -417,71 +434,92 @@ export default function AdminOrderDetailPage({
           </div>
 
           <div className="divide-y divide-stone-100">
-            {order.items.map(item => (
-              <div key={item.id} className="p-5 flex flex-col lg:flex-row gap-5">
-                <div className="w-20 h-20 rounded-2xl bg-stone-100 overflow-hidden shrink-0">
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-6 h-6 text-stone-300" />
-                    </div>
-                  )}
-                </div>
+            {groupItems(order.items).map(g => {
+              const item = g.first;
+              return (
+                <div key={g.key} className="p-5 flex flex-col lg:flex-row gap-5">
+                  <div className="w-20 h-20 rounded-2xl bg-stone-100 overflow-hidden shrink-0">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-6 h-6 text-stone-300" />
+                      </div>
+                    )}
+                  </div>
 
-                <div className="flex-1">
-                  <div className="flex justify-between gap-4">
-                    <div>
-                      <h3 className="font-bold">{item.productName}</h3>
+                  <div className="flex-1">
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <h3 className="font-bold">{item.productName}</h3>
+                        <p className="text-xs text-stone-500 mt-1">
+                          SKU {item.sku} · Design {item.designNumber}
+                        </p>
+                        <p className="text-xs text-stone-500 mt-1">{item.categoryName}</p>
+                      </div>
+                      <p className="font-bold text-[#831843]">{money(g.total)}</p>
+                    </div>
+
+                    {(item.sizeCombination || item.hsn) && (
                       <p className="text-xs text-stone-500 mt-1">
-                        SKU {item.sku} · Design {item.designNumber}
+                        {[
+                          item.sizeCombination ? `Sizes ${item.sizeCombination}` : null,
+                          item.hsn ? `HSN ${item.hsn}` : null,
+                        ].filter(Boolean).join(" · ")}
                       </p>
-                      <p className="text-xs text-stone-500 mt-1">{item.categoryName}</p>
+                    )}
+
+                    <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
+                      {item.pieceRate !== undefined && (
+                        <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Rate / pc</p><p className="font-bold">{money(item.pieceRate)}</p></div>
+                      )}
+                      {item.setRate !== undefined && (
+                        <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Rate / set{item.piecesPerSet ? ` (${item.piecesPerSet} pcs)` : ""}</p><p className="font-bold">{money(item.setRate)}</p></div>
+                      )}
+                      <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Sets</p><p className="font-bold">{g.sets}</p></div>
+                      <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Pieces</p><p className="font-bold">{g.pieces}</p></div>
+                      <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">GST{item.gstRate !== undefined ? ` (${item.gstRate}%)` : ""}</p><p className="font-bold">{money(g.gst)}</p></div>
                     </div>
-                    <p className="font-bold text-[#831843]">{money(item.totalWithGst)}</p>
-                  </div>
 
-                  {(item.sizeCombination || item.color || item.hsn) && (
-                    <p className="text-xs text-stone-500 mt-1">
-                      {[
-                        item.sizeCombination ? `Sizes ${item.sizeCombination}` : null,
-                        item.color ? `Color ${item.color}` : null,
-                        item.hsn ? `HSN ${item.hsn}` : null,
-                      ].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-                    {item.pieceRate !== undefined && (
-                      <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Rate / pc</p><p className="font-bold">{money(item.pieceRate)}</p></div>
-                    )}
-                    {item.setRate !== undefined && (
-                      <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Rate / set{item.piecesPerSet ? ` (${item.piecesPerSet} pcs)` : ""}</p><p className="font-bold">{money(item.setRate)}</p></div>
-                    )}
-                    <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Sets</p><p className="font-bold">{item.sets}</p></div>
-                    <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">Pieces</p><p className="font-bold">{item.totalPieces}</p></div>
-                    <div className="rounded-xl bg-stone-50 p-3"><p className="text-[10px] text-stone-400">GST{item.gstRate !== undefined ? ` (${item.gstRate}%)` : ""}</p><p className="font-bold">{money(item.gstAmount)}</p></div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    {item.product?.vendor && (
-                      <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 border border-rose-100 text-[11px] font-bold text-[#831843]">
-                        <Store className="w-3.5 h-3.5" />
-                        {item.product.vendor.businessName}
+                    {/* Colour-wise breakdown */}
+                    {g.lines.some(l => l.color) && (
+                      <div className="mt-4 rounded-xl border border-stone-200 overflow-hidden">
+                        <div className="grid grid-cols-4 gap-2 px-3 py-2 bg-stone-50 text-[10px] uppercase tracking-wider text-stone-400 font-bold">
+                          <span>Colour</span><span>Sets</span><span>Pieces</span><span className="text-right">Amount</span>
+                        </div>
+                        <div className="divide-y divide-stone-100">
+                          {g.lines.map(l => (
+                            <div key={l.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs">
+                              <span className="font-semibold text-stone-800">{l.color || "—"}</span>
+                              <span>{l.sets}</span>
+                              <span>{l.totalPieces}</span>
+                              <span className="text-right font-semibold">{money(l.totalWithGst)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {item.product?.warehouse && (
-                      <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-600">
-                        <Warehouse className="w-3.5 h-3.5" />
-                        {item.product.warehouse.name}
-                        {item.product.warehouse.city ? ` · ${item.product.warehouse.city}` : ""}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      {item.product?.vendor && (
+                        <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 border border-rose-100 text-[11px] font-bold text-[#831843]">
+                          <Store className="w-3.5 h-3.5" />
+                          {item.product.vendor.businessName}
+                        </div>
+                      )}
+
+                      {item.product?.warehouse && (
+                        <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-600">
+                          <Warehouse className="w-3.5 h-3.5" />
+                          {item.product.warehouse.name}
+                          {item.product.warehouse.city ? ` · ${item.product.warehouse.city}` : ""}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

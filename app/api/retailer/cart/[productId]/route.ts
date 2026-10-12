@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
 import { getOrCreateCart, serializeCartFull } from "@/lib/cart-utils";
+import { NO_COLOR } from "@/lib/cart-colors";
 
 const NO_SIZE = "__NO_SIZE__";
 
@@ -12,6 +13,7 @@ const updateSchema = z.object({
     .int()
     .min(1, "Must have at least 1 set — use DELETE to remove the item"),
   selectedSize: z.string().trim().optional(),
+  selectedColor: z.string().trim().optional(),
 });
 
 export async function PATCH(
@@ -39,6 +41,7 @@ export async function PATCH(
 
   const { sets } = parsed.data;
   const selectedSize = parsed.data.selectedSize?.trim() || NO_SIZE;
+  const selectedColor = parsed.data.selectedColor?.trim() || NO_COLOR;
 
   const cart = await prisma.cart.findUnique({
     where: { retailerProfileId: guard.retailerProfile.id },
@@ -52,7 +55,7 @@ export async function PATCH(
   }
 
   const item = await prisma.cartItem.findFirst({
-    where: { cartId: cart.id, productId, selectedSize },
+    where: { cartId: cart.id, productId, selectedSize, selectedColor },
     include: {
       product: {
         include: {
@@ -70,13 +73,18 @@ export async function PATCH(
     );
   }
 
-  // Preserve the vendor/admin-defined per-product minimum order quantity.
-  // Retailers can remove the line entirely through DELETE.
-  if (sets < item.product.minOrderSets) {
+  // The per-design minimum applies to the total across all colours of this design (in this size),
+  // so one colour may drop below it as long as the combined total still meets it.
+  const siblings = await prisma.cartItem.findMany({
+    where: { cartId: cart.id, productId, selectedSize, NOT: { id: item.id } },
+    select: { sets: true },
+  });
+  const otherColorSets = siblings.reduce((sum, row) => sum + row.sets, 0);
+  if (otherColorSets + sets < item.product.minOrderSets) {
     return NextResponse.json(
       {
         success: false,
-        error: `This product has a minimum order of ${item.product.minOrderSets} set(s). Remove the item instead if you want fewer than that.`,
+        error: `This design has a minimum order of ${item.product.minOrderSets} set(s) across all colours. Add more to another colour first, or remove the item instead.`,
       },
       { status: 400 }
     );
@@ -119,6 +127,7 @@ export async function DELETE(
   const { productId } = await params;
   const { searchParams } = new URL(request.url);
   const selectedSize = searchParams.get("selectedSize")?.trim() || NO_SIZE;
+  const selectedColor = searchParams.get("selectedColor")?.trim() || NO_COLOR;
 
   const cart = await prisma.cart.findUnique({
     where: { retailerProfileId: guard.retailerProfile.id },
@@ -132,7 +141,7 @@ export async function DELETE(
   }
 
   const item = await prisma.cartItem.findFirst({
-    where: { cartId: cart.id, productId, selectedSize },
+    where: { cartId: cart.id, productId, selectedSize, selectedColor },
   });
 
   if (!item) {

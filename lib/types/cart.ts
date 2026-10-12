@@ -24,6 +24,12 @@ export interface CartItem {
   productId: string;
   selectedSets: number;
   selectedSize: string | null;
+  /** null for products without colours */
+  selectedColor: string | null;
+  /** Swatch colour for the selected colour, when the admin picked one with the colour picker */
+  selectedColorHex: string | null;
+  /** Total sets of this design (this size) across ALL colours - what the per-design minimum is checked against. */
+  designSets: number;
   piecesPerSet: number;
   totalPieces: number;
   unitPrice: number;

@@ -47,6 +47,7 @@ model VendorProfile {
   bankName       String?
   accountHolder  String?
   accountNumber  String?
+  instagramUrl   String?
   ifsc           String?
   branch         String?
   upiId          String?
@@ -671,18 +672,20 @@ model Cart {
 }
 
 model CartItem {
-  id           String   @id @default(uuid())
-  cartId       String
-  productId    String
-  sets         Int      @default(1)
-  selectedSize String   @default("NO_SIZE")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(uuid())
+  cartId        String
+  productId     String
+  sets          Int      @default(1)
+  selectedSize  String   @default("NO_SIZE")
+  // One cart line per (product, size, colour). "__NO_COLOR__" for products without colours.
+  selectedColor String   @default("__NO_COLOR__")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([cartId, productId, selectedSize])
+  @@unique([cartId, productId, selectedSize, selectedColor])
 }
 
 enum OrderEnquiryStatus {

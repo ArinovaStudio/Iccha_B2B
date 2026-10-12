@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
 import { evaluateMoq } from "@/lib/moq";
 import { colorNames } from "@/lib/product-colors";
+import { NO_COLOR, designKey } from "@/lib/cart-colors";
 import type { BillingEntity } from "@prisma/client";
 const FREE_SHIPPING_THRESHOLD = 20000;
 const FLAT_SHIPPING = 350;
@@ -262,6 +263,21 @@ export async function POST(request: NextRequest) {
         });
         if (!cart || cart.items.length === 0) {
           throw new Error("Your cart is empty");
+        }
+        // Per-design minimum: checked on the total across all colours (and sizes' own pools).
+        const designTotals = new Map<string, { name: string; min: number; sets: number }>();
+        for (const item of cart.items) {
+          const key = designKey(item.productId, item.selectedSize);
+          const row = designTotals.get(key) ?? { name: item.product.name, min: item.product.minOrderSets, sets: 0 };
+          row.sets += item.sets;
+          designTotals.set(key, row);
+        }
+        for (const row of designTotals.values()) {
+          if (row.sets < row.min) {
+            throw new Error(
+              `${row.name} has a minimum order of ${row.min} set(s) across all colours - you have ${row.sets}.`
+            );
+          }
         }
         const totalDesigns = new Set(cart.items.map((item) => item.productId)).size;
         const totalSets = cart.items.reduce((sum, item) => sum + item.sets, 0);
@@ -545,7 +561,11 @@ export async function POST(request: NextRequest) {
               gstAmount,
               totalWithGst: lineSubtotal + gstAmount,
               imageUrl,
-              color: colorNames(product.color).join(", ") || product.color,
+              // Each colour the retailer picked becomes its own order line with its own quantity.
+              color:
+                item.selectedColor !== NO_COLOR
+                  ? item.selectedColor
+                  : colorNames(product.color).join(", ") || product.color,
               sizeCombination: selectedSize,
             },
          });

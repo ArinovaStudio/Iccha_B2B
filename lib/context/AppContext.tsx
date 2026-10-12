@@ -26,9 +26,9 @@ interface AppContextType {
   cart: Cart;
   isCartLoading: boolean;
   refreshCart: () => Promise<void>;
-  addToCart: (productId: string, sets?: number, productName?: string, selectedSize?: string | null) => Promise<void>;
-  updateCartItemSets: (productId: string, sets: number, selectedSize?: string | null) => Promise<void>;
-  removeFromCart: (productId: string, selectedSize?: string | null) => Promise<void>;
+  addToCart: (productId: string, sets?: number, productName?: string, selectedSize?: string | null, colorQuantities?: { color: string; sets: number }[]) => Promise<void>;
+  updateCartItemSets: (productId: string, sets: number, selectedSize?: string | null, selectedColor?: string | null) => Promise<void>;
+  removeFromCart: (productId: string, selectedSize?: string | null, selectedColor?: string | null) => Promise<void>;
   clearCart: () => Promise<void>;
   moqEvaluation: MOQEvaluation | null;
   isEvaluatingMoq: boolean;
@@ -178,12 +178,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [inRetailerArea, refreshCart]);
 
-  const addToCart = async (productId: string, sets = 1, productName?: string, selectedSize?: string | null) => {
+  const addToCart = async (productId: string, sets = 1, productName?: string, selectedSize?: string | null, colorQuantities?: { color: string; sets: number }[]) => {
+    if (colorQuantities && colorQuantities.length > 0) {
+      sets = colorQuantities.reduce((sum, l) => sum + l.sets, 0);
+    }
     try {
       const res = await fetch('/api/retailer/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, sets, ...(selectedSize ? { selectedSize } : {}) }),
+        body: JSON.stringify({
+          productId,
+          ...(colorQuantities && colorQuantities.length > 0 ? { colorQuantities } : { sets }),
+          ...(selectedSize ? { selectedSize } : {}),
+        }),
       });
       const json = await res.json();
       if (json.success) {
@@ -201,16 +208,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateCartItemSets = async (productId: string, sets: number, selectedSize?: string | null) => {
+  const updateCartItemSets = async (productId: string, sets: number, selectedSize?: string | null, selectedColor?: string | null) => {
     if (sets <= 0) {
-      await removeFromCart(productId, selectedSize);
+      await removeFromCart(productId, selectedSize, selectedColor);
       return;
     }
     try {
       const res = await fetch(`/api/retailer/cart/${productId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sets, ...(selectedSize ? { selectedSize } : {}) }),
+        body: JSON.stringify({ sets, ...(selectedSize ? { selectedSize } : {}), ...(selectedColor ? { selectedColor } : {}) }),
       });
       const json = await res.json();
       if (json.success) {
@@ -223,9 +230,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const removeFromCart = async (productId: string, selectedSize?: string | null) => {
+  const removeFromCart = async (productId: string, selectedSize?: string | null, selectedColor?: string | null) => {
     try {
-      const query = selectedSize ? `?selectedSize=${encodeURIComponent(selectedSize)}` : '';
+      const qs = new URLSearchParams();
+      if (selectedSize) qs.set('selectedSize', selectedSize);
+      if (selectedColor) qs.set('selectedColor', selectedColor);
+      const query = qs.toString() ? `?${qs.toString()}` : '';
       const res = await fetch(`/api/retailer/cart/${productId}${query}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {

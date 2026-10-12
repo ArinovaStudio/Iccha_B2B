@@ -60,13 +60,16 @@ export default function RetailerCartPage() {
     router.push('/retailer/checkout');
   };
 
-  const gstBreakdown = cart.items.map((item) => ({
-    name: item.product.name,
-    rate: Number(item.product.gstRate ?? 0),
-    amount: Math.round(
-      (item.lineSubtotal * Number(item.product.gstRate ?? 0)) / 100
-    ),
-  }));
+  const gstBreakdown = Object.values(
+    cart.items.reduce<Record<string, { key: string; name: string; rate: number; amount: number }>>((acc, item) => {
+      const rate = Number(item.product.gstRate ?? 0);
+      const key = `${item.productId}-${rate}`;
+      const amount = Math.round((item.lineSubtotal * rate) / 100);
+      if (acc[key]) acc[key].amount += amount;
+      else acc[key] = { key, name: item.product.name, rate, amount };
+      return acc;
+    }, {})
+  );
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -194,7 +197,7 @@ export default function RetailerCartPage() {
 
                     {gstBreakdown.map((gst) => (
                       <div
-                        key={`${gst.name}-${gst.rate}`}
+                        key={gst.key}
                         className="flex justify-between text-[11px]"
                       >
                         <span>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
+import { parseColors } from "@/lib/product-colors";
 
 export async function GET(
   request: NextRequest,
@@ -65,6 +66,7 @@ export async function GET(
       // and in addition to, the cart-wide MOQ. Set by the vendor (or admin for house products).
       minOrderSets: product.minOrderSets,
       sizeCombination: product.sizeCombination,
+      colorOptions: parseColors(product.color),
       // Keep the existing response shape for clients that use sizeStocks, but do not expose stock counts.
       sizeStocks: product.sizes.map((row) => ({ size: row.size })),
       sizes: product.sizes.length > 0

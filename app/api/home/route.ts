@@ -69,6 +69,7 @@ const vendorSelect = {
   id: true,
   businessName: true,
   description: true,
+  instagramUrl: true, // Add this
   city: true,
   state: true,
   bannerAsset: { select: { publicUrl: true } },
@@ -90,15 +91,16 @@ function toVendor(v: DbVendor) {
     .filter((url): url is string => Boolean(url));
 
   return {
-    id: v.id,
-    name: v.businessName,
-    description: v.description,
-    location: [v.city, v.state].filter(Boolean).join(", "),
-    productCount: v._count.products,
-    images,
-    products,
-    image: v.bannerAsset?.publicUrl ?? images[0] ?? FALLBACK_IMAGE,
-  };
+  id: v.id,
+  name: v.businessName,
+  description: v.description,
+  instagramUrl: v.instagramUrl, // Add this
+  location: [v.city, v.state].filter(Boolean).join(", "),
+  productCount: v._count.products,
+  images,
+  products,
+  image: v.bannerAsset?.publicUrl ?? images[0] ?? FALLBACK_IMAGE,
+};
 }
 
 export async function GET(req: NextRequest) {

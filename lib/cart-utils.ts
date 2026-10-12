@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { evaluateMoq } from "@/lib/moq";
+import { NO_COLOR, designKey } from "@/lib/cart-colors";
+import { parseColors } from "@/lib/product-colors";
 const CART_ITEM_INCLUDE = {
     product: {
         include: {
@@ -67,6 +69,12 @@ export async function getOrCreateCart(retailerProfileId: string): Promise<CartWi
 // (GSTEntityBreakdown, MOQProgressBar) keep working unmodified once
 // AppContext is wired to this real, DB-backed cart.
 export async function serializeCartFull(cart: CartWithItems, retailerProfileId: string) {
+    // Sets per design (product + size) across all colours - the per-design minimum applies to this total.
+    const designSets = new Map<string, number>();
+    for (const item of cart.items) {
+        const key = designKey(item.productId, item.selectedSize);
+        designSets.set(key, (designSets.get(key) ?? 0) + item.sets);
+    }
     const rawItems = cart.items.map((item) => {
         const p = item.product;
         const rate = item?.product?.category?.gst;
@@ -84,6 +92,12 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
             productId: item.productId,
             selectedSets: item.sets,
             selectedSize: item.selectedSize === "__NO_SIZE__" ? null : item.selectedSize,
+            selectedColor: item.selectedColor === NO_COLOR ? null : item.selectedColor,
+            selectedColorHex:
+                item.selectedColor === NO_COLOR
+                    ? null
+                    : parseColors(p.color).find((c) => c.name === item.selectedColor)?.hex ?? null,
+            designSets: designSets.get(designKey(item.productId, item.selectedSize)) ?? item.sets,
             piecesPerSet: p.piecesPerSet,
             totalPieces,
             unitPrice,

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
 import { getOrCreateCart, serializeCartFull } from "@/lib/cart-utils";
+import { resolveColor } from "@/lib/cart-colors";
 
 export async function GET(request: NextRequest) {
   const guard = await requireRetailer(request);
@@ -20,11 +21,27 @@ export async function GET(request: NextRequest) {
 
 const NO_SIZE = "__NO_SIZE__";
 
-const addItemSchema = z.object({
-  productId: z.string().uuid("Invalid product ID"),
-  sets: z.number().int().min(1, "Must add at least 1 set"),
-  selectedSize: z.string().trim().min(1).optional(),
-});
+const addItemSchema = z
+  .object({
+    productId: z.string().uuid("Invalid product ID"),
+    // Single-line add (products without colours, or one colour).
+    sets: z.number().int().min(1, "Must add at least 1 set").optional(),
+    selectedSize: z.string().trim().min(1).optional(),
+    selectedColor: z.string().trim().min(1).optional(),
+    // Multi-colour add: one entry per colour. Colours with 0 sets should simply be omitted.
+    colorQuantities: z
+      .array(
+        z.object({
+          color: z.string().trim().min(1),
+          sets: z.number().int().min(1, "Each selected colour needs at least 1 set"),
+        })
+      )
+      .min(1)
+      .optional(),
+  })
+  .refine((v) => v.sets !== undefined || v.colorQuantities !== undefined, {
+    message: "Provide the quantity to add",
+  });
 
 export async function POST(request: NextRequest) {
   const guard = await requireRetailer(request);
@@ -44,7 +61,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { productId, sets, selectedSize } = parsed.data;
+  const { productId, selectedSize } = parsed.data;
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
@@ -96,42 +113,73 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const cart = await getOrCreateCart(guard.retailerProfile.id);
-  const existingItem = cart.items.find(
-    (item) =>
-      item.productId === productId &&
-      item.selectedSize === normalizedSize
-  );
+  // Normalise the request into one line per colour (merging duplicates).
+  const requestedLines: { color: string | undefined; sets: number }[] =
+    parsed.data.colorQuantities
+      ? parsed.data.colorQuantities.map((l) => ({ color: l.color, sets: l.sets }))
+      : [{ color: parsed.data.selectedColor, sets: parsed.data.sets! }];
 
-  if (existingItem) {
-    // Allow increasing the quantity without checking available stock.
-    const newSets = existingItem.sets + sets;
-
-    await prisma.cartItem.update({
-      where: { id: existingItem.id },
-      data: { sets: newSets },
-    });
-  } else {
-    // Preserve the vendor/admin-defined minimum for each new product line.
-    if (sets < product.minOrderSets) {
+  const lineMap = new Map<string, number>();
+  for (const line of requestedLines) {
+    const color = resolveColor(product.color, line.color);
+    if (color === null) {
       return NextResponse.json(
         {
           success: false,
-          error: `This product has a minimum order of ${product.minOrderSets} set(s). Please add at least ${product.minOrderSets} set(s).`,
+          error: line.color
+            ? `"${line.color}" is not an available colour for this product.`
+            : "Please select a colour before adding this product.",
         },
         { status: 400 }
       );
     }
-
-    await prisma.cartItem.create({
-      data: {
-        cartId: cart.id,
-        productId,
-        sets,
-        selectedSize: normalizedSize,
-      },
-    });
+    lineMap.set(color, (lineMap.get(color) ?? 0) + line.sets);
   }
+  const lines = Array.from(lineMap, ([color, sets]) => ({ color, sets }));
+  const addedSets = lines.reduce((sum, l) => sum + l.sets, 0);
+
+  const cart = await getOrCreateCart(guard.retailerProfile.id);
+
+  // The per-design minimum applies to the TOTAL across all colours of this design (in this size),
+  // e.g. min 100 -> 60 red + 30 green + 10 brown is fine.
+  const alreadyInCart = cart.items
+    .filter((item) => item.productId === productId && item.selectedSize === normalizedSize)
+    .reduce((sum, item) => sum + item.sets, 0);
+
+  if (alreadyInCart + addedSets < product.minOrderSets) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `This design has a minimum order of ${product.minOrderSets} set(s) across all colours. You have ${alreadyInCart + addedSets} so far - add at least ${product.minOrderSets - alreadyInCart - addedSets} more.`,
+      },
+      { status: 400 }
+    );
+  }
+
+  await prisma.$transaction(
+    lines.map((line) => {
+      const existingItem = cart.items.find(
+        (item) =>
+          item.productId === productId &&
+          item.selectedSize === normalizedSize &&
+          item.selectedColor === line.color
+      );
+      return existingItem
+        ? prisma.cartItem.update({
+            where: { id: existingItem.id },
+            data: { sets: existingItem.sets + line.sets },
+          })
+        : prisma.cartItem.create({
+            data: {
+              cartId: cart.id,
+              productId,
+              sets: line.sets,
+              selectedSize: normalizedSize,
+              selectedColor: line.color,
+            },
+          });
+    })
+  );
 
   // Adding to cart counts as meaningful activity — reset the inactivity clock.
   await prisma.retailerProfile.update({

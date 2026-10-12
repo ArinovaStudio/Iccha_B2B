@@ -23,9 +23,24 @@ type Vendor = {
 
 type Item = {
   id: string;
+  productId?: string | null;
   designNumber: string;
+  color?: string | null;
   sets: number;
 };
+
+// Each colour of a product is stored as its own order line; group them so one product counts once.
+function groupItemsByProduct(items: Item[]) {
+  const map = new Map<string, { key: string; designNumber: string; sets: number; colors: string[] }>();
+  for (const i of items) {
+    const key = i.productId ?? i.designNumber;
+    const g = map.get(key) ?? { key, designNumber: i.designNumber, sets: 0, colors: [] };
+    g.sets += i.sets;
+    if (i.color && !g.colors.includes(i.color)) g.colors.push(i.color);
+    map.set(key, g);
+  }
+  return Array.from(map.values());
+}
 
 type Order = {
   id: string;
@@ -342,13 +357,13 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-7 w-full lg:w-auto">
                       <div><p className="text-[10px] text-stone-400 uppercase">Sets</p><p className="font-bold">{order.totalSets}</p></div>
-                      <div><p className="text-[10px] text-stone-400 uppercase">Products</p><p className="font-bold">{order.items.length}</p></div>
+                      <div><p className="text-[10px] text-stone-400 uppercase">Products</p><p className="font-bold">{groupItemsByProduct(order.items).length}</p></div>
                       <div className="text-right"><p className="text-[10px] text-stone-400 uppercase">Value</p><p className="font-bold text-[#831843]">{money(order.masterTotal)}</p></div>
                       <ArrowRight className="w-5 h-5 text-stone-300 shrink-0 hidden sm:block" />
                     </div>
                   </div>
                   <div className="mt-5 pt-4 border-t border-stone-100 flex flex-wrap gap-2">
-                    {order.items.slice(0, 5).map(i => <span key={i.id} className="px-2.5 py-1.5 rounded-lg bg-stone-50 border border-stone-100 text-[10px] text-stone-600">{i.designNumber} · {i.sets} sets</span>)}
+                    {groupItemsByProduct(order.items).slice(0, 5).map(g => <span key={g.key} className="px-2.5 py-1.5 rounded-lg bg-stone-50 border border-stone-100 text-[10px] text-stone-600">{g.designNumber} · {g.sets} sets{g.colors.length > 1 ? ` · ${g.colors.length} colours` : g.colors.length === 1 ? ` · ${g.colors[0]}` : ""}</span>)}
                   </div>
                 </div>
               </Link>

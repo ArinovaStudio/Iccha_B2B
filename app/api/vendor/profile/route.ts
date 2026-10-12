@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -19,30 +20,60 @@ const updateProfileSchema = z.object({
     branch: z.string().trim().optional().or(z.literal("")),
     upiId: z.string().trim().optional().or(z.literal("")),
     description: z.string().trim().max(2000).optional().or(z.literal("")),
+
+    // Instagram profile URL
+    instagramUrl: z
+        .string()
+        .trim()
+        .url("Please enter a valid Instagram URL.")
+        .refine(
+            (value) => {
+                try {
+                    const url = new URL(value);
+                    return (
+                        ["instagram.com", "www.instagram.com"].includes(url.hostname) &&
+                        url.protocol === "https:"
+                    );
+                } catch {
+                    return false;
+                }
+            },
+            { message: "Please enter a valid HTTPS Instagram profile URL." }
+        )
+        .optional()
+        .or(z.literal("")),
 });
 
 export async function GET(request: NextRequest) {
     try {
         const auth = await requireVendor(request);
+
         if ("error" in auth) {
-            return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+            return NextResponse.json(
+                { success: false, error: auth.error },
+                { status: 401 }
+            );
         }
 
         const profile = await prisma.vendorProfile.findUnique({
             where: { id: auth.vendorProfile.id },
             include: {
                 _count: { select: { products: true } },
-                bannerAsset: { select: { publicUrl: true } }
+                bannerAsset: { select: { publicUrl: true } },
             },
         });
 
         if (!profile) {
-            return NextResponse.json({ success: false, error: "Vendor profile not found" }, { status: 404 });
+            return NextResponse.json(
+                { success: false, error: "Vendor profile not found" },
+                { status: 404 }
+            );
         }
 
         return NextResponse.json({ success: true, data: profile });
     } catch (error) {
         console.error("Fetch vendor profile error:", error);
+
         return NextResponse.json(
             { success: false, error: "Something went wrong. Please try again." },
             { status: 500 }
@@ -53,8 +84,12 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
     try {
         const auth = await requireVendor(request);
+
         if ("error" in auth) {
-            return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+            return NextResponse.json(
+                { success: false, error: auth.error },
+                { status: 401 }
+            );
         }
 
         const body = await request.json();
@@ -73,7 +108,9 @@ export async function PATCH(request: NextRequest) {
             const updatedVendor = await tx.vendorProfile.update({
                 where: { id: auth.vendorProfile.id },
                 data: {
-                    ...(data.businessName ? { businessName: data.businessName } : {}),
+                    ...(data.businessName
+                        ? { businessName: data.businessName }
+                        : {}),
                     contactName: data.contactName,
                     mobile: data.mobile,
                     address: data.address,
@@ -87,6 +124,7 @@ export async function PATCH(request: NextRequest) {
                     branch: data.branch || null,
                     upiId: data.upiId || null,
                     description: data.description?.trim() || null,
+                    instagramUrl: data.instagramUrl?.trim() || null,
                 },
             });
 
@@ -108,7 +146,11 @@ export async function PATCH(request: NextRequest) {
                     pan: updatedVendor.pan || "",
                     state: updatedVendor.state,
                     stateCode: updatedVendor.stateCode,
-                    registeredAddress: [updatedVendor.address, updatedVendor.city, updatedVendor.state]
+                    registeredAddress: [
+                        updatedVendor.address,
+                        updatedVendor.city,
+                        updatedVendor.state,
+                    ]
                         .filter(Boolean)
                         .join(", "),
                     contactEmail: user.email,
@@ -132,7 +174,11 @@ export async function PATCH(request: NextRequest) {
                     pan: updatedVendor.pan || "",
                     state: updatedVendor.state,
                     stateCode: updatedVendor.stateCode,
-                    registeredAddress: [updatedVendor.address, updatedVendor.city, updatedVendor.state]
+                    registeredAddress: [
+                        updatedVendor.address,
+                        updatedVendor.city,
+                        updatedVendor.state,
+                    ]
                         .filter(Boolean)
                         .join(", "),
                     contactEmail: user.email,
@@ -155,13 +201,21 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({ success: true, data: updated });
     } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002"
+        ) {
             return NextResponse.json(
-                { success: false, error: "Another account is already using one of these values." },
+                {
+                    success: false,
+                    error: "Another account is already using one of these values.",
+                },
                 { status: 409 }
             );
         }
+
         console.error("Update vendor profile error:", error);
+
         return NextResponse.json(
             { success: false, error: "Something went wrong. Please try again." },
             { status: 500 }

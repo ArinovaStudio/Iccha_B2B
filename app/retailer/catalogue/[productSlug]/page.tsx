@@ -21,6 +21,7 @@ type ProductDetail = Product & {
   categoryRequiresSize?: boolean;
   sizes?: string[];
   sizeStocks?: { size: string; availableSets: number }[];
+  colorOptions?: { name: string; hex: string | null }[];
   sellerName?: string | null;
   vendor?: {
     id: string;
@@ -44,6 +45,8 @@ export default function RetailerProductDetailPage() {
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [setsToAdd, setSetsToAdd] = useState(1);
+  // Sets per colour, keyed by colour name (multi-colour ordering)
+  const [colorQty, setColorQty] = useState<Record<string, number>>({});
   const [hasInitializedSets, setHasInitializedSets] = useState(false);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function RetailerProductDetailPage() {
           setSelectedImageIdx(0);
           setSelectedSize(null);
           setSetsToAdd(1);
+          setColorQty({});
         } else {
           setProduct(null);
         }
@@ -119,12 +123,29 @@ export default function RetailerProductDetailPage() {
     );
   }
   const media = product.media ?? [];
-  const cartItem = cart.items.find((item) => item.productId === product.id && (item.selectedSize || null) === (selectedSize || null));
-  const existingSets = cartItem?.selectedSets || 0;
+  const existingSets = cart.items
+    .filter((item) => item.productId === product.id && (item.selectedSize || null) === (selectedSize || null))
+    .reduce((sum, item) => sum + item.selectedSets, 0);
+  const colorOptions = product.colorOptions ?? [];
+  const hasColors = colorOptions.length > 0;
+  const colorLines = colorOptions
+    .map((c) => ({ color: c.name, sets: colorQty[c.name] || 0 }))
+    .filter((l) => l.sets > 0);
+  const colorTotalSets = colorLines.reduce((sum, l) => sum + l.sets, 0);
+  // The per-design minimum counts sets already in the cart for this design (this size) plus what's being added now.
+  const colorShortfall = Math.max(0, product.minOrderSets - existingSets - colorTotalSets);
+  const setColorSets = (name: string, next: number) =>
+    setColorQty((cur) => ({ ...cur, [name]: Math.max(0, Math.floor(next) || 0) }));
   const currentImage =
     media[selectedImageIdx]?.url ||
     media[0]?.url ||
     '/placeholder-product.jpg';
+  const handleAddToColorCart = async () => {
+    if (product.categoryRequiresSize && !selectedSize) return;
+    if (colorLines.length === 0 || colorShortfall > 0) return;
+    await addToCart(product.id, colorTotalSets, product.name, product.categoryRequiresSize ? selectedSize : null, colorLines);
+    setColorQty({});
+  };
   const handleAddToCart = () => {
     if (product.categoryRequiresSize && !selectedSize) return;
     addToCart(product.id, setsToAdd, product.name, product.categoryRequiresSize ? selectedSize : null);
@@ -371,7 +392,112 @@ export default function RetailerProductDetailPage() {
                 {/* =====================================================
                     CART CONTROLS
                 \===================================================== */}
-                <div className="pt-2 space-y-3">
+                {hasColors ? (
+                  <div className="pt-2 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <strong className="text-stone-800">Select Colours &amp; Sets:</strong>
+                      <span className="text-[11px] text-stone-500">Mix any colours — the minimum applies to the total</span>
+                    </div>
+                    <div className="space-y-2">
+                      {colorOptions.map((c) => {
+                        const qty = colorQty[c.name] || 0;
+                        return (
+                          <div
+                            key={c.name}
+                            className={`flex items-center justify-between gap-3 rounded-xl border-2 px-3 py-2 transition ${
+                              qty > 0 ? 'border-amber-500 bg-amber-50' : 'border-stone-200 bg-stone-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className="w-6 h-6 rounded-full border border-stone-300 shrink-0"
+                                style={{ backgroundColor: c.hex || 'transparent' }}
+                              />
+                              <span className="text-xs font-semibold text-stone-900 truncate">{c.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center border border-stone-300 rounded-lg bg-white overflow-hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => setColorSets(c.name, qty - 1)}
+                                  disabled={qty <= 0}
+                                  className="p-2 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700"
+                                  aria-label={`Decrease ${c.name} sets`}
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={qty}
+                                  onChange={(e) => setColorSets(c.name, Number(e.target.value))}
+                                  className="w-14 text-center text-xs font-bold text-stone-900 outline-none py-1.5"
+                                  aria-label={`${c.name} sets`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setColorSets(c.name, qty + 1)}
+                                  className="p-2 hover:bg-stone-100 text-stone-700"
+                                  aria-label={`Increase ${c.name} sets`}
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <span className="text-[10px] text-stone-400 w-12 text-right">
+                                {qty > 0 ? `${qty * product.piecesPerSet} pcs` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div
+                      className={`text-[11px] rounded-xl px-3 py-2 border ${
+                        colorTotalSets > 0 && colorShortfall === 0
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : 'bg-stone-50 border-stone-200 text-stone-600'
+                      }`}
+                    >
+                      Total: <strong>{colorTotalSets} set{colorTotalSets === 1 ? '' : 's'}</strong> ({colorTotalSets * product.piecesPerSet} pcs)
+                      {minOrderSets > 1 && (
+                        <>
+                          {' '}&bull; Minimum for this design: <strong>{minOrderSets} sets</strong> across all colours
+                          {existingSets > 0 && <> (you already have {existingSets} in your cart)</>}
+                          {colorShortfall > 0 && <> &mdash; add <strong>{colorShortfall}</strong> more</>}
+                        </>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddToColorCart}
+                      disabled={colorLines.length === 0 || colorShortfall > 0 || (product.categoryRequiresSize && !selectedSize)}
+                      className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#831843] to-[#9a3412] hover:from-[#701a75] hover:to-[#852e10] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2"
+                    >
+                      <ShoppingBag className="w-4 h-4 text-amber-300" />
+                      <span>
+                        {product.categoryRequiresSize && !selectedSize
+                          ? 'Select a size to continue'
+                          : colorLines.length === 0
+                            ? 'Enter sets for at least one colour'
+                            : colorShortfall > 0
+                              ? `Add ${colorShortfall} more set${colorShortfall > 1 ? 's' : ''} to reach the minimum`
+                              : `Add ${colorTotalSets} Set${colorTotalSets > 1 ? 's' : ''} in ${colorLines.length} colour${colorLines.length > 1 ? 's' : ''} • ₹${(colorTotalSets * Number(product.wholesalePricePerSet)).toLocaleString('en-IN')}`}
+                      </span>
+                    </button>
+
+                    {existingSets > 0 && (
+                      <div className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <strong>{existingSets} Set{existingSets > 1 ? 's' : ''}</strong>{product.categoryRequiresSize && selectedSize ? ` in ${selectedSize}` : ''} currently in your wholesale cart.
+                        </span>
+                        <Link href="/retailer/cart" className="font-bold underline whitespace-nowrap">View Cart</Link>
+                      </div>
+                    )}
+                  </div>
+                ) : (<div className="pt-2 space-y-3">
                   <div className="flex items-center gap-3">
                     {/* Quantity */}
                     <div className="flex items-center border border-stone-300 rounded-xl bg-stone-50 overflow-hidden shrink-0">
@@ -475,7 +601,7 @@ export default function RetailerProductDetailPage() {
                       </Link>
                     </div>
                   )}
-                </div>
+                </div>)}
                 {/* Live Sample */}
                 <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-600">
                   <span>
