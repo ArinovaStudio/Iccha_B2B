@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { colorNames } from "@/lib/product-colors";
 import { Product } from "@/lib/types";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
@@ -45,7 +46,7 @@ function toProduct(p: DbProduct): Product {
     totalAvailablePieces: p.totalAvailablePieces,
     sizeCombination: p.sizeCombination,
     sizes: [],
-    colors: [p.color],
+    colors: colorNames(p.color),
     collectionName: p.collection?.name || "General Wholesale",
     billingEntityId: undefined,
     hsn: p.hsnCode,

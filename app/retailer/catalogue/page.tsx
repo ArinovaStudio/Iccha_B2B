@@ -409,7 +409,6 @@ function RetailerCatalogueContent() {
             <div className="md:col-span-9 space-y-3">
               <div className="flex items-center justify-between text-[11px] text-stone-500 gap-4">
                 <span>Showing <strong>{products.length}</strong> wholesale kurti designs</span>
-                <span>Standard Lot Ratio: M (38), L (40), XL (42), XXL (44)</span>
               </div>
 
               {loading ? (

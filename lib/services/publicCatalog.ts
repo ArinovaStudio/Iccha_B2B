@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { colorNames } from '@/lib/product-colors';
 import { Category, Product } from '@/lib/types';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=900&auto=format&fit=crop&q=80';
@@ -83,7 +84,7 @@ function toProduct(p: DbProduct): Product {
     totalAvailablePieces: p.totalAvailablePieces,
     sizeCombination: p.sizeCombination,
     sizes: [],
-    colors: [p.color],
+    colors: colorNames(p.color),
     collectionName: p.collection?.name || 'General Wholesale',
     billingEntityId: undefined,
     hsn: p.hsnCode,

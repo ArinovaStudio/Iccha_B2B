@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
 import { evaluateMoq } from "@/lib/moq";
+import { colorNames } from "@/lib/product-colors";
 import type { BillingEntity } from "@prisma/client";
 const FREE_SHIPPING_THRESHOLD = 20000;
 const FLAT_SHIPPING = 350;
@@ -544,7 +545,7 @@ export async function POST(request: NextRequest) {
               gstAmount,
               totalWithGst: lineSubtotal + gstAmount,
               imageUrl,
-              color: product.color,
+              color: colorNames(product.color).join(", ") || product.color,
               sizeCombination: selectedSize,
             },
          });

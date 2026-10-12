@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { useApp } from '@/lib/context/AppContext';
+import MultiColorInput from '@/components/admin/ColorPicker';
 
 interface Vendor {
   id: string;
@@ -480,7 +481,7 @@ export default function AdminProductsPage() {
         if (!json.success) return;
 
         if (json.data.status === 'uploaded' && json.data.mediaAssets?.length) {
-          setQrMediaAssets(prev => [...prev, ...json.data.mediaAssets.map((a: { id: string; publicUrl: string }) => ({ id: a.id, url: a.publicUrl })), ]);
+          setQrMediaAssets(prev => [...prev, ...json.data.mediaAssets.map((a: { id: string; publicUrl: string }) => ({ id: a.id, url: a.publicUrl })),]);
           setFormData(prev => ({
             ...prev,
             sku: prev.sku || `IC-${(json.data.vendor?.vendorCode || 'GEN')}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -1401,18 +1402,16 @@ export default function AdminProductsPage() {
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                     />
                   </div>
-                  <div>
-                    <label className="block font-bold text-stone-800 mb-1">Color *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.color}
-                      onChange={e => setFormData({ ...formData, color: e.target.value })}
-                      className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
-                    />
-                  </div>
                 </div>
 
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Colors *</label>
+                  <MultiColorInput
+                    required
+                    value={formData.color}
+                    onChange={color => setFormData({ ...formData, color })}
+                  />
+                </div>
                 {categories.find(c => c.id === formData.categoryId)?.requiresSize ? (
                   <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
                     <div>
