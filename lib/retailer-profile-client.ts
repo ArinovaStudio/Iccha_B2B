@@ -17,7 +17,7 @@ export interface RetailerProfileData {
     email: string;
     gstin: string | null;
     pan: string | null;
-    businessType: string;
+    businessType: string | null;
     yearsInBusiness: number;
     status: string;
   };

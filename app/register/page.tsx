@@ -26,9 +26,7 @@ export default function RegisterStep1Page() {
   const [formData, setFormData] = useState({
     accountType: 'retailer' as 'retailer' | 'drop_shipper',
     businessName: '',
-    legalEntityType: 'proprietorship' as 'proprietorship' | 'partnership' | 'private_limited' | 'llp',
     applicantName: '',
-    designation: 'Owner / Partner',
     mobile: '',
     whatsapp: '',
     email: '',
@@ -66,9 +64,7 @@ export default function RegisterStep1Page() {
     setFormData(prev => ({
       ...prev,
       businessName: 'Ananya Designer Boutiques',
-      legalEntityType: 'proprietorship',
       applicantName: 'Ananya Rathore',
-      designation: 'Founder & Head Buyer',
       mobile: '+91 94140 77665',
       whatsapp: '+91 94140 77665',
       email: 'ananya.rathore@boutique.in',
@@ -224,7 +220,7 @@ export default function RegisterStep1Page() {
                   1. Business Identity
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block font-semibold text-stone-800 mb-1">
                       Registered Business / Boutique Name *
@@ -239,21 +235,6 @@ export default function RegisterStep1Page() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block font-semibold text-stone-800 mb-1">
-                      Legal Constitution / Entity Type *
-                    </label>
-                    <select
-                      value={formData.legalEntityType}
-                      onChange={e => setFormData({ ...formData, legalEntityType: e.target.value as any })}
-                      className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-medium"
-                    >
-                      <option value="proprietorship">Sole Proprietorship</option>
-                      <option value="partnership">Partnership Firm</option>
-                      <option value="private_limited">Private Limited Company</option>
-                      <option value="llp">Limited Liability Partnership (LLP)</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 
@@ -274,20 +255,6 @@ export default function RegisterStep1Page() {
                       value={formData.applicantName}
                       onChange={e => setFormData({ ...formData, applicantName: e.target.value })}
                       placeholder="e.g. Ramesh Chandra Patel"
-                      className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-stone-800 mb-1">
-                      Designation in Firm *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.designation}
-                      onChange={e => setFormData({ ...formData, designation: e.target.value })}
-                      placeholder="e.g. Proprietor / Managing Director"
                       className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-medium"
                     />
                   </div>
@@ -320,7 +287,7 @@ export default function RegisterStep1Page() {
                     />
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div>
                     <label className="block font-semibold text-stone-800 mb-1">
                       Official Email Address *
                     </label>

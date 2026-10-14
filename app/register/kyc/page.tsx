@@ -13,7 +13,6 @@ import {
   ArrowRight, 
   ShieldCheck, 
   Sparkles, 
-  Camera, 
   FileCheck,
   Trash2,
   Lock
@@ -25,9 +24,7 @@ import { useApp } from '@/lib/context/AppContext';
 interface Step1Data {
   accountType: 'retailer' | 'drop_shipper';
   businessName: string;
-  legalEntityType: string;
   applicantName: string;
-  designation: string;
   mobile: string;
   whatsapp: string;
   email: string;
@@ -84,9 +81,7 @@ export default function RegisterKYCPage() {
   const [documentType, setDocumentType] = useState<'gst_certificate' | 'shop_act' | 'udyam_msme' | 'trade_license'>('gst_certificate');
 
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
-  const [storefrontFile, setStorefrontFile] = useState<string | null>(null);
-  const [accountNumber, setAccountNumber] = useState('');
-  const [ifsc, setIfsc] = useState('');
+  const [socialProof, setSocialProof] = useState('');
   const [declarationChecked, setDeclarationChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStage, setSubmitStage] = useState<'idle' | 'registering' | 'uploading'>('idle');
@@ -119,6 +114,27 @@ export default function RegisterKYCPage() {
     setDocuments(prev => prev.filter(d => d.id !== id));
   };
 
+  // Drop shipper social proof: at most one business card / screenshot file
+  const businessCardDoc = documents.find(d => d.type === 'business_card');
+
+  const handleBusinessCardSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDocuments(prev => [
+        ...prev.filter(d => d.type !== 'business_card'),
+        {
+          id: `doc-${Date.now()}`,
+          file,
+          type: 'business_card',
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          uploadedAt: new Date().toISOString().split('T')[0]
+        }
+      ]);
+    }
+    e.target.value = '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!step1Data) return;
@@ -135,6 +151,15 @@ export default function RegisterKYCPage() {
 
     if (password !== confirmPassword) {
       addToast({ type: 'warning', title: 'Passwords Don\'t Match', message: 'Please re-enter your password.' });
+      return;
+    }
+
+    if (isDropShipper && !socialProof.trim() && !businessCardDoc) {
+      addToast({
+        type: 'warning',
+        title: 'Social Proof Required',
+        message: 'Please add your Instagram / social link or upload a business card.'
+      });
       return;
     }
 
@@ -173,7 +198,7 @@ export default function RegisterKYCPage() {
           whatsapp: step1Data.whatsapp,
           gstin: isDropShipper ? undefined : gstin,
           pan: pan || undefined,
-          businessType: step1Data.legalEntityType,
+          socialProof: isDropShipper ? socialProof.trim() || undefined : undefined,
           street: step1Data.street,
           city: step1Data.city,
           state: step1Data.state,
@@ -405,6 +430,71 @@ export default function RegisterKYCPage() {
                 </div>
               </div>
 
+              {/* Social Proof (Drop Shipper only) */}
+              {isDropShipper && (
+                <div className="space-y-4">
+                  <h3 className="font-serif text-base font-bold text-stone-900 border-b border-stone-100 pb-2">
+                    3. Social Proof (Required)
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Please provide at least one: your Instagram / social media page, or a photo of your business card.
+                  </p>
+
+                  <div>
+                    <label className="block font-semibold text-stone-800 mb-1">
+                      Instagram / Social Media Handle or Link
+                    </label>
+                    <input
+                      type="text"
+                      value={socialProof}
+                      onChange={e => setSocialProof(e.target.value)}
+                      placeholder="e.g. @yourbrand or https://instagram.com/yourbrand"
+                      maxLength={200}
+                      className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-medium"
+                    />
+                  </div>
+
+                  <div className="text-center text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                    and / or
+                  </div>
+
+                  <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-5 h-5 text-amber-700 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-semibold text-stone-800 block truncate">
+                          {businessCardDoc ? businessCardDoc.name : 'No business card attached'}
+                        </span>
+                        <span className="text-[10px] text-stone-500">
+                          Business card or any proof of your business (JPG, PNG, WebP or PDF).
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 font-semibold rounded-lg cursor-pointer">
+                        <span>{businessCardDoc ? 'Change File' : 'Upload File'}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.webp"
+                          onChange={handleBusinessCardSelect}
+                          className="hidden"
+                        />
+                      </label>
+                      {businessCardDoc && (
+                        <button
+                          type="button"
+                          onClick={() => removeDoc(businessCardDoc.id)}
+                          className="text-stone-400 hover:text-rose-600 p-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Document Upload Section */}
               {!isDropShipper && (
                 <div className="space-y-4">
@@ -485,93 +575,6 @@ export default function RegisterKYCPage() {
                   </div>
                 </div>
               )}
-
-              {/* Optional Storefront Photo */}
-              <div className="space-y-3">
-                <h3 className="font-serif text-base font-bold text-stone-900 border-b border-stone-100 pb-2">
-                  {isDropShipper ? '3. Storefront / ID Photo (Optional)' : '4. Storefront / Display Board Photo (Optional)'}
-                </h3>
-
-                <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <Camera className="w-5 h-5 text-amber-700" />
-                    <div>
-                      <span className="font-semibold text-stone-800 block">
-                        {storefrontFile || 'No photo attached'}
-                      </span>
-                      <span className="text-[10px] text-stone-500">
-                        Helps speed up fast-track approval within 2 hours.
-                      </span>
-                    </div>
-                  </div>
-
-                  <label className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 font-semibold rounded-lg cursor-pointer">
-                    <span>{storefrontFile ? 'Change Photo' : 'Upload Photo'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setStorefrontFile(file.name);
-                          setDocuments(prev => [
-                            ...prev,
-                            {
-                              id: `doc-${Date.now()}`,
-                              file,
-                              type: 'shop_photo',
-                              name: file.name,
-                              size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-                              uploadedAt: new Date().toISOString().split('T')[0]
-                            }
-                          ]);
-                        }
-                        e.target.value = '';
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Bank Details */}
-              <div className="space-y-4">
-                <h3 className="font-serif text-base font-bold text-stone-900 border-b border-stone-100 pb-2">
-                  {isDropShipper ? '4.' : '5.'} Commercial Bank Account (for Invoicing Verification)
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-stone-800 mb-1">
-                      Current Bank Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={accountNumber}
-                      onChange={e => setAccountNumber(e.target.value)}
-                      placeholder="e.g. 98765432101234"
-                      className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-stone-800 mb-1">
-                      Bank IFSC Code
-                    </label>
-                    <input
-                      type="text"
-                      value={ifsc}
-                      onChange={e => setIfsc(e.target.value.toUpperCase())}
-                      placeholder="e.g. HDFC0001234"
-                      maxLength={11}
-                      className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-mono"
-                    />
-                  </div>
-                </div>
-                <p className="text-[10px] text-stone-500">
-                  Bank details are not yet stored by this form — collected here for reference only until wired to your profile.
-                </p>
-              </div>
 
               {/* Declaration Checkbox */}
               <div className="p-4 bg-rose-50/60 border border-rose-200 rounded-2xl space-y-2">

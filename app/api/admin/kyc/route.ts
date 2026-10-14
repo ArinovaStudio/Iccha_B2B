@@ -14,6 +14,7 @@ function formatApplication(app: any) {
     email: app.email,
     gstin: app.gstin,
     pan: app.pan,
+    socialProof: app.socialProof,
     businessType: app.retailerProfile?.businessType,
     yearsInBusiness: app.retailerProfile?.yearsInBusiness,
     annualTurnover: app.retailerProfile?.annualTurnover,

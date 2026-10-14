@@ -16,7 +16,7 @@ interface Retailer {
   mobile: string;
   gstin: string | null;
   status: string;
-  businessType: string;
+  businessType: string | null;
   city: string | null;
   state: string | null;
   moqOverride: boolean;

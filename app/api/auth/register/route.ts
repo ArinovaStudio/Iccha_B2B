@@ -13,7 +13,8 @@ const registerSchema = z.object({
   whatsapp: z.string().optional(),
   gstin: z.string().optional(),
   pan: z.string().optional(),
-  businessType: z.string().default("boutique"),
+  socialProof: z.string().trim().max(200).optional(),
+  businessType: z.string().optional(),
   street: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
             whatsapp: data.whatsapp,
             gstin: data.accountType === "retailer" ? data.gstin : null,
             pan: data.pan || null,
-            businessType: data.accountType === "drop_shipper" ? "drop_shipper" : data.businessType,
+            businessType: data.accountType === "drop_shipper" ? "drop_shipper" : null,
             addresses: {
               create: {
                 type: "billing",
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
               create: {
                 gstin: data.gstin || null,
                 pan: data.pan || null,
+                socialProof: data.accountType === "drop_shipper" ? data.socialProof || null : null,
                 businessName: data.businessName,
                 applicantName: data.applicantName,
                 mobile: data.mobile,

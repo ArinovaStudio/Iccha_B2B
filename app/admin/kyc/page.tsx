@@ -30,6 +30,7 @@ interface KycApplication {
   email: string;
   gstin: string | null;
   pan: string | null;
+  socialProof?: string | null;
   businessType?: string;
   yearsInBusiness?: number;
   annualTurnover?: string | null;
@@ -353,6 +354,25 @@ function AdminKYCContent() {
               <div>
                 <span className="text-stone-400 text-[10px] uppercase font-bold block">Submitted</span>
                 <strong className="text-stone-900">{new Date(selectedApp.submittedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</strong>
+              </div>
+              <div className="col-span-2">
+                <span className="text-stone-400 text-[10px] uppercase font-bold block">Social Proof (Instagram / Link)</span>
+                {selectedApp.socialProof ? (
+                  /^https?:\/\//i.test(selectedApp.socialProof) ? (
+                    <a
+                      href={selectedApp.socialProof}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-[#831843] underline break-all"
+                    >
+                      {selectedApp.socialProof}
+                    </a>
+                  ) : (
+                    <strong className="text-stone-900 break-all">{selectedApp.socialProof}</strong>
+                  )
+                ) : (
+                  <strong className="text-stone-900">—</strong>
+                )}
               </div>
             </div>
 

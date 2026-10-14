@@ -19,7 +19,7 @@ interface ReactivationRequest {
   mobile: string;
   email: string;
   gstin: string | null;
-  businessType: string;
+  businessType: string | null;
   city: string | null;
   state: string | null;
   status: string;

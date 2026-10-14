@@ -157,7 +157,7 @@ model RetailerProfile {
   whatsapp         String?
   gstin            String?               @unique
   pan              String?
-  businessType     String                @default("boutique")
+  businessType     String?
   yearsInBusiness  Int                   @default(1)
   annualTurnover   String?
   status           RetailerAccountStatus @default(APPLICATION_RECEIVED)
@@ -223,6 +223,7 @@ model KYCApplication {
   retailerProfileId String
   gstin             String?
   pan               String?
+  socialProof       String?
   businessName      String
   applicantName     String
   mobile            String

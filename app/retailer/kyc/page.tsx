@@ -12,6 +12,7 @@ const DOC_LABELS: Record<string, string> = {
   pan_card: 'PAN Card',
   business_proof: 'Business Proof',
   shop_photo: 'Shop Photograph',
+  business_card: 'Business Card / Social Proof',
 };
 
 const ACTION_LABELS: Record<string, string> = {
