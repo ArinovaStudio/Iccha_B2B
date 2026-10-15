@@ -16,6 +16,7 @@ import {
 import RetailerHeader from '@/components/layout/RetailerHeader';
 import Footer from '@/components/layout/Footer';
 import RetailerProductCard from '@/components/product/RetailerProductCard';
+import { useCatalogueViewer } from '@/lib/context/CatalogueViewerContext';
 
 interface Category {
   id: string;
@@ -68,6 +69,7 @@ function RetailerCatalogueContent() {
   const [products, setProducts] = useState<RetailerProduct[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const { role: viewerRole, canOrder } = useCatalogueViewer();
   const [cartSummary, setCartSummary] = useState<CartSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -103,6 +105,7 @@ function RetailerCatalogueContent() {
   );
 
   const refreshCart = useCallback(() => {
+    if (!canOrder) return; // admins/vendors have no cart
     fetch('/api/retailer/cart')
       .then(res => res.json())
       .then(json => {
@@ -111,7 +114,7 @@ function RetailerCatalogueContent() {
       .catch(() => {
         // Cart pill stays stale until next successful refresh.
       });
-  }, []);
+  }, [canOrder]);
 
   // One-time data: vendors + cart
   useEffect(() => {
@@ -255,7 +258,9 @@ function RetailerCatalogueContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <nav className="text-xs text-stone-500 mb-1 flex items-center gap-2">
-                <Link href="/retailer" className="hover:text-stone-900">Retailer Portal</Link>
+                <Link href={canOrder ? '/retailer' : '/admin'} className="hover:text-stone-900">
+                  {canOrder ? 'Retailer Portal' : viewerRole === 'VENDOR' ? 'Vendor Panel' : 'Admin Panel'}
+                </Link>
                 <span>/</span>
                 <span className="text-stone-900 font-semibold">Wholesale Catalogue</span>
               </nav>
@@ -264,6 +269,7 @@ function RetailerCatalogueContent() {
               </h1>
             </div>
 
+            {canOrder && (
             <Link
               href="/retailer/cart"
               className="self-start sm:self-center inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white border border-stone-300 hover:border-rose-400 shadow-sm text-xs font-semibold text-stone-800 transition"
@@ -274,6 +280,7 @@ function RetailerCatalogueContent() {
                 ₹{Number(cartSummary?.subtotal ?? 0).toLocaleString('en-IN')}
               </span>
             </Link>
+            )}
           </div>
 
           <form onSubmit={handleSearchSubmit} className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">

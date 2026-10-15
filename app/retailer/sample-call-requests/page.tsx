@@ -161,7 +161,7 @@ export default function SampleCallRequestsPage() {
               You have not submitted any sample call requests yet.
             </p>
             <Link
-              href="/retailer/catalogue"
+              href="/catalogue"
               className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-xl bg-[#831843] text-white text-xs font-bold hover:bg-rose-900"
             >
               Browse Catalogue

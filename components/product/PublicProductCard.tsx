@@ -137,7 +137,7 @@ export default function PublicProductCard({ product }: PublicProductCardProps) {
 
 
               <Link
-                href={`/retailer/catalogue/${product.slug ?? ''}`}
+                href={`/catalogue/${product.slug ?? ''}`}
                 className="group/cta mt-3 flex h-10 items-center justify-between rounded-full bg-white pl-4 pr-1 text-[13px] font-semibold text-[#18140D] transition-colors hover:bg-[#F5F0E6]"
               >
                 <span className="whitespace-nowrap">

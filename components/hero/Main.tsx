@@ -165,11 +165,7 @@ export default function HomeElements() {
 
   // Route the homepage CTA according to the authenticated user's role.
   
-const destination = !isLoggedIn
-  ? "/register"
-  : ["admin", "super_admin", "vendor"].includes(userRole ?? "")
-    ? "/categories"
-    : "/retailer/catalogue";
+const destination = !isLoggedIn ? "/register" : "/catalogue";
 
 const ctaLabel = isLoggedIn ? "View All" : "Apply for Access";
 

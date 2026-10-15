@@ -39,6 +39,14 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // The catalogue moved out of /retailer so admins and vendors can browse it too.
+  async redirects() {
+    return [
+      { source: '/retailer/catalogue', destination: '/catalogue', permanent: false },
+      { source: '/retailer/catalogue/:path*', destination: '/catalogue/:path*', permanent: false },
+    ];
+  },
+
   output: 'standalone',
   transpilePackages: ['motion'],
 

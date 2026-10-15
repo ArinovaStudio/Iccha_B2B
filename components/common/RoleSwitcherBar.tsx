@@ -138,7 +138,7 @@ export default function RoleSwitcherBar() {
                 <button
                   onClick={() => {
                     switchRetailerPreset('approved');
-                    navigateSafely('/retailer/catalogue');
+                    navigateSafely('/catalogue');
                   }}
                   className={`p-2 rounded-xl text-center border font-medium transition ${
                     role === 'retailer' && currentRetailer?.status === 'approved'

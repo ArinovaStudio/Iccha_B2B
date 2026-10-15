@@ -16,8 +16,9 @@ export async function middleware(request: NextRequest) {
 
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isRetailerRoute = pathname === "/retailer" || pathname.startsWith("/retailer/");
+  const isCatalogueRoute = pathname === "/catalogue" || pathname.startsWith("/catalogue/");
 
-  if (!isAdminRoute && !isRetailerRoute) {
+  if (!isAdminRoute && !isRetailerRoute && !isCatalogueRoute) {
     return NextResponse.next();
   }
 
@@ -40,6 +41,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Catalogue: any logged-in retailer, admin or vendor (logged-out users were redirected above).
+  if (
+    isCatalogueRoute &&
+    session.role !== "RETAILER" &&
+    !(ADMIN_AREA_ROLES as readonly string[]).includes(session.role)
+  ) {
+    return NextResponse.redirect(publicUrl(request, "/login"));
+  }
+
   if (isRetailerRoute && session.role !== "RETAILER") {
     return NextResponse.redirect(publicUrl(request, "/login"));
   }
@@ -51,5 +61,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/retailer/:path*"],
+  matcher: ["/admin/:path*", "/retailer/:path*", "/catalogue/:path*"],
 };

@@ -30,7 +30,7 @@ export default async function LoginLayout({
     }
 
     if (status === "APPROVED") {
-      redirect("/retailer/catalogue");
+      redirect("/catalogue");
     }
 
     // Only pending/non-approved/non-deactivated retailers

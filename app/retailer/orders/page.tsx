@@ -124,7 +124,7 @@ export default function RetailerOrdersPage() {
             </div>
 
             <Link
-              href="/retailer/catalogue"
+              href="/catalogue"
               className="px-4 py-2 bg-[#831843] text-white text-xs font-bold rounded-xl shadow hover:bg-rose-900 transition flex items-center gap-1.5 self-start sm:self-center"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
@@ -263,7 +263,7 @@ export default function RetailerOrdersPage() {
               <h3 className="font-serif text-lg font-bold text-stone-800">No order enquiries found</h3>
               <p className="text-xs text-stone-500">Create your first wholesale kurti order enquiry from our catalogue.</p>
               <Link
-                href="/retailer/catalogue"
+                href="/catalogue"
                 className="px-5 py-2.5 bg-[#831843] text-white text-xs font-bold rounded-xl inline-block"
               >
                 Browse Catalogue

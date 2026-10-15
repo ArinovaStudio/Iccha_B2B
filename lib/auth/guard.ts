@@ -70,6 +70,17 @@ export async function requireRetailer(request: NextRequest) {
 
   return { user, retailerProfile: user.retailerProfile };
 }
+// Read-only catalogue browsing: approved retailers, plus staff and vendors.
+export async function requireCatalogueViewer(request: NextRequest) {
+  const retailer = await requireRetailer(request);
+  if (!("error" in retailer)) return retailer;
+
+  const staffOrVendor = await requireStaffOrVendor(request);
+  if (!("error" in staffOrVendor)) return staffOrVendor;
+
+  // Nobody matched: keep the retailer error (401 vs "not approved").
+  return retailer;
+}
 export async function requireStaffOrVendor(request: NextRequest) {
   const staff = await requireStaff(request);
   if (!("error" in staff)) return staff;

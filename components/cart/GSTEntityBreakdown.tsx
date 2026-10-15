@@ -51,7 +51,7 @@ export default function GSTEntityBreakdown({ summaries, isEditable = true }: GST
         <h4 className="font-semibold text-stone-700">Your Wholesale Cart is Empty</h4>
         <p className="text-xs text-stone-500 mt-1">Browse our wholesale kurti catalogue to add sets.</p>
         <Link
-          href="/retailer/catalogue"
+          href="/catalogue"
           className="inline-block mt-4 px-4 py-2 bg-[#831843] text-white text-xs font-semibold rounded-lg shadow"
         >
           Explore Catalogue

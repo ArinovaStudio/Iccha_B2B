@@ -1,4 +1,5 @@
 'use client';
+import { useCatalogueViewer } from '@/lib/context/CatalogueViewerContext';
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -39,6 +40,7 @@ interface RetailerProductCardProps {
  * bottom edge with a gradient blend so the two read as a single card.
  */
 export default function RetailerProductCard({ product, cartItem, onCartChanged }: RetailerProductCardProps) {
+  const { canOrder } = useCatalogueViewer();
   const minOrderSets = Math.max(1, product.minOrderSets || 1);
   const [setsToAdd, setSetsToAdd] = useState(minOrderSets);
   const [justAdded, setJustAdded] = useState(false);
@@ -72,7 +74,7 @@ export default function RetailerProductCard({ product, cartItem, onCartChanged }
     }
   };
   const primaryImageUrl = product.media?.[0]?.mediaAsset?.publicUrl;
-  const detailHref = `/retailer/catalogue/${product.slug}`;
+  const detailHref = `/catalogue/${product.slug}`;
   const setLabel = `${setsToAdd} Set${setsToAdd > 1 ? 's' : ''}`;
   const glassPill =
     'whitespace-nowrap rounded-full border border-white/15 bg-[#18140D]/45 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md';
@@ -171,6 +173,7 @@ export default function RetailerProductCard({ product, cartItem, onCartChanged }
             </p>
           )}
           {/* Actions */}
+          {canOrder && (
           <div className="mt-auto flex flex-wrap items-center gap-2 pt-2.5">
             <div className="flex h-9 shrink-0 items-center rounded-full border border-white/25 px-1">
               <button
@@ -218,6 +221,7 @@ export default function RetailerProductCard({ product, cartItem, onCartChanged }
               </span>
             </button>
           </div>
+          )}
         </div>
       </div>
     </article>

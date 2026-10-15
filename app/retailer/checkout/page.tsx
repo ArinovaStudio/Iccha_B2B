@@ -122,7 +122,7 @@ export default function RetailerCheckoutPage() {
   const handleSubmitOrderEnquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.items.length === 0) {
-      router.push('/retailer/catalogue');
+      router.push('/catalogue');
       return;
     }
     const normalizedShippingAddress = normalizeAddress(shippingAddress);
@@ -183,7 +183,7 @@ export default function RetailerCheckoutPage() {
           <ShoppingBag className="w-12 h-12 text-stone-400 mx-auto" />
           <h2 className="font-serif text-xl font-bold text-stone-900">Your Cart is Empty</h2>
           <p className="text-xs text-stone-500">Please select wholesale sets before proceeding to checkout.</p>
-          <Link href="/retailer/catalogue" className="px-5 py-2.5 bg-[#831843] text-white text-xs font-bold rounded-xl inline-block">
+          <Link href="/catalogue" className="px-5 py-2.5 bg-[#831843] text-white text-xs font-bold rounded-xl inline-block">
             Explore Catalogue
           </Link>
         </main>

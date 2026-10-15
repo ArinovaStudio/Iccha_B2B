@@ -280,7 +280,7 @@ export default function RetailerCartPage() {
                 Explore our ready-to-dispatch 2-piece and 3-piece kurti catalogue to assemble wholesale sets.
               </p>
               <Link
-                href="/retailer/catalogue"
+                href="/catalogue"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#831843] to-[#9a3412] text-white text-xs font-bold rounded-xl shadow-lg transition"
               >
                 <span>Browse Wholesale Catalogue</span>

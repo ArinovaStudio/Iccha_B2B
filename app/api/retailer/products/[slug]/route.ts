@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireRetailer } from "@/lib/auth/guard";
+import { requireCatalogueViewer } from "@/lib/auth/guard";
 import { parseColors } from "@/lib/product-colors";
 
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const guard = await requireRetailer(request);
+    const guard = await requireCatalogueViewer(request);
     if ("error" in guard) {
       return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
     }

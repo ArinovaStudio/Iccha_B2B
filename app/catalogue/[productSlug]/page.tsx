@@ -1,4 +1,5 @@
 'use client';
+import { useCatalogueViewer } from '@/lib/context/CatalogueViewerContext';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -41,6 +42,7 @@ export default function RetailerProductDetailPage() {
   const params = useParams();
   const productSlug = params?.productSlug as string;
   const { addToCart, cart, openSellerModal } = useApp();
+  const { canOrder } = useCatalogueViewer();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -110,7 +112,7 @@ export default function RetailerProductDetailPage() {
               The requested kurti design is no longer in active production.
             </p>
             <Link
-              href="/retailer/catalogue"
+              href="/catalogue"
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#831843] text-white text-xs font-semibold rounded-xl hover:bg-rose-900 transition"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -175,7 +177,7 @@ export default function RetailerProductDetailPage() {
             </Link>
             <span>/</span>
             <Link
-              href="/retailer/catalogue"
+              href="/catalogue"
               className="hover:text-stone-900 transition"
             >
               Catalogue
@@ -389,6 +391,7 @@ export default function RetailerProductDetailPage() {
                     Size selection is not required for this category.
                   </div>
                 )}
+                {canOrder && (<>
                 {/* =====================================================
                     CART CONTROLS
                 \===================================================== */}
@@ -602,7 +605,9 @@ export default function RetailerProductDetailPage() {
                     </div>
                   )}
                 </div>)}
+                </>)}
                 {/* Live Sample */}
+                {canOrder && (
                 <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-600">
                   <span>
                     Want to see embroidery quality on video?
@@ -616,6 +621,7 @@ export default function RetailerProductDetailPage() {
                     Request Live Sample Call
                   </button>
                 </div>
+                )}
               </div>
               {/* =======================================================
                   TECHNICAL SPECIFICATIONS

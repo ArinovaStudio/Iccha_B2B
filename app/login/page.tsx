@@ -99,7 +99,7 @@ export default function LoginPage() {
       } else if (result.data.role === 'VENDOR') {
         router.push('/admin/products'); // vendor's own product management page, not yet built
       } else {
-        router.push('/retailer/catalogue');
+        router.push('/catalogue');
       }
     } catch (err) {
       console.error(err);

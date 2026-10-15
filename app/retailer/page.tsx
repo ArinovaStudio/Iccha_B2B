@@ -102,7 +102,7 @@ export default function RetailerDashboardPage() {
 
               <div className="flex flex-wrap items-center gap-3">
                 <Link
-                  href="/retailer/catalogue"
+                  href="/catalogue"
                   className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-stone-950 font-bold text-xs shadow-lg transition flex items-center gap-2"
                 >
                   <ShoppingBag className="w-4 h-4" />
@@ -180,7 +180,7 @@ export default function RetailerDashboardPage() {
           {/* Quick Action Navigation */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Link
-              href="/retailer/catalogue"
+              href="/catalogue"
               className="p-6 bg-white rounded-3xl border border-stone-200 hover:border-rose-300 hover:shadow-lg transition space-y-3 group"
             >
               <div className="w-10 h-10 rounded-xl bg-rose-50 text-[#831843] flex items-center justify-center">
@@ -236,7 +236,7 @@ export default function RetailerDashboardPage() {
               <h3 className="font-serif text-lg font-bold text-stone-900">
                 Wholesale Product Categories
               </h3>
-              <Link href="/retailer/catalogue" className="text-xs font-bold text-[#831843] hover:underline">
+              <Link href="/catalogue" className="text-xs font-bold text-[#831843] hover:underline">
                 View All Categories &rarr;
               </Link>
             </div>
@@ -250,7 +250,7 @@ export default function RetailerDashboardPage() {
                 {categories.map((cat) => (
                   <Link
                     key={cat.id}
-                    href={`/retailer/catalogue?category=${cat.id}`}
+                    href={`/catalogue?category=${cat.id}`}
                     className="p-2.5 rounded-xl bg-stone-50 hover:bg-rose-50 border border-stone-200/80 hover:border-rose-300 text-center transition group"
                   >
                     <div className="relative aspect-square w-full rounded-lg overflow-hidden mb-1.5 bg-stone-200">

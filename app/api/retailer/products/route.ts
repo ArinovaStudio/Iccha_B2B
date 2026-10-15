@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireRetailer } from "@/lib/auth/guard";
+import { requireCatalogueViewer } from "@/lib/auth/guard";
 
 const PAGE_SIZE = 9;
 
 export async function GET(request: NextRequest) {
   try {
-    const guard = await requireRetailer(request);
+    const guard = await requireCatalogueViewer(request);
     if ("error" in guard) {
       return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
     }

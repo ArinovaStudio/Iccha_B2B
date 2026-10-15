@@ -76,7 +76,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
 
   const pathname = usePathname();
-  const inRetailerArea = pathname?.startsWith('/retailer') ?? false;
+  const inRetailerArea =
+    (pathname?.startsWith('/retailer') ?? false) || (pathname?.startsWith('/catalogue') ?? false);
 
   const [cart, setCart] = useState<Cart>(EMPTY_CART);
   // Bumped on every cart write so a slow, older response can never overwrite newer state.
@@ -164,7 +165,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // AppProvider lives in the root layout, so it mounts ONCE and survives client-side
-  // navigation (login -> /retailer/catalogue). Fetching only on mount meant the cart was
+  // navigation (login -> /catalogue). Fetching only on mount meant the cart was
   // requested while logged out (401 -> empty) and never re-fetched after login.
   // Instead: (re)load whenever we enter the retailer area, and clear when we leave it
   // (logout), so one user's cart can't linger for the next login.

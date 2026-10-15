@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useApp } from '@/lib/context/AppContext';
+import { useCatalogueViewer } from '@/lib/context/CatalogueViewerContext';
 
 interface NavItem {
   label: string;
@@ -35,7 +36,7 @@ interface Account {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Catalogue', href: '/retailer/catalogue', icon: Layers },
+  { label: 'Catalogue', href: '/catalogue', icon: Layers },
   { label: 'Categories', href: '/categories', icon: Package },
   { label: 'Orders', href: '/retailer/orders', icon: FileCheck2 },
   { label: 'Sample Calls', href: '/retailer/sample-call-requests', icon: PhoneCall },
@@ -72,6 +73,17 @@ export default function RetailerHeader() {
   const router = useRouter();
 
   const { cart, setRole, setCurrentRetailer, addToast } = useApp();
+  const { role: viewerRole, canOrder } = useCatalogueViewer();
+
+  // Admins/vendors browse the catalogue read-only: no cart, orders or retailer account pages.
+  const panelLabel = viewerRole === 'VENDOR' ? 'Vendor Panel' : 'Admin Panel';
+  const visibleNavItems = canOrder
+    ? navItems
+    : navItems.filter((i) => i.href === '/catalogue' || i.href === '/categories');
+  const visibleAccountLinks: NavItem[] = canOrder
+    ? accountLinks
+    : [{ label: panelLabel, href: '/admin', icon: LayoutDashboard }];
+  const roleBadge = canOrder ? 'Approved Retailer' : viewerRole === 'VENDOR' ? 'Vendor' : 'Admin';
 
   // Real logged-in retailer, from the session (not the demo/mock context)
   const [account, setAccount] = useState<Account | null>(null);
@@ -88,7 +100,7 @@ export default function RetailerHeader() {
       .then((json) => {
         if (cancelled || !json.success) return;
         setAccount({
-          businessName: json.data.retailerBusinessName ?? null,
+          businessName: json.data.retailerBusinessName ?? json.data.vendorBusinessName ?? null,
           name: json.data.name ?? null,
           email: json.data.email ?? null,
           gstin: json.data.retailerGstin ?? null,
@@ -147,7 +159,7 @@ export default function RetailerHeader() {
     };
   }, [mobileNavOpen]);
 
-  const displayName = account?.businessName || account?.name || 'Retailer Account';
+  const displayName = account?.businessName || account?.name || (canOrder ? 'Retailer Account' : 'Account');
   const initial = (account?.businessName || account?.name || 'R').charAt(0).toUpperCase();
   const cartCount = cart?.items?.length || 0;
   const cartActive = pathname.startsWith('/retailer/cart');
@@ -221,7 +233,7 @@ export default function RetailerHeader() {
         <div className="mx-auto grid h-[68px] max-w-[1400px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:px-8">
           {/* LOGO */}
           <Link
-            href="/retailer/catalogue"
+            href="/catalogue"
             aria-label="Iccha - The Women's Label"
             className={`flex shrink-0 items-center justify-self-start rounded-sm ${focusRing}`}
           >
@@ -237,7 +249,7 @@ export default function RetailerHeader() {
             aria-label="Main"
             className="hidden items-center gap-1 justify-self-center rounded-full border border-white/[0.07] bg-white/[0.02] p-1 lg:flex"
           >
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
 
@@ -267,6 +279,8 @@ export default function RetailerHeader() {
 
           {/* RIGHT ACTIONS */}
           <div className="col-start-3 flex items-center gap-2 justify-self-end">
+            {canOrder && (
+              <>
             {/* CART */}
             <Link
               href="/retailer/cart"
@@ -290,7 +304,9 @@ export default function RetailerHeader() {
               </span>
             </Link>
 
-            <div className="mx-1 hidden h-7 w-px bg-white/[0.08] sm:block" />
+                <div className="mx-1 hidden h-7 w-px bg-white/[0.08] sm:block" />
+              </>
+            )}
 
             {/* PROFILE */}
             <div className="relative" ref={dropdownRef}>
@@ -312,7 +328,7 @@ export default function RetailerHeader() {
                     {displayName}
                   </p>
                   <p className="mt-0.5 text-[8px] uppercase tracking-[0.12em] text-emerald-400">
-                    Approved Retailer
+                    {roleBadge}
                   </p>
                 </div>
 
@@ -345,7 +361,7 @@ export default function RetailerHeader() {
 
                         <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-2 py-0.5 text-[8px] uppercase tracking-[0.13em] text-emerald-400">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                          Approved Retailer
+                          {roleBadge}
                         </div>
                       </div>
                     </div>
@@ -353,7 +369,7 @@ export default function RetailerHeader() {
 
                   {/* links */}
                   <div className="p-2">
-                    {accountLinks.map(({ href, label, icon: Icon }) => (
+                    {visibleAccountLinks.map(({ href, label, icon: Icon }) => (
                       <Link
                         key={href}
                         href={href}
@@ -419,7 +435,7 @@ export default function RetailerHeader() {
 
             {/* nav items */}
             <div className="grid grid-cols-2 gap-2">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
 
@@ -444,6 +460,7 @@ export default function RetailerHeader() {
             </div>
 
             {/* cart */}
+            {canOrder && (
             <Link
               href="/retailer/cart"
               className={`mt-2 flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${focusRing} ${
@@ -462,15 +479,16 @@ export default function RetailerHeader() {
                 </span>
               )}
             </Link>
+            )}
 
             {/* account links */}
             <div className="mt-4 border-t border-white/[0.07] pt-4">
               <p className="mb-2 px-1 text-[8px] uppercase tracking-[0.2em] text-stone-600">
-                Account
+                {canOrder ? 'Account' : 'Panel'}
               </p>
 
               <div className="space-y-1">
-                {accountLinks.map(({ href, label, icon: Icon }) => (
+                {visibleAccountLinks.map(({ href, label, icon: Icon }) => (
                   <Link
                     key={href}
                     href={href}
