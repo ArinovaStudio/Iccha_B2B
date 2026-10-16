@@ -289,6 +289,41 @@ export default function GSTEntityBreakdown({ summaries, isEditable = true }: GST
               </div>
             </div> */}
 
+            {/* Seller-wise total */}
+            <div className="bg-stone-50/80 p-4 border-t border-stone-200 space-y-1.5 text-xs">
+              <div className="flex justify-between text-stone-500">
+                <span>Taxable value ({group.totalSets} sets)</span>
+                <span className="font-mono text-stone-700">₹{group.subtotal.toLocaleString('en-IN')}</span>
+              </div>
+
+              {group.cgst > 0 || group.sgst > 0 ? (
+                <>
+                  <div className="flex justify-between text-stone-500">
+                    <span>CGST</span>
+                    <span className="font-mono text-stone-700">₹{group.cgst.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-stone-500">
+                    <span>SGST</span>
+                    <span className="font-mono text-stone-700">₹{group.sgst.toLocaleString('en-IN')}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-stone-500">
+                  <span>IGST</span>
+                  <span className="font-mono text-stone-700">₹{group.igst.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              <div className="flex items-baseline justify-between border-t border-stone-300 pt-2">
+                <span className="font-bold text-stone-900">
+                  Total for {entity.tradeName || entity.legalName}
+                </span>
+                <span className="font-mono text-base font-bold text-[#831843]">
+                  ₹{group.total.toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
           </div>
         );
       })}

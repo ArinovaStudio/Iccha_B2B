@@ -1,4 +1,3 @@
-
 "use client";
 
 import axios from "axios";
@@ -8,6 +7,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import PublicProductCard from "@/components/product/PublicProductCard";
 import VendorRail, { RailVendor } from "@/components/vendor/VendorRail";
 import { Product } from "@/lib/types";
+import InstagramBanner from "@/components/hero/InstagramBanner";
 
 const BATCH_SIZE = 6;
 
@@ -163,12 +163,9 @@ export default function HomeElements() {
     return () => observer.disconnect();
   }, [nextCursor, initialLoading, loadMoreVendors]);
 
-  // Route the homepage CTA according to the authenticated user's role.
-  
-const destination = !isLoggedIn ? "/register" : "/catalogue";
-
-const ctaLabel = isLoggedIn ? "View All" : "Apply for Access";
-
+  // Route the homepage CTA according to the authenticated user's state.
+  const destination = !isLoggedIn ? "/register" : "/catalogue";
+  const ctaLabel = isLoggedIn ? "View All" : "Apply for Access";
 
   function renderProductRow(
     title: string,
@@ -229,12 +226,18 @@ const ctaLabel = isLoggedIn ? "View All" : "Apply for Access";
 
           {featuredVendors.length > 0 && (
             <div className="reveal">
-              <VendorRail vendors={featuredVendors} />
+              <VendorRail
+                vendors={featuredVendors}
+                isLoggedIn={isLoggedIn}
+              />
             </div>
           )}
         </div>
       </section>
 
+      {initialLoading ? null : !isLoggedIn ? (
+        <InstagramBanner />
+      ) : (
       <section className="border-t border-neutral-200 bg-neutral-50 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
@@ -326,6 +329,7 @@ const ctaLabel = isLoggedIn ? "View All" : "Apply for Access";
           )}
         </div>
       </section>
+      )}
     </>
   );
 }

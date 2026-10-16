@@ -64,12 +64,7 @@ export default function PublicProductCard({ product }: PublicProductCardProps) {
     alt: product.name,
   };
 
-  const typeLabel =
-    product.clothingType === '3_piece'
-      ? '3-Pc Set'
-      : product.clothingType === '2_piece'
-        ? '2-Pc Set'
-        : 'Kurti';
+  const categoryLabel = product.categoryName?.trim();
 
   const glassPill =
     'whitespace-nowrap rounded-full border border-white/15 bg-[#18140D]/45 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-md';
@@ -92,20 +87,22 @@ export default function PublicProductCard({ product }: PublicProductCardProps) {
           className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent"
         />
 
-        {/* Top row */}
+        {/* Top row: category and design number */}
         <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
-          <span className={`shrink-0 ${glassPill}`}>{typeLabel}</span>
-          <span className={`min-w-0 truncate tabular-nums ${glassPill}`}>#{product.designNumber}</span>
+          {categoryLabel && (
+            <span className={`min-w-0 truncate ${glassPill}`} title={categoryLabel}>
+              {categoryLabel}
+            </span>
+          )}
+          <span className={`ml-auto shrink-0 tabular-nums ${glassPill}`}>
+            #{product.designNumber}
+          </span>
         </div>
 
         {/* Floating info panel */}
         <div className="absolute inset-x-2 bottom-2 rounded-[18px] border border-white/15 bg-[#18140D]/60 p-3.5 text-white backdrop-blur-xl backdrop-saturate-150">
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="min-w-0 truncate font-medium text-[#D9AE68]">{product.categoryName}</span>
-          </div>
-
           {/* min-h keeps every panel the same height whether the name runs 1 or 2 lines */}
-          <h3 className="mt-1 line-clamp-2 min-h-[2.75em] font-serif text-[17px] leading-snug">
+          <h3 className="line-clamp-2 min-h-[2.75em] font-serif text-[17px] leading-snug">
             {product.name}
           </h3>
 

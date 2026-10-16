@@ -92,7 +92,7 @@ model Warehouse {
 
 model User {
   id           String    @id @default(uuid())
-  email        String    @unique
+  email        String?    @unique
   passwordHash String
   name         String
   mobile       String?
@@ -227,7 +227,7 @@ model KYCApplication {
   businessName      String
   applicantName     String
   mobile            String
-  email             String
+  email             String?
   status            RetailerAccountStatus @default(APPLICATION_RECEIVED)
   rejectionReason   String?
   infoRequestNotes  String?

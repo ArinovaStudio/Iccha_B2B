@@ -164,3 +164,11 @@ button:focus-visible,
     display: none !important;
   }
 }
+@keyframes ig-float {
+  0%, 100% { transform: translateY(0) rotate(8deg); }
+  50%      { transform: translateY(-16px) rotate(-6deg); }
+}
+.animate-ig-float { animation: ig-float 4.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-ig-float { animation: none; }
+}

@@ -217,9 +217,33 @@ export default function RetailerCartPage() {
                       </span>
                     </div>
 
+                    {/* Seller-wise payable amounts */}
+                    {cart.entitySummaries.length > 1 && (
+                      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3.5 space-y-2.5">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                          Payable seller-wise
+                        </span>
+                        {cart.entitySummaries.map((s) => (
+                          <div key={s.entityId} className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <span className="block truncate text-[12px] font-semibold text-stone-800">
+                                {s.entity?.tradeName || s.entity?.legalName || 'Seller'}
+                              </span>
+                              <span className="block text-[10px] text-stone-400">
+                                ₹{s.subtotal.toLocaleString('en-IN')} + ₹{s.totalGst.toLocaleString('en-IN')} GST
+                              </span>
+                            </div>
+                            <span className="shrink-0 font-mono text-[13px] font-bold text-stone-900">
+                              ₹{s.total.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Master Grand Total */}
                     <div className="border-t-2 border-stone-900 pt-3 flex justify-between items-baseline text-stone-900">
-                      <span className="font-bold text-sm">Grand Order estimate Total:</span>
+                      <span className="font-bold text-sm">Combined Total (all sellers):</span>
                       <span className="text-xl font-bold font-mono text-[#831843]">
                         ₹{cart.estimatedTotal.toLocaleString('en-IN')}
                       </span>

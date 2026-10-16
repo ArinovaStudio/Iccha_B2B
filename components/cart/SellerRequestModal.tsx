@@ -27,7 +27,9 @@ export default function SellerRequestModal() {
   const [customerName, setCustomerName] = useState(currentRetailer?.applicantName || 'Ananya Rathore');
   const [businessName, setBusinessName] = useState(currentRetailer?.businessName || 'Ananya Designer Boutiques');
   const [mobile, setMobile] = useState(currentRetailer?.mobile || '+91 94140 77665');
-  const [whatsapp, setWhatsapp] = useState(currentRetailer?.whatsapp || '+91 94140 77665');
+  const [whatsapp, setWhatsapp] = useState(
+  currentRetailer?.whatsapp || currentRetailer?.mobile || ''
+);
   const [preferredDate, setPreferredDate] = useState('2026-09-03');
   const [preferredTime, setPreferredTime] = useState('2:00 PM - 4:00 PM IST');
   const [remarks, setRemarks] = useState('We would like to inspect the fabric and stitching quality over video call before placing our bulk festive festival order.');
