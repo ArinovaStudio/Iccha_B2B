@@ -57,7 +57,7 @@ export default function PublicHeader() {
 
   const navLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Categories', href: '/categories' },
+    ...(session ? [{ label: 'Categories', href: '/categories' }] : []),
     { label: 'About IcchaStore', href: '/about' },
     { label: 'Contact', href: '/contact' }
   ];

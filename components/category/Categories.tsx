@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  ArrowRight, 
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import PublicHeader from '@/components/layout/PublicHeader';
 import Footer from '@/components/layout/Footer';
 import axios from 'axios';
@@ -27,92 +24,62 @@ export default function CategoriesPage() {
     <div className="flex flex-col min-h-screen">
       <PublicHeader />
 
-      <main className="flex-1 py-12 bg-[#faf8f5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 bg-[#f7f7f2] py-8 sm:py-10">
+        <div className="w-full px-4 sm:px-8 lg:px-[5%] 2xl:px-[10%]">
           
           {/* Breadcrumbs */}
-          <nav className="text-xs text-stone-500 mb-6 flex items-center gap-2">
+          <nav className="text-xs text-stone-500 mb-5 flex items-center gap-2">
             <Link href="/" className="hover:text-stone-900">Home</Link>
             <span>/</span>
             <span className="text-stone-900 font-semibold">Categories</span>
           </nav>
 
           {/* Header Banner */}
-          <div className="bg-white rounded-3xl p-8 sm:p-10 border border-[#e7dfd5] shadow-sm mb-10">
-            <div className="max-w-3xl space-y-3">
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 block">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-[#e5e3dc] shadow-sm mb-6 sm:mb-8">
+            <div className="max-w-3xl space-y-2">
+              <span className="text-[10px] font-semibold tracking-[0.16em] text-[#9b7b3e] block">
                 Wholesale Product Lines
               </span>
-              <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
+              <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-stone-900 normal-case">
                 {categories.length} Categories
               </h1>
-              <p className="text-sm text-stone-600 leading-relaxed">
+              <p className="text-sm text-stone-600 leading-relaxed normal-case">
                 Browse our complete wholesale directory of stitched 2-piece and 3-piece kurti sets. All categories are manufactured in-house across our Surat and Jaipur production facilities.
               </p>
               
             </div>
           </div>
 
-          {/* 20 Categories Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="group bg-white rounded-2xl border border-[#e7dfd5] hover:border-rose-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
+                className="group relative bg-white rounded-xl border border-[#e5e3dc] hover:border-[#c5b487] hover:shadow-md transition-all duration-200 flex flex-col min-h-[174px]"
               >
-                {/* Visual Thumbnail */}
-                <div className="relative aspect-[4/5] w-full overflow-hidden bg-stone-100">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover object-top group-hover:scale-105 transition-transform duration-700"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent" />
-
-                  {/* Clothing Type Badge */}
-                  <div className="absolute top-3 right-3 bg-white/90 text-stone-900 text-[10px] font-bold px-2 py-0.5 rounded shadow">
-                    {category.type === '3_piece' ? '3-Pc Set' : category.type === '2_piece' ? '2-Pc Set' : 'Kurti Lot'}
-                  </div>
-                    <h3 className="absolute bottom-3 left-3 text-white text-xl font-serif line-clamp-2 font-bold leading-tight mt-0.5">
+                <span className="absolute right-3 top-3 rounded border border-stone-200 bg-[#fafaf7] px-1.5 py-0.5 text-[9px] font-semibold text-stone-600">
+                  {category.type === '3_piece' ? '3-Pc Set' : category.type === '2_piece' ? '2-Pc Set' : 'Kurti Lot'}
+                </span>
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <div>
+                    <h2 className="pr-10 font-serif text-[21px] leading-tight font-medium text-stone-900 normal-case">
                       {category.name}
-                    </h3>
-                </div>
-
-                {/* Category Body */}
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                  <div className="space-y-2">
-                    <p className="text-xs text-stone-600 leading-relaxed line-clamp-2">
-                      {category.description}
+                    </h2>
+                    <p className="mt-2 w-full text-[11px] leading-relaxed text-stone-600 normal-case line-clamp-3">
+                      {category.description || `Wholesale ${category.name} manufactured in-house.`}
                     </p>
-                                <div className="text-white">
-                    <span className="text-[10px] font-bold uppercase text-amber-600 tracking-wider block">
-                      {category.itemCount}+ Available Designs
+                  </div>
+                  <div className="mt-2">
+                    <span className="inline-flex rounded-full bg-[#f7f3e8] px-2 py-1 text-[9px] font-medium text-[#8a713b] normal-case">
+                      {category.itemCount}+ available designs
                     </span>
                   </div>
-                    {/* Subcategory Pills */}
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {category.subcategories.length > 0 && category.subcategories.slice(0, 3).map((sub: string, idx: number) => (
-                        <span
-                          key={idx}
-                          className="text-[10px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded font-medium"
-                        >
-                          {sub}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Action Link */}
-                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+                  <div className="mt-auto pt-3 border-t border-stone-100 flex items-center">
                     <Link
                       href={`/categories/${category.slug}`}
-                      className="text-xs font-bold text-amber-800 group-hover:text-rose-700 flex items-center gap-1 transition"
+                      className="inline-flex items-center gap-1 rounded-full border border-[#e5dcc6] px-2.5 py-1 text-[9px] font-medium text-[#6d5427] transition hover:border-[#b99a58] hover:bg-[#faf7ef] group-hover:text-stone-900"
                     >
                       <span>Representative Catalogue</span>
-                      <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition" />
+                      <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </div>
                 </div>

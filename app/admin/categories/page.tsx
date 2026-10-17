@@ -7,14 +7,12 @@ import {
   Edit3,
   Trash2,
   Save,
-  FolderTree,
   Building2,
   CheckCircle2,
   Loader2,
 } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { useApp } from '@/lib/context/AppContext';
-import Image from 'next/image';
 
 interface Category {
   id: string;
@@ -23,7 +21,6 @@ interface Category {
   description?: string | null;
   requiresSize: boolean;
   vendorId?: string | null;
-  mediaAsset?: { publicUrl: string } | null;
   gst?: string | null;
   _count?: { products: number };
 }
@@ -46,8 +43,6 @@ export default function AdminCategoriesPage() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -234,41 +229,12 @@ export default function AdminCategoriesPage() {
     }
     const slug = formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-    let mediaAssetId: string | undefined;
-
-    if (imageFile) {
-      setUploading(true);
-      try {
-        const uploadForm = new FormData();
-        uploadForm.append('file', imageFile);
-        uploadForm.append('mediaType', 'CATEGORY_BANNER');
-        const uploadRes = await fetch('/api/admin/media/upload', {
-          method: 'POST',
-          body: uploadForm,
-        });
-        const uploadJson = await uploadRes.json();
-        if (uploadJson.success) {
-          mediaAssetId = uploadJson.data.id;
-        } else {
-          addToast({ type: 'error', title: 'Image upload failed', message: uploadJson.error?.message || 'Try again.' });
-          setUploading(false);
-          return;
-        }
-      } catch {
-        addToast({ type: 'error', title: 'Network error', message: 'Could not upload image.' });
-        setUploading(false);
-        return;
-      }
-      setUploading(false);
-    }
-
     const payload = {
       name: formData.name,
       slug,
       description: formData.description,
       requiresSize: formData.requiresSize,
       gst: formData.gst || undefined,
-      ...(mediaAssetId ? { mediaAssetId } : {}),
       ...(isStaff
         ? { vendorId: selectedOwner === "admin" ? null : selectedOwner }
         : {}),
@@ -303,7 +269,6 @@ export default function AdminCategoriesPage() {
         }
       }
 
-      setImageFile(null);
       setIsModalOpen(false);
       loadCategories();
     } catch {
@@ -530,39 +495,23 @@ export default function AdminCategoriesPage() {
             {filtered.map((cat) => (
               <div
                 key={cat.id}
-                className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                className="group bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#c5b487] hover:shadow-md transition flex min-h-[174px] flex-col justify-between"
               >
-                <div>
-                  <div className="relative aspect-video w-full bg-stone-100">
-                    {cat.mediaAsset?.publicUrl ? (
-                      <Image
-                        src={cat.mediaAsset.publicUrl}
-                        alt={cat.name}
-                        fill
-                        className="object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FolderTree className="w-8 h-8 text-stone-300" />
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 bg-stone-900/80 text-white font-mono text-[10px] px-2 py-0.5 rounded font-bold">
-                      {cat._count?.products ?? 0} Products
-                    </div>
-                    <div className={`absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded font-bold ${cat.requiresSize ? 'bg-amber-500 text-stone-900' : 'bg-stone-700/80 text-white'}`}>
-                      {cat.requiresSize ? 'SIZE REQUIRED' : 'NO SIZE'}
-                    </div>
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-serif text-xl font-medium leading-tight text-stone-900 normal-case">{cat.name}</h3>
+                    <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-semibold ${cat.requiresSize ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-stone-200 bg-stone-50 text-stone-600'}`}>
+                      {cat.requiresSize ? 'Size required' : 'No size'}
+                    </span>
                   </div>
-
-                  <div className="p-4 space-y-1">
-                    <h3 className="font-serif text-base font-bold text-stone-900 line-clamp-1">{cat.name}</h3>
-                    <p className="text-stone-500 line-clamp-2 text-[11px]">{cat.description || 'No description'}</p>
-                  </div>
+                  <p className="mt-2 w-full text-[11px] leading-relaxed text-stone-600 normal-case line-clamp-3">{cat.description || 'No description'}</p>
+                  <span className="mt-2 inline-flex w-fit rounded-full bg-[#f7f3e8] px-2 py-1 text-[9px] font-medium text-[#8a713b] normal-case">
+                    {cat._count?.products ?? 0} products
+                  </span>
                 </div>
 
-                <div className="p-4 pt-0 border-t border-stone-100 flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-stone-400">/{cat.slug}</span>
+                <div className="mx-5 sm:mx-6 border-t border-stone-100 py-3 flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate font-mono text-[10px] text-stone-400">/{cat.slug}</span>
                   <div className="flex gap-1">
                     <button
                       type="button"
@@ -710,16 +659,6 @@ export default function AdminCategoriesPage() {
                     placeholder="Enter GST % (0–100)" className="w-full mt-2 px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"/>
                 )}
               </div>
-              <div>
-                <label className="block font-bold text-stone-800 mb-1">Cover Image</label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  onChange={e => setImageFile(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-[11px]"
-                />
-              </div>
-
               <div className="flex items-center justify-between gap-3 p-3 bg-stone-50 border border-stone-200 rounded-xl">
                 <div>
                   <p className="font-bold text-stone-800">Size Required for Products</p>
@@ -746,11 +685,10 @@ export default function AdminCategoriesPage() {
               <div className="flex gap-2 pt-2 border-t border-stone-100">
                 <button
                   type="submit"
-                  disabled={uploading}
                   className="flex-1 py-2.5 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   <Save className="w-4 h-4" />
-                  {uploading ? 'Uploading image...' : 'Save Category'}
+                  Save Category
                 </button>
                 <button
                   type="button"
