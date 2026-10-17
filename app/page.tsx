@@ -3,9 +3,6 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Instagram,
-  Scissors,
-  Building2,
-  Lock,
 } from 'lucide-react';
 import PublicHeader from '@/components/layout/PublicHeader';
 import Footer from '@/components/layout/Footer';
@@ -13,6 +10,7 @@ import HeroSection from '@/components/hero/HeroSection';
 import RevealInit from '@/components/ui/RevealInit';
 //import Showcase from '@/components/hero/Showcase';
 import HomeElements from '@/components/hero/Main';
+import HomeFeaturesGrid from '@/components/home/HomeFeaturesGrid';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,63 +33,7 @@ export default async function HomePage() {
         <HeroSection />
         <HomeElements />
 
-        <section className="py-24 sm:py-32 bg-white border-t border-neutral-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="reveal font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-black tracking-tight leading-[1.05] max-w-3xl mb-16">
-              Built for margin, not just volume
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 border-t border-l border-neutral-200">
-              {[
-                {
-                  icon: Scissors,
-                  tier: 'border-t-black',
-                  title: 'Organized set lots',
-                  body:
-                    'Every design is packed in standard, market-tested size combinations — M-38, L-40, XL-42, XXL-44 — so shelves rotate without dead sizes.',
-                },
-                {
-                  icon: Building2,
-                  tier: 'border-t-neutral-500',
-                  title: 'Custom Piece of Fabric',
-                  body:
-                    'Discover a versatile range of fabrics tailored to your designs and business needs. Choose from different materials, textures, colours and prints to create distinctive collections that match your customers’ preferences.',
-                },
-                {
-                  icon: Lock,
-                  tier: 'border-t-neutral-300',
-                  title: 'Wholesale rates stay private',
-                  body:
-                    'Your retail customers never see our margins or supplier prices. Commercial access is gated behind verified KYC, every time.',
-                },
-              ].map((item, idx) => (
-                <div
-                  key={item.title}
-                  className={`reveal group border-r border-b border-neutral-200 border-t-2 ${item.tier} p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-50`}
-                  style={
-                    {
-                      '--reveal-delay': `${idx * 100}ms`,
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <item.icon
-                      className="w-5 h-5 text-black"
-                      strokeWidth={1.75}
-                    />
-                    <h3 className="font-serif text-xl font-medium text-black">
-                      {item.title}
-                    </h3>
-                  </div>
-
-                  <p className="text-[15px] text-neutral-500 leading-relaxed">
-                    {item.body}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <HomeFeaturesGrid />
 
         {/* 6. CRAFT, FACTORY VIDEO & REELS */}
         <section className="relative bg-black text-white overflow-hidden border-t border-white/10">

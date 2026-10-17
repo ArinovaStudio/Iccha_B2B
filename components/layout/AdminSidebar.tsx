@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   PhoneCall,
+  FileText,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -48,6 +49,9 @@ const COUNTS_REFRESH_MS = 30000;
 const STAFF_ONLY_LINKS: NavLink[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Hero Banners', href: '/admin/hero', icon: Sparkles },
+  { label: 'About Page', href: '/admin/content/about', icon: FileText },
+  { label: 'Contact Page', href: '/admin/content/contact', icon: PhoneCall },
+  { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
   { label: 'Retailers', href: '/admin/retailers', icon: Users },
   {
     label: 'Reactivation Requests',

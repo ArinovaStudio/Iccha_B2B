@@ -3,6 +3,7 @@
 import Footer from "@/components/layout/Footer";
 import PublicHeader from "@/components/layout/PublicHeader";
 import { useEffect, useRef, useState } from "react";
+import { AboutContent, defaultAbout } from "@/lib/site-content";
 
 
 function useReducedMotion() {
@@ -66,7 +67,7 @@ function RevealImage({
   className = "",
   delay = 0,
 }: {
-  src: string;
+    src: string;
   alt: string;
   className?: string;
   delay?: number;
@@ -235,7 +236,14 @@ const navLinks = [
 /* ------------------------------ page ----------------------------------- */
 
 export default function IcchaStoreAbout() {
+  const [content, setContent] = useState<AboutContent>(defaultAbout);
   const reduced = useReducedMotion();
+
+  useEffect(() => {
+    fetch("/api/public/site-content", { cache: "no-store" }).then((r) => r.json()).then((json) => {
+      if (json.success && json.data?.about) setContent({ ...defaultAbout, ...json.data.about });
+    }).catch(() => undefined);
+  }, []);
 
   const story = useInView<HTMLDivElement>();
   const numbers = useInView<HTMLDivElement>(0.4);
@@ -307,11 +315,11 @@ export default function IcchaStoreAbout() {
           <div>
             <span className="hero-rise-0 inline-flex items-center gap-2 rounded-full border border-[var(--ink)]/15 bg-[var(--card)] px-4 py-1.5 text-xs text-[var(--ink)]/80 shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-[linear-gradient(135deg,var(--turmeric),var(--thread))]" />
-              Trusted by 800+ retailers across 14 states
+              {content.heroBadge}
             </span>
 
             <h1 className="hero-rise-2 mt-6 [font-family:var(--font-display)] text-4xl sm:text-5xl leading-[1.1] text-[var(--ink)]">
-              Every shopkeeper&rsquo;s wish list starts on our shelves.
+              {content.heroTitle}
             </h1>
 
             <svg
@@ -333,22 +341,20 @@ export default function IcchaStoreAbout() {
             </svg>
 
             <p className="hero-rise-3 max-w-lg text-lg leading-relaxed text-[var(--charcoal)]/85">
-              We supply retailers with ready stock, fair minimums, and fast
-              turnaround — so your shop never has to explain an empty rack
-              to a customer.
+              {content.heroBody}
             </p>
 
             <div className="hero-rise-3 mt-9 flex flex-wrap gap-4">
-              <PrimaryButton href="#contact">Get the current catalog</PrimaryButton>
-              <SecondaryButton href="https://wa.me/910000000000">Chat on WhatsApp</SecondaryButton>
+              <PrimaryButton href={content.heroPrimaryUrl}>{content.heroPrimaryLabel}</PrimaryButton>
+              <SecondaryButton href={content.whatsappUrl}>{content.whatsappLabel}</SecondaryButton>
             </div>
           </div>
 
           <div className="relative">
             <div className="absolute -inset-3 -z-10 rounded-2xl bg-[linear-gradient(135deg,var(--turmeric),var(--thread))] opacity-30 blur-2xl" />
             <RevealImage
-              src="https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"
-              alt="Wholesale garment stock ready for dispatch — placeholder, swap for Iccha Store's own photo"
+              src={content.heroImage}
+              alt={content.heroImageAlt}
               className="h-72 w-full rounded-2xl object-cover shadow-xl sm:h-[40rem]"
               delay={0.15}
             />
@@ -359,8 +365,8 @@ export default function IcchaStoreAbout() {
               }}
             >
               <div className="h-1 w-8 rounded-full bg-[linear-gradient(90deg,var(--turmeric),var(--thread))]" />
-              <div className="mt-2 [font-family:var(--font-display)] text-2xl text-[var(--ink)]">48h</div>
-              <div className="text-xs text-[var(--ink)]/60">average dispatch</div>
+              <div className="mt-2 [font-family:var(--font-display)] text-2xl text-[var(--ink)]">{content.dispatchValue}</div>
+              <div className="text-xs text-[var(--ink)]/60">{content.dispatchLabel}</div>
             </div>
           </div>
         </div>
@@ -377,24 +383,18 @@ export default function IcchaStoreAbout() {
         >
           <div className="flex flex-col justify-center">
             <h2 className="[font-family:var(--font-display)] text-3xl text-[var(--ink)]">
-              A counter that grew into a floor.
+              {content.storyTitle}
             </h2>
             <p className="mt-5 leading-relaxed text-[var(--charcoal)]/85">
-              Iccha Store began as a single counter in the wholesale market,
-              stocking a handful of lines for a handful of shopkeepers. Word
-              travelled the way it does in this trade — through the people
-              who reorder. Today the same floor holds hundreds of styles
-              across menswear, womenswear, and kidswear, and the same rule
-              still applies: quote it straight, pack it right, and never
-              make a retailer wait on their own stock.
+              {content.storyBody}
             </p>
           </div>
 
           <div className="relative">
             <div className="absolute -inset-2 -z-10 rounded-2xl bg-[linear-gradient(135deg,rgba(217,142,43,0.35),rgba(162,59,59,0.35))] blur-xl" />
             <RevealImage
-              src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=600"
-              alt="Iccha Store's wholesale floor — placeholder, swap for a real photo of the showroom"
+              src={content.storyImage}
+              alt={content.storyImageAlt}
               className="h-72 w-full rounded-2xl object-cover shadow-lg sm:h-full"
             />
           </div>
@@ -405,14 +405,14 @@ export default function IcchaStoreAbout() {
       <section id="floor" className="relative">
         <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
           <h2 className="[font-family:var(--font-display)] text-3xl text-[var(--ink)]">
-            What&rsquo;s on the floor.
+            {content.categoriesTitle}
           </h2>
           <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
-            {categories.map((c, i) => (
+            {content.categories.map((c, i) => (
               <div key={c.label} className="group relative">
                 <div className="relative overflow-hidden rounded-2xl">
                   <RevealImage
-                    src={c.src}
+                    src={c.image}
                     alt={c.alt}
                     className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     delay={0.1 * i}
@@ -435,7 +435,7 @@ export default function IcchaStoreAbout() {
           ref={numbers.ref}
           className="relative mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 px-6 py-16 sm:grid-cols-4 sm:py-20"
         >
-          {stats.map((s, i) => (
+          {content.stats.map((s, i) => (
             <Stat key={i} {...s} active={numbers.inView} />
           ))}
         </div>
@@ -448,11 +448,11 @@ export default function IcchaStoreAbout() {
           className="mx-auto max-w-2xl px-6 py-20 sm:py-28"
         >
           <h2 className="[font-family:var(--font-display)] text-3xl text-[var(--ink)]">
-            How an order moves through the floor.
+            {content.stepsTitle}
           </h2>
 
           <ol className="mt-12 space-y-0">
-            {steps.map((step, i) => (
+            {content.steps.map((step, i) => (
               <li key={i} className="relative flex gap-6 pb-10 last:pb-0">
                 {i < steps.length - 1 && (
                   <span
@@ -485,11 +485,11 @@ export default function IcchaStoreAbout() {
       <section className="relative">
         <div ref={why.ref} className="mx-auto max-w-2xl px-6 py-20 sm:py-28">
           <h2 className="[font-family:var(--font-display)] text-3xl text-[var(--ink)]">
-            Why retailers keep coming back.
+          {content.reasonsTitle}
           </h2>
 
           <div className="mt-10">
-            {reasons.map((r, i) => (
+            {content.reasons.map((r, i) => (
               <div key={i} className="py-6">
                 <div
                   className="h-px bg-[linear-gradient(90deg,var(--turmeric),var(--thread))]"
@@ -515,26 +515,24 @@ export default function IcchaStoreAbout() {
         <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-20 sm:grid-cols-2 sm:py-28">
           <div className="flex flex-col items-start gap-6">
             <h2 className="[font-family:var(--font-display)] text-3xl text-[var(--ink)]">
-              Come see the floor for yourself.
+              {content.ctaTitle}
             </h2>
             <p className="max-w-md leading-relaxed text-[var(--charcoal)]/85">
-              Bring your size chart and your busiest week&rsquo;s numbers.
-              We&rsquo;ll show you what&rsquo;s moving and what fits your
-              shelf.
+              {content.ctaBody}
             </p>
             <div className="flex flex-wrap gap-4">
-              <PrimaryButton href="mailto:orders@icchastore.example">
-                Get the current catalog
+              <PrimaryButton href={`mailto:${content.catalogEmail}`}>
+                {content.heroPrimaryLabel}
               </PrimaryButton>
-              <SecondaryButton href="https://wa.me/910000000000">Chat on WhatsApp</SecondaryButton>
+              <SecondaryButton href={content.whatsappUrl}>{content.whatsappLabel}</SecondaryButton>
             </div>
           </div>
 
           <div className="relative">
             <div className="absolute -inset-2 -z-10 rounded-2xl bg-[linear-gradient(135deg,rgba(28,37,65,0.35),rgba(162,59,59,0.3))] blur-xl" />
             <RevealImage
-              src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600"
-              alt="Iccha Store showroom entrance — placeholder, swap for a real photo"
+              src={content.ctaImage}
+              alt={content.ctaImageAlt}
               className="h-64 w-full rounded-2xl object-cover shadow-lg sm:h-[30rem]"
             />
           </div>
@@ -545,7 +543,7 @@ export default function IcchaStoreAbout() {
 
       {/* -------------------- Floating WhatsApp CTA --------------------- */}
       <a
-        href="https://wa.me/910000000000"
+        href={content.whatsappUrl}
         className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--turmeric),var(--thread))] px-5 py-3 text-sm font-medium text-[var(--paper)] shadow-lg transition-transform duration-300 hover:-translate-y-0.5"
       >
         <span className="relative flex h-2.5 w-2.5">
@@ -553,7 +551,7 @@ export default function IcchaStoreAbout() {
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--paper)]" />
         </span>
         <WhatsAppIcon />
-        Chat with us
+        {content.whatsappLabel}
       </a>
     </main>
   );

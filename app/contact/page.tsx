@@ -4,6 +4,8 @@ import { useState } from "react";
 import axios from "axios";
 import Footer from "@/components/layout/Footer";
 import PublicHeader from "@/components/layout/PublicHeader";
+import { ContactContent, defaultContact } from "@/lib/site-content";
+import { useEffect } from "react";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -25,24 +27,6 @@ const initialForm: FormState = {
   message: "",
 };
 
-const faqs = [
-  {
-    q: "What's the minimum order quantity?",
-    a: "MOQ is fixed per style, usually a set per size-run rather than a flat number across the catalog. Your exact minimum is confirmed when you share your requirement.",
-  },
-  {
-    q: "Do I need a GST number to order?",
-    a: "Yes — we bill every order against a GST invoice, so a valid GSTIN is needed to place a wholesale order.",
-  },
-  {
-    q: "Can I see samples before a bulk order?",
-    a: "Yes, single-piece samples are available for most styles. Sample cost is adjusted against your bulk order once confirmed.",
-  },
-  {
-    q: "Which cities do you dispatch to?",
-    a: "We ship pan-India through your choice of transport. Average dispatch time is about 48 hours from order confirmation.",
-  },
-];
 
 /* ------------------------------- icons ---------------------------------- */
 
@@ -334,9 +318,16 @@ function Field({
 /* -------------------------------- page ----------------------------------- */
 
 export default function ContactSection() {
+  const [content, setContent] = useState<ContactContent>(defaultContact);
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState<Status>("idle");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  useEffect(() => {
+    fetch("/api/public/site-content", { cache: "no-store" }).then((r) => r.json()).then((json) => {
+      if (json.success && json.data?.contact) setContent({ ...defaultContact, ...json.data.contact });
+    }).catch(() => undefined);
+  }, []);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -362,7 +353,7 @@ export default function ContactSection() {
     const whatsappWindow = window.open("", "_blank");
 
     try {
-      const response = await axios.post("/api/contact", form);
+      const response = await axios.post("/api/contact", { ...form, whatsappNumber: content.whatsapp });
 
       const whatsappUrl = response.data?.whatsappUrl;
 
@@ -451,77 +442,78 @@ export default function ContactSection() {
         {/* ------------------------------ Left column ------------------------------ */}
 
         <div>
-          <p className="text-sm text-[var(--gold)]">Get in touch</p>
+          <p className="text-sm text-[var(--gold)]">{content.eyebrow}</p>
 
           <h2 className="mt-2 [font-family:var(--font-display)] text-3xl leading-tight text-[var(--ink)] sm:text-4xl">
-            Questions before you order? Start here.
+            {content.title}
           </h2>
 
           <p className="mt-4 max-w-md leading-relaxed text-[var(--charcoal)]/70">
-            Reach us directly, or check the answers retailers ask most before
-            placing their first order.
+            {content.intro}
           </p>
 
           <div className="mt-8">
             <InfoRow
               icon={<MapPinIcon />}
-              title="Visit the showroom"
+              title={content.showroomTitle}
             >
-              Iccha Store, Shop 14, Wholesale Cloth Market, Main Road
+              {content.address}
               <br />
 
               <a
-                href="#"
+                href={content.directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[var(--gold)] underline-offset-2 hover:underline"
               >
-                Get directions
+                {content.directionsLabel}
               </a>
             </InfoRow>
 
             <InfoRow
               icon={<PhoneIcon />}
-              title="Call or WhatsApp"
+              title={content.phoneTitle}
             >
               <a
-                href="tel:+919875576465"
+                href={`tel:${content.phone.replace(/[^+\d]/g, "")}`}
                 className="hover:text-[var(--ink)]"
               >
-                +91 98755 76465
+                {content.phone}
               </a>
 
               <br />
 
               <a
-                href="https://wa.me/919875576465"
+                href={`https://wa.me/${content.whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--gold)] underline-offset-2 hover:underline"
               >
-                Chat on WhatsApp
+                {content.whatsappLabel}
               </a>
             </InfoRow>
 
             <InfoRow
               icon={<ClockIcon />}
-              title="Showroom hours"
+              title={content.hoursTitle}
             >
-              Mon–Sat, 10:00 AM – 8:00 PM
+              {content.hours}
               <br />
-              Closed on Sundays and market holidays
+              {content.closed}
             </InfoRow>
           </div>
 
           <div className="mt-10">
             <h3 className="text-lg text-[var(--ink)]">
-              Frequently asked
+              {content.faqTitle}
             </h3>
 
             <div className="mt-1">
-              {faqs.map((f, i) => (
+              {content.faqs.map((f, i) => (
                 <FaqItem
-                  key={f.q}
-                  q={f.q}
-                  a={f.a}
+                  key={f.question}
+                  q={f.question}
+                  a={f.answer}
                   open={openFaq === i}
                   onToggle={() =>
                     setOpenFaq(openFaq === i ? null : i)
@@ -537,12 +529,11 @@ export default function ContactSection() {
         <div className="rounded-2xl border-t-2 border-[var(--gold)] bg-[var(--card)] p-7 shadow-[0_2px_24px_-8px_rgba(46,38,32,0.12)] sm:p-9">
 
           <h3 className="[font-family:var(--font-display)] text-2xl text-[var(--ink)]">
-            Send us your requirement
+            {content.formTitle}
           </h3>
 
           <p className="mt-1.5 text-sm text-[var(--charcoal)]/60">
-            Share a few details and we&rsquo;ll open WhatsApp with your
-            enquiry ready to send.
+            {content.formIntro}
           </p>
 
           {status === "success" ? (
@@ -651,12 +642,11 @@ export default function ContactSection() {
 
                 {status === "loading"
                   ? "Preparing WhatsApp…"
-                  : "Send & Continue on WhatsApp"}
+                  : content.submitLabel}
               </button>
 
               <p className="text-xs leading-relaxed text-[var(--charcoal)]/45">
-                Your enquiry details will be prepared in WhatsApp and sent
-                to our business number.
+                {content.formNote}
               </p>
             </form>
           )}

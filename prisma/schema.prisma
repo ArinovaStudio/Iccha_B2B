@@ -1025,6 +1025,14 @@ model MediaAsset {
   @@index([mediaType])
 }
 
+model SiteContent {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  content   Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
 // =========================================================================
 // 11. AUDIT LOGS & SITE SETTINGS
 // =========================================================================
