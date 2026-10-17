@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { evaluateMoq } from "@/lib/moq";
 import { NO_COLOR, designKey } from "@/lib/cart-colors";
 import { parseColors } from "@/lib/product-colors";
+import { resolveGstRate } from "@/lib/gst-rate";
 const CART_ITEM_INCLUDE = {
     product: {
         include: {
@@ -23,6 +24,7 @@ const CART_ITEM_INCLUDE = {
                     state: true,
                     stateCode: true,
                     mobile: true,
+                    defaultGstRate: true,
                 },
             },
             gstConfig: true,
@@ -77,10 +79,12 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
     }
     const rawItems = cart.items.map((item) => {
         const p = item.product;
-        const rate = item?.product?.category?.gst;
-        const gstRate = p.gstConfig
-            ? Number(p.gstConfig.cgstRate) + Number(p.gstConfig.sgstRate)
-            : 5;
+        // Category GST first, then the vendor's default. Platform (admin) products are
+        // re-resolved below once the platform billing entity has been loaded.
+        const gstRate = resolveGstRate(
+            p.category.gst,
+            p.vendor?.vendorCode ? p.vendor.defaultGstRate : undefined
+        );
         const totalPieces = item.sets * p.piecesPerSet;
         const unitPrice = Number(p.wholesalePricePerPiece);
         const setPrice = Number(p.wholesalePricePerSet);
@@ -157,6 +161,7 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
                     state: true,
                     stateCode: true,
                     registeredAddress: true,
+                    defaultGstRate: true,
                 },
             })
             : Promise.resolve(null),
@@ -169,6 +174,13 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
             subtotal,
         }),
     ]);
+    // IcchaStore-owned products: category GST, else the platform entity's default rate.
+    rawItems.forEach((row, index) => {
+        const source = cart.items[index].product;
+        if (!source.vendor?.vendorCode) {
+            row.product.gstRate = resolveGstRate(source.category.gst, platform?.defaultGstRate);
+        }
+    });
     const entitySummaries = Array.from(
         new Set(rawItems.map((item) => item.billingEntityId))
     ).map((entityId) => {

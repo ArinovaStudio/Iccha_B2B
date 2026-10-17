@@ -20,7 +20,8 @@ function normalizePhone(value: string): string {
 const registerSchema = z.object({
   // Email is optional now; an empty string counts as "not provided"
   email: z.string().trim().email("Enter a valid email").optional().or(z.literal("")),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  // Optional: when blank, the mobile number becomes the password
+  password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal("")),
   accountType: z.enum(["retailer", "drop_shipper"]).default("retailer"),
   businessName: z.string().min(1, "Business name is required"),
   applicantName: z.string().min(1, "Applicant name is required"),
@@ -86,7 +87,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const passwordHash = await hashPassword(data.password);
+    // No password given -> use the last 10 digits of the mobile number
+    const mobileDigits = mobile.replace(/\D/g, "");
+    const plainPassword = data.password || mobileDigits.slice(-10);
+    if (plainPassword.length < 8) {
+      return NextResponse.json(
+        { success: false, error: "Enter a password of at least 8 characters, or a longer mobile number" },
+        { status: 400 }
+      );
+    }
+    const passwordHash = await hashPassword(plainPassword);
 
     const user = await prisma.user.create({
       data: {

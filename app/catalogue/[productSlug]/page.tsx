@@ -681,22 +681,26 @@ export default function RetailerProductDetailPage() {
                       {product.gstRate}% Applicable
                     </strong>
                   </div>
-                  <div>
-                    <span className="text-stone-400 text-[10px] uppercase font-bold block">
-                      Lining
-                    </span>
-                    <strong className="text-stone-800">
-                      Premium Crepe Attached
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-stone-400 text-[10px] uppercase font-bold block">
-                      Margins
-                    </span>
-                    <strong className="text-stone-800">
-                      2-inch Boutique Alteration Margin
-                    </strong>
-                  </div>
+                  {product.lining && (
+                    <div>
+                      <span className="text-stone-400 text-[10px] uppercase font-bold block">
+                        Lining
+                      </span>
+                      <strong className="text-stone-800">
+                        {product.lining}
+                      </strong>
+                    </div>
+                  )}
+                  {product.margin && (
+                    <div>
+                      <span className="text-stone-400 text-[10px] uppercase font-bold block">
+                        Margins
+                      </span>
+                      <strong className="text-stone-800">
+                        {product.margin}
+                      </strong>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

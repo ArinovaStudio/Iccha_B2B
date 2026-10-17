@@ -29,8 +29,7 @@ interface FormData {
   mobile: string;
   whatsapp: string;
   email: string;
-  state: string;
-  stateCode: string;
+  address: string;
 }
 
 interface AttachedDocument {
@@ -42,11 +41,51 @@ interface AttachedDocument {
 }
 
 const STATE_CODES: Record<string, string> = {
-  Gujarat: '24', Rajasthan: '08', Maharashtra: '27', Delhi: '07', Karnataka: '29',
-  'Uttar Pradesh': '09', 'Madhya Pradesh': '23', 'Tamil Nadu': '33', Telangana: '36',
-  'West Bengal': '19', Punjab: '03', Haryana: '06', Bihar: '10', 'Andhra Pradesh': '37',
-  Odisha: '21', Kerala: '32', Assam: '18', Jharkhand: '20', Chhattisgarh: '22',
+  'Jammu and Kashmir': '01',
+  'Himachal Pradesh': '02',
+  'Punjab': '03',
+  'Chandigarh': '04',
+  'Uttarakhand': '05',
+  'Haryana': '06',
+  'Delhi': '07',
+  'Rajasthan': '08',
+  'Uttar Pradesh': '09',
+  'Bihar': '10',
+  'Sikkim': '11',
+  'Arunachal Pradesh': '12',
+  'Nagaland': '13',
+  'Manipur': '14',
+  'Mizoram': '15',
+  'Tripura': '16',
+  'Meghalaya': '17',
+  'Assam': '18',
+  'West Bengal': '19',
+  'Jharkhand': '20',
+  'Odisha': '21',
+  'Chhattisgarh': '22',
+  'Madhya Pradesh': '23',
+  'Gujarat': '24',
+  'Maharashtra': '27',
+  'Karnataka': '29',
+  'Goa': '30',
+  'Lakshadweep': '31',
+  'Kerala': '32',
+  'Tamil Nadu': '33',
+  'Puducherry': '34',
+  'Andaman and Nicobar Islands': '35',
+  'Telangana': '36',
+  'Andhra Pradesh': '37',
+  'Ladakh': '38',
 };
+
+// Finds the state named inside a free-text address (longest name first).
+function detectState(address: string): { state: string; stateCode: string } {
+  const text = address.toLowerCase();
+  const match = Object.keys(STATE_CODES)
+    .sort((a, b) => b.length - a.length)
+    .find((name) => text.includes(name.toLowerCase()));
+  return match ? { state: match, stateCode: STATE_CODES[match] } : { state: 'Other', stateCode: '99' };
+}
 
 const inputClass = 'w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2.5 text-sm font-medium text-stone-900 outline-none transition focus:border-rose-900 focus:ring-2 focus:ring-rose-100';
 const labelClass = 'mb-1 block text-xs font-semibold text-stone-800';
@@ -56,17 +95,15 @@ export default function RegisterPage() {
   const { addToast } = useApp();
 
   const [formData, setFormData] = useState<FormData>({
-    accountType: 'retailer',
+    accountType: 'drop_shipper',
     businessName: '',
     applicantName: '',
     mobile: '',
     whatsapp: '',
     email: '',
-    state: 'Rajasthan',
-    stateCode: '08',
+    address: '',
   });
   const [gstin, setGstin] = useState('');
-  const [pan, setPan] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [socialProof, setSocialProof] = useState('');
@@ -81,10 +118,6 @@ export default function RegisterPage() {
 
   const updateForm = <K extends keyof FormData>(key: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleStateChange = (state: string) => {
-    setFormData((prev) => ({ ...prev, state, stateCode: STATE_CODES[state] || '99' }));
   };
 
   const addDocument = (file: File, type: DocumentType) => {
@@ -112,31 +145,17 @@ export default function RegisterPage() {
 
   const removeDocument = (id: string) => setDocuments((prev) => prev.filter((doc) => doc.id !== id));
 
-  const handleDemoData = () => {
-    setFormData({
-      accountType: 'retailer',
-      businessName: 'Ananya Designer Boutiques',
-      applicantName: 'Ananya Rathore',
-      mobile: '+91 94140 77665',
-      whatsapp: '+91 94140 77665',
-      email: 'ananya.rathore@boutique.in',
-      state: 'Rajasthan',
-      stateCode: '08',
-    });
-    addToast({ type: 'info', title: 'Demo Data Loaded', message: 'Sample boutique details loaded. Replace them before submitting.' });
-  };
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (formData.mobile.replace(/\D/g, '').length < 10) {
       addToast({ type: 'warning', title: 'Check Mobile Number', message: 'Enter a valid mobile number with at least 10 digits.' });
       return;
     }
-    if (password.length < 8) {
-      addToast({ type: 'warning', title: 'Weak Password', message: 'Password must be at least 8 characters.' });
+    if (password && password.length < 8) {
+      addToast({ type: 'warning', title: 'Weak Password', message: 'Password must be at least 8 characters, or leave it blank to use your mobile number.' });
       return;
     }
-    if (password !== confirmPassword) {
+    if (password && password !== confirmPassword) {
       addToast({ type: 'warning', title: "Passwords Don't Match", message: 'Please enter the same password in both fields.' });
       return;
     }
@@ -146,10 +165,6 @@ export default function RegisterPage() {
     }
     if (gstin.trim() && !/^[0-9A-Z]{15}$/.test(gstin.trim().toUpperCase())) {
       addToast({ type: 'warning', title: 'Invalid GSTIN', message: 'GSTIN must contain 15 letters and numbers.' });
-      return;
-    }
-    if (pan.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.trim().toUpperCase())) {
-      addToast({ type: 'warning', title: 'Invalid PAN', message: 'Enter a valid 10-character PAN.' });
       return;
     }
     if (isDropShipper && !socialProof.trim() && !businessCardDoc) {
@@ -165,6 +180,8 @@ export default function RegisterPage() {
       return;
     }
 
+    const detected = detectState(formData.address);
+
     setIsSubmitting(true);
     setSubmitStage('registering');
     try {
@@ -173,20 +190,18 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email.trim() || undefined,
-          password,
+          password: password || undefined,
           accountType: formData.accountType,
           businessName: formData.businessName.trim(),
           applicantName: formData.applicantName.trim(),
           mobile: formData.mobile.trim(),
           whatsapp: formData.whatsapp.trim() || formData.mobile.trim(),
           gstin: isDropShipper ? undefined : gstin.trim().toUpperCase(),
-          pan: pan.trim() ? pan.trim().toUpperCase() : undefined,
           socialProof: isDropShipper ? socialProof.trim() || undefined : undefined,
-          state: formData.state,
-          stateCode: formData.stateCode,
-          // The current registration API creates an address record and expects these strings.
-          // The form intentionally collects only the state.
-          street: '',
+          state: detected.state,
+          stateCode: detected.stateCode,
+          // The full address goes in `street`; the state is detected from it.
+          street: formData.address.trim(),
           city: '',
           pincode: '',
         }),
@@ -254,27 +269,11 @@ export default function RegisterPage() {
 
           <div className="mb-5 flex flex-col items-start justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 sm:flex-row">
             <div className="flex items-start gap-2.5"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" /><p><strong>Account activity notice:</strong> Accounts inactive for an extended period (more than 15 days without logins or orders) may be deactivated. Contact the admin if you need reactivation.</p></div>
-            <button type="button" onClick={handleDemoData} className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 font-bold text-white hover:bg-amber-700">Load demo data</button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-7 rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-9">
             <section className="space-y-4">
-              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">1. Account type</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {([
-                  { value: 'retailer', title: 'GST Retailer', description: 'You hold and sell stock directly. GSTIN and business proof required.' },
-                  { value: 'drop_shipper', title: 'Non-GST / Drop Shipper', description: 'Resell without holding inventory. GSTIN is not required.' },
-                ] as const).map((option) => (
-                  <label key={option.value} className={`cursor-pointer rounded-xl border-2 p-4 transition ${formData.accountType === option.value ? 'border-[#831843] bg-rose-50' : 'border-stone-200 bg-stone-50 hover:border-stone-300'}`}>
-                    <input className="sr-only" type="radio" name="accountType" value={option.value} checked={formData.accountType === option.value} onChange={() => updateForm('accountType', option.value)} />
-                    <span className="block text-sm font-bold text-stone-900">{option.title}</span><span className="mt-1 block text-xs text-stone-600">{option.description}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">2. Business & applicant details</h2>
+              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">1. Business & applicant details</h2>
               <div><label className={labelClass}>Registered business / boutique name *</label><input className={inputClass} required maxLength={120} value={formData.businessName} onChange={(e) => updateForm('businessName', e.target.value)} placeholder="e.g. Saffron Styles & Boutiques" /></div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><label className={labelClass}>Applicant full name *</label><input className={inputClass} required value={formData.applicantName} onChange={(e) => updateForm('applicantName', e.target.value)} placeholder="Your full name" /></div>
@@ -285,36 +284,17 @@ export default function RegisterPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">3. Business state</h2>
+              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">2. Business address</h2>
               <div>
-                <label className={labelClass}>State (for GST place of supply) *</label>
-                <select className={inputClass} required value={formData.state} onChange={(e) => handleStateChange(e.target.value)}>
-                  {Object.keys(STATE_CODES).sort().map((state) => <option key={state} value={state}>{state}</option>)}
-                </select>
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">4. Login password</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div><label className={labelClass}><Lock className="mr-1 inline h-3.5 w-3.5" /> Password *</label><input className={inputClass} type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimum 8 characters" /></div>
-                <div><label className={labelClass}>Confirm password *</label><input className={inputClass} type="password" required autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" /></div>
-              </div>
-              <p className="text-[11px] text-stone-500">After approval, you can log in using {formData.email.trim() || formData.mobile || 'your email or mobile number'} and this password.</p>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">5. KYC & tax identifiers</h2>
-              {isDropShipper && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">GSTIN is not required for a Non-GST / Drop Shipper account.</p>}
-              <div className="grid gap-4 sm:grid-cols-2">
-                {!isDropShipper && <div><label className={labelClass}>GSTIN *</label><input className={inputClass} required maxLength={15} value={gstin} onChange={(e) => setGstin(e.target.value.toUpperCase())} placeholder="15-character GSTIN" /><p className="mt-1 text-[11px] text-stone-500">Enter the GSTIN matching your registered state.</p></div>}
-                <div><label className={labelClass}>PAN (optional)</label><input className={inputClass} maxLength={10} value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCDE1234F" /></div>
+                <label className={labelClass}>Address (including state) *</label>
+                <textarea className={inputClass} required rows={3} maxLength={300} value={formData.address} onChange={(e) => updateForm('address', e.target.value)} placeholder="Shop / building, street, city, state, pincode" />
+                <p className="mt-1 text-[11px] text-stone-500">Enter your complete address with the state name in one place.</p>
               </div>
             </section>
 
             {isDropShipper ? (
               <section className="space-y-4">
-                <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">6. Social / business proof</h2>
+                <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">3. Social / business proof</h2>
                 <p className="text-xs text-stone-600">Provide a social media link or upload a business card / business proof document.</p>
                 <div><label className={labelClass}>Instagram / social media link</label><input className={inputClass} maxLength={200} value={socialProof} onChange={(e) => setSocialProof(e.target.value)} placeholder="@yourbrand or https://instagram.com/yourbrand" /></div>
                 <div className="flex flex-col justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-center"><div className="flex min-w-0 items-center gap-2"><FileText className="h-5 w-5 shrink-0 text-amber-700" /><div className="min-w-0"><span className="block truncate text-xs font-semibold text-stone-800">{businessCardDoc?.name || 'Business card / proof (optional if link provided)'}</span><span className="text-[11px] text-stone-500">PDF, JPG, PNG or WebP, max 5 MB</span></div></div><label className="cursor-pointer rounded-lg bg-stone-200 px-3 py-2 text-center text-xs font-semibold text-stone-800 hover:bg-stone-300">{businessCardDoc ? 'Change file' : 'Upload file'}<input className="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e) => handleDocumentSelect(e, 'business_card')} /></label></div>
@@ -328,6 +308,16 @@ export default function RegisterPage() {
                 {documents.length > 0 && <div className="space-y-2"><p className="text-xs font-semibold text-stone-700">Attached documents ({documents.length})</p>{documents.map((doc) => <div key={doc.id} className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3"><div className="flex min-w-0 items-center gap-3"><span className="rounded-lg bg-rose-100 p-2 text-[#831843]"><FileText className="h-4 w-4" /></span><div className="min-w-0"><strong className="block truncate text-xs text-stone-900">{doc.name}</strong><span className="text-[10px] text-stone-500">{doc.size} · {doc.type.replaceAll('_', ' ').toUpperCase()}</span></div></div><button type="button" onClick={() => removeDocument(doc.id)} aria-label={`Remove ${doc.name}`} className="shrink-0 p-1 text-stone-400 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button></div>)}</div>}
               </section>
             )}
+
+            <section className="space-y-4">
+              <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">4. Login password</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><label className={labelClass}><Lock className="mr-1 inline h-3.5 w-3.5" /> Password (optional)</label><input className={inputClass} type="password" minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to use mobile number" /></div>
+                <div><label className={labelClass}>Confirm password</label><input className={inputClass} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" /></div>
+              </div>
+              <p className="text-[11px] text-stone-500">After approval, you can log in using {formData.email.trim() || formData.mobile || 'your email or mobile number'} and your password.</p>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><strong>Note:</strong> If you do not enter a password, your 10-digit mobile number will be your password. You can change it after logging in.</p>
+            </section>
 
             <section className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-4">
               <h2 className="font-serif text-base font-bold text-stone-900">Wholesale B2B Reseller Undertaking</h2>

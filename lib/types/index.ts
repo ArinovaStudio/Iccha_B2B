@@ -160,6 +160,8 @@ export interface Product {
   description: string;
   fabric: string;
   workType: string; // e.g., 'Hand Embroidery', 'Zari Foil Print', 'Mirror Work', 'Digital Print'
+  lining?: string | null; // e.g., 'Premium Crepe Attached'
+  margin?: string | null; // e.g., '2-inch Boutique Alteration Margin'
   style: string; // e.g., 'Straight Cut', 'Anarkali Set', 'A-Line Kurti Pant', 'Alia Cut', 'Nayra Cut'
   clothingType: '2_piece' | '3_piece' | 'kurti_only';
   piecesPerSet: number; // e.g., 4 or 5 or 6 (e.g., M, L, XL, XXL, 3XL)
