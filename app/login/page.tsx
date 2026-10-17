@@ -127,7 +127,7 @@ export default function LoginPage() {
               Retailer Secure Login
             </h1>
             <p className="text-xs text-stone-500">
-              Sign in with your registered email to access wholesale pricing.
+              Sign in with your registered mobile number or email to access wholesale pricing.
             </p>
           </div>
 
@@ -192,14 +192,14 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-stone-700 mb-1">
-                  Registered Email Address Or Phone Number *
+                  Registered Mobile Number Or Email *
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
                   <input
                     type="text"
                     required
-                    placeholder="Email or phone number"
+                    placeholder="Mobile number or email"
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
                     className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900 font-medium"

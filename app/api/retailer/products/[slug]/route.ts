@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveGstRate } from "@/lib/gst-rate";
 import { prisma } from "@/lib/db";
 import { requireCatalogueViewer } from "@/lib/auth/guard";
 import { parseColors } from "@/lib/product-colors";
@@ -38,6 +39,7 @@ export async function GET(
           select: {
             id: true,
             businessName: true,
+            defaultGstRate: true,
           },
         },
 
@@ -102,6 +104,18 @@ export async function GET(
       );
     }
 
+    // IcchaStore-owned products fall back to the platform entity's default GST rate.
+    const platformEntity = product.vendor
+      ? null
+      : await prisma.billingEntity.findFirst({
+          where: {
+            code: process.env.PLATFORM_BILLING_ENTITY_CODE || "platform",
+            isActive: true,
+          },
+          select: { defaultGstRate: true },
+        });
+    const platformGstRate = platformEntity?.defaultGstRate;
+
     const shaped = {
       id: product.id,
       slug: product.slug,
@@ -131,6 +145,8 @@ export async function GET(
 
       fabric: product.fabric,
       workType: product.workType,
+      lining: product.lining,
+      margin: product.margin,
       style: product.style,
       clothingType: product.clothingType,
 
@@ -160,7 +176,7 @@ export async function GET(
 
       billingEntityId: product.gstConfig?.billingEntityId ?? null,
       hsn: product.gstConfig?.hsnCode ?? product.hsnCode,
-      gstRate: product.category?.gst ?? "",
+      gstRate: String(resolveGstRate(product.category?.gst, product.vendor ? product.vendor.defaultGstRate : platformGstRate)),
 
       media: product.media.map((m) => ({
         id: m.id,

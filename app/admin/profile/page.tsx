@@ -615,14 +615,6 @@ function VendorProfilePage() {
 
             </div>
 
-            <div>
-
-              <span className="text-[10px] uppercase font-bold text-stone-400 block">Default GST Rate</span>
-
-              <span className="font-semibold text-stone-800">{profile.defaultGstRate}%</span>
-
-            </div>
-
           </div>
 
         </div>
@@ -2664,4 +2656,3 @@ function StaffProfilePage() {
   );
 
 }
-

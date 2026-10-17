@@ -99,6 +99,8 @@ interface Product {
   style: string;
   clothingType: string;
   hsnCode: string;
+  lining?: string | null;
+  margin?: string | null;
   minOrderSets: number;
   media?: { mediaAsset: { publicUrl: string } }[]
   sizes?: { id: string; size: string; availableSets: number; sortOrder: number }[]
@@ -176,6 +178,8 @@ export default function AdminProductsPage() {
     style: '',
     clothingType: 'kurti_set',
     hsnCode: '621142',
+    lining: '',
+    margin: '',
     minOrderSets: 1,
     color: '',
     description: ''
@@ -436,6 +440,8 @@ export default function AdminProductsPage() {
       style: '',
       clothingType: 'kurti_set',
       hsnCode: '621142',
+      lining: '',
+      margin: '',
       minOrderSets: 1,
       color: '',
       description: ''
@@ -591,6 +597,8 @@ export default function AdminProductsPage() {
       style: formData.style,
       clothingType: formData.clothingType,
       hsnCode: formData.hsnCode,
+      lining: formData.lining.trim(),
+      margin: formData.margin.trim(),
       minOrderSets: Number(formData.minOrderSets),
       description: formData.description
     };
@@ -694,6 +702,8 @@ export default function AdminProductsPage() {
       style: product.style || '',
       clothingType: product.clothingType || 'kurti_set',
       hsnCode: product.hsnCode || '621142',
+      lining: product.lining || '',
+      margin: product.margin || '',
       minOrderSets: Math.max(1, Number(product.minOrderSets) || 1),
       color: product.color || '',
       description: product.description || ''
@@ -1399,6 +1409,31 @@ export default function AdminProductsPage() {
                       required
                       value={formData.style}
                       onChange={e => setFormData({ ...formData, style: e.target.value })}
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-stone-800 mb-1">Lining</label>
+                    <input
+                      type="text"
+                      maxLength={200}
+                      value={formData.lining}
+                      onChange={e => setFormData({ ...formData, lining: e.target.value })}
+                      placeholder="e.g. Premium Crepe Attached"
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-stone-800 mb-1">Margin</label>
+                    <input
+                      type="text"
+                      maxLength={200}
+                      value={formData.margin}
+                      onChange={e => setFormData({ ...formData, margin: e.target.value })}
+                      placeholder="e.g. 2-inch alteration margin"
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                     />
                   </div>

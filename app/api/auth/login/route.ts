@@ -54,12 +54,25 @@ export async function POST(request: NextRequest) {
     const { identifier, password } = parsed.data;
     const usingEmail = isEmailFormat(identifier);
 
-    const user = await prisma.user.findFirst({
+    let user = await prisma.user.findFirst({
       where: usingEmail
         ? { email: identifier.toLowerCase() }
         : { mobile: normalizePhone(identifier) },
       include: { retailerProfile: true },
     });
+
+    // Mobile login: the number may have been saved with a country code
+    // (+91...) but typed without it (or the other way round), so fall back
+    // to matching on the last 10 digits.
+    if (!user && !usingEmail) {
+      const last10 = normalizePhone(identifier).replace(/\D/g, "").slice(-10);
+      if (last10.length === 10) {
+        user = await prisma.user.findFirst({
+          where: { mobile: { endsWith: last10 } },
+          include: { retailerProfile: true },
+        });
+      }
+    }
 
     if (!user || !user.isActive) {
       return NextResponse.json(
