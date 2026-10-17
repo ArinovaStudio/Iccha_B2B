@@ -227,6 +227,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
       )}
 
       <aside
+        data-admin-sidebar
         className={`
           fixed lg:static inset-y-0 left-0 z-50
           w-64 min-h-screen shrink-0

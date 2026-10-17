@@ -49,6 +49,34 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Admin pages use one fixed viewport: the sidebar stays in place and the
+   page's main region owns vertical scrolling, regardless of content length. */
+body:has([data-admin-sidebar]) {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body:has([data-admin-sidebar]) [data-admin-sidebar] {
+  position: fixed !important;
+  inset: 0 auto 0 0;
+  height: 100vh;
+  min-height: 0;
+}
+
+body:has([data-admin-sidebar]) main {
+  height: 100vh;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 1024px) {
+  body:has([data-admin-sidebar]) main {
+    width: calc(100% - 16rem);
+    margin-left: 16rem;
+  }
+}
+
 .font-editorial-serif {
   font-family: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
 }
