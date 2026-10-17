@@ -48,19 +48,22 @@ const COUNTS_REFRESH_MS = 30000;
 
 const STAFF_ONLY_LINKS: NavLink[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  // { label: 'Hero Banners', href: '/admin/hero', icon: Sparkles },
+  // { label: 'About Page', href: '/admin/content/about', icon: FileText },
+  // { label: 'Contact Page', href: '/admin/content/contact', icon: PhoneCall },
+  // { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
+  { label: 'Retailers', href: '/admin/retailers', icon: Users },
+  { label: 'Reactivation Requests', href: '/admin/retailer-reactivation-requests', icon: ClipboardCheck, },
+  { label: 'Vendors', href: '/admin/vendors', icon: Store },
+  { label: 'KYC Applications', href: '/admin/kyc', icon: FileCheck },
+  { label: 'User', href: '/admin/roles', icon: UserCog },
+];
+
+const STAFF_ONLY_HOME_CHANGES: NavLink[] = [
   { label: 'Hero Banners', href: '/admin/hero', icon: Sparkles },
   { label: 'About Page', href: '/admin/content/about', icon: FileText },
   { label: 'Contact Page', href: '/admin/content/contact', icon: PhoneCall },
   { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
-  { label: 'Retailers', href: '/admin/retailers', icon: Users },
-  {
-    label: 'Reactivation Requests',
-    href: '/admin/retailer-reactivation-requests',
-    icon: ClipboardCheck,
-  },
-  { label: 'Vendors', href: '/admin/vendors', icon: Store },
-  { label: 'KYC Applications', href: '/admin/kyc', icon: FileCheck },
-  { label: 'User', href: '/admin/roles', icon: UserCog },
 ];
 
 const SHARED_LINKS: NavLink[] = [
@@ -175,14 +178,15 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
 
   // Unknown role -> show no links (never default to the full staff menu).
   const navLinks: NavLink[] = !role
-  ? []
-  : isVendor
-    ? [...SHARED_LINKS, CATEGORY_LINK]
-    : [
+    ? []
+    : isVendor
+      ? [...SHARED_LINKS, CATEGORY_LINK]
+      : [
         ...STAFF_ONLY_LINKS,
         ...SHARED_LINKS,
         CATEGORY_LINK,
         ...STAFF_ONLY_TRAILING_LINKS,
+        ...STAFF_ONLY_HOME_CHANGES
       ];
   const formatCount = (n: number) => (n > 99 ? '99+' : String(n));
 
@@ -285,18 +289,16 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
                 className={`
                   flex items-center justify-between gap-3
                   px-3 py-2.5 rounded-lg text-xs font-medium transition
-                  ${
-                    isActive
-                      ? 'bg-rose-950/80 text-rose-300 font-semibold border border-rose-800/60 shadow-sm'
-                      : 'text-stone-300 hover:bg-stone-900 hover:text-white'
+                  ${isActive
+                    ? 'bg-rose-950/80 text-rose-300 font-semibold border border-rose-800/60 shadow-sm'
+                    : 'text-stone-300 hover:bg-stone-900 hover:text-white'
                   }
                 `}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      isActive ? 'text-rose-400' : 'text-stone-400'
-                    }`}
+                    className={`w-4 h-4 shrink-0 ${isActive ? 'text-rose-400' : 'text-stone-400'
+                      }`}
                   />
                   <span className="truncate">{item.label}</span>
                 </div>
