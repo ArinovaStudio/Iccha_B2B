@@ -421,6 +421,8 @@ model Product {
   clothingType    String
   hsnCode         String  @default("621142")
   minOrderSets    Int     @default(1)
+  lining          String? // e.g. "Premium Crepe Attached"
+  margin          String? // e.g. "2-inch Boutique Alteration Margin"
   // Garment Measurements & Details
   kurtiLength     String?
   bottomLength    String?
@@ -1023,14 +1025,6 @@ model MediaAsset {
   @@index([storageKey])
   @@index([visibility])
   @@index([mediaType])
-}
-
-model SiteContent {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  content   Json
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
 }
 
 // =========================================================================

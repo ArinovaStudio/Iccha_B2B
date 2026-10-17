@@ -21,6 +21,8 @@ const updateProductSchema = z.object({
   style: z.string().min(1).optional(),
   clothingType: z.string().min(1).optional(),
   hsnCode: z.string().optional(),
+  lining: z.string().trim().max(200).nullable().optional(),
+  margin: z.string().trim().max(200).nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

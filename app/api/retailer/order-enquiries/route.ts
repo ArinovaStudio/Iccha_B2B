@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveGstRate } from "@/lib/gst-rate";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRetailer } from "@/lib/auth/guard";
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
               include: {
                 product: {
                   include: {
-                    category: { select: { id: true, name: true, requiresSize: true } },
+                    category: { select: { id: true, name: true, requiresSize: true, gst: true } },
                     vendor: {
                       select: {
                         id: true,
@@ -389,13 +390,8 @@ export async function POST(request: NextRequest) {
             entity = platformEntity;
           }
           const lineSubtotal = Number(product.wholesalePricePerSet) * item.sets;
-          const isInterState = shippingAddress.stateCode !== entity.stateCode;
-          const configuredGstRate = product.gstConfig
-            ? isInterState
-              ? Number(product.gstConfig.igstRate)
-              : Number(product.gstConfig.cgstRate) + Number(product.gstConfig.sgstRate)
-            : Number(entity.defaultGstRate);
-          const gstRate = configuredGstRate || Number(entity.defaultGstRate);
+          // Category GST first, then the seller's default GST rate.
+          const gstRate = resolveGstRate(product.category.gst, entity.defaultGstRate);
           const gstAmount = roundMoney((lineSubtotal * gstRate) / 100);
           const existing = entityGroups.get(entity.id);
           if (existing) {
@@ -521,12 +517,7 @@ export async function POST(request: NextRequest) {
             throw new Error(`${product.name} is missing seller billing configuration`);
           }
           const entity = entityGroup.entity;
-          const isInterState = shippingAddress.stateCode !== entity.stateCode;
-          const gstRate = product.gstConfig
-            ? isInterState
-              ? Number(product.gstConfig.igstRate)
-              : Number(product.gstConfig.cgstRate) + Number(product.gstConfig.sgstRate)
-            : Number(entity.defaultGstRate)
+          const gstRate = resolveGstRate(product.category.gst, entity.defaultGstRate);
           const lineSubtotal = Number(product.wholesalePricePerSet) * item.sets;
           const gstAmount = roundMoney((lineSubtotal * gstRate) / 100);
           const imageUrl = product.media[0]?.mediaAsset.publicUrl || null;

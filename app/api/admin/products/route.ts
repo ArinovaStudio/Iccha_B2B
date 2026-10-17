@@ -30,6 +30,8 @@ function formatZodIssue(issue: z.ZodIssue): string {
         style: "Style",
         clothingType: "Clothing type",
         hsnCode: "HSN code",
+        lining: "Lining",
+        margin: "Margin",
         mediaAssetIds: "Product photos",
     };
     const key = String(issue.path[0] ?? "");
@@ -140,6 +142,8 @@ const productFieldsSchema = z.object({
     style: z.string(),
     clothingType: z.string(),
     hsnCode: z.string(),
+    lining: z.string().trim().max(200).optional(),
+    margin: z.string().trim().max(200).optional(),
     // Billing entity is resolved server-side from the product owner.
     // Vendor products use the vendor's GST/billing details; house products use the platform entity.
     billingEntityId: z.string().uuid().optional(),
@@ -412,6 +416,8 @@ export async function POST(request: NextRequest) {
                 style: data.style,
                 clothingType: data.clothingType,
                 hsnCode: data.hsnCode,
+                lining: data.lining || null,
+                margin: data.margin || null,
 
                 vendorId,
                 warehouseId: data.warehouseId ?? null,
@@ -664,6 +670,8 @@ export async function PATCH(request: NextRequest) {
                         style: data.style,
                         clothingType: data.clothingType,
                         hsnCode: data.hsnCode,
+                        lining: data.lining || null,
+                        margin: data.margin || null,
                         gstConfigId,
                         vendorId,
                         warehouseId: data.warehouseId ?? null,
@@ -750,6 +758,8 @@ export async function PATCH(request: NextRequest) {
                 style: data.style,
                 clothingType: data.clothingType,
                 hsnCode: data.hsnCode,
+                lining: data.lining || null,
+                margin: data.margin || null,
                 gstConfigId,
                 vendorId,
                 warehouseId: data.warehouseId ?? null,
