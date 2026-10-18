@@ -38,14 +38,16 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
     if (!collection) return fail("Collection not found.", 404);
 
+    // Only logged in users are allowed to access collection details
+    const actor = await getActor(req);
+    if (!actor) return fail("Please log in to view this collection.", 401);
+
     // If published, it is viewable
     if (collection.isPublished) {
       return NextResponse.json({ success: true, data: toDetail(collection) });
     }
 
     // If draft/unpublished, only authorized admin or owning vendor can view
-    const actor = await getActor(req);
-    if (!actor) return fail("Please log in to view this collection.", 401);
     if (!canManage(actor, collection.vendorId)) {
       return fail("This collection is not currently published.", 404);
     }

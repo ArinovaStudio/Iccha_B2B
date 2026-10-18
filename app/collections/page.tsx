@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Lock, Layers, BookOpen } from 'lucide-react';
+import { Lock, Layers, BookOpen, X, LogIn, Sparkles } from 'lucide-react';
 import PublicHeader from '@/components/layout/PublicHeader';
 import Footer from '@/components/layout/Footer';
 import { CollectionListItem, fetchCollections } from '@/lib/collection/fetcher';
@@ -11,16 +11,40 @@ import { CollectionListItem, fetchCollections } from '@/lib/collection/fetcher';
 export default function CollectionsPage() {
   const [collections, setCollections] = useState<CollectionListItem[] | null>(null); // null = loading
   const [error, setError] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [targetSlug, setTargetSlug] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
+
+    // Check login status
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => {
+        if (alive && json.success && json.data) {
+          setIsLoggedIn(true);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch collections
     fetchCollections()
       .then((data) => alive && setCollections(data))
       .catch(() => alive && setError(true));
+
     return () => {
       alive = false;
     };
   }, []);
+
+  const handleCollectionClick = (e: React.MouseEvent, slug: string) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      setTargetSlug(slug);
+      setShowLoginModal(true);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -58,7 +82,11 @@ export default function CollectionsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {collections.map((book) => (
                 <div key={book.id} className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
-                  <Link href={`/collections/${book.slug}`} className="group relative block aspect-[16/10] w-full overflow-hidden bg-stone-100">
+                  <Link
+                    href={`/collections/${book.slug}`}
+                    onClick={(e) => handleCollectionClick(e, book.slug)}
+                    className="group relative block aspect-[16/10] w-full overflow-hidden bg-stone-100 cursor-pointer"
+                  >
                     {book.coverImage ? (
                       <Image
                         src={book.coverImage}
@@ -82,7 +110,11 @@ export default function CollectionsPage() {
                   <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
                       <h3 className="font-serif text-xl font-bold text-stone-900">
-                        <Link href={`/collections/${book.slug}`} className="hover:underline">
+                        <Link
+                          href={`/collections/${book.slug}`}
+                          onClick={(e) => handleCollectionClick(e, book.slug)}
+                          className="hover:underline cursor-pointer"
+                        >
                           {book.name}
                         </Link>
                       </h3>
@@ -107,7 +139,8 @@ export default function CollectionsPage() {
                       </div>
                       <Link
                         href={`/collections/${book.slug}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-[#831843] hover:underline"
+                        onClick={(e) => handleCollectionClick(e, book.slug)}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#831843] hover:underline cursor-pointer"
                       >
                         View collection &rarr;
                       </Link>
@@ -119,6 +152,64 @@ export default function CollectionsPage() {
           )}
         </div>
       </main>
+
+      {/* Login Required Popup Modal */}
+      {showLoginModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-stone-200 text-center animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-[#831843] mb-4 shadow-sm">
+              <Lock className="w-7 h-7" />
+            </div>
+
+            <span className="text-[11px] uppercase font-bold tracking-[0.2em] text-[#831843] block mb-1">
+              Member Exclusive
+            </span>
+
+            <h2 className="font-serif text-2xl font-bold text-stone-900 mb-2">
+              Whole Seller Login Required
+            </h2>
+
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-6">
+              Our curated seasonal lookbooks and wholesale pricing are reserved exclusively for registered whole sellers. Please log in to view this collection.
+            </p>
+
+            <div className="flex flex-col gap-2.5">
+              <Link
+                href={`/login${targetSlug ? `?next=${encodeURIComponent(`/collections/${targetSlug}`)}` : ''}`}
+                className="w-full py-3 px-4 rounded-xl bg-[#1a1a1a] hover:bg-black text-white text-xs font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-md transition-colors"
+              >
+                <LogIn className="w-4 h-4 text-amber-400" />
+                Log In to Continue
+              </Link>
+
+              <Link
+                href="/register"
+                className="w-full py-2.5 px-4 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                Apply for Wholesale Access
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

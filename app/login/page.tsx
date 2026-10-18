@@ -93,8 +93,13 @@ export default function LoginPage() {
         message: `Welcome back, ${result.data.name}.`
       });
 
-      // Route by role — staff go to the admin console, retailers to their catalogue
-      if (['ADMIN', 'SUPER_ADMIN', 'OPERATIONS_MANAGER'].includes(result.data.role)) {
+      // Check if redirect URL exists in query params
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const nextUrl = searchParams?.get('next') || searchParams?.get('redirectTo');
+
+      if (nextUrl && nextUrl.startsWith('/')) {
+        router.push(nextUrl);
+      } else if (['ADMIN', 'SUPER_ADMIN', 'OPERATIONS_MANAGER'].includes(result.data.role)) {
         router.push('/admin');
       } else if (result.data.role === 'VENDOR') {
         router.push('/admin/products'); // vendor's own product management page, not yet built

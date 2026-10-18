@@ -933,20 +933,6 @@ export default function AdminCollectionsPage() {
                                     >
                                       {vendor.businessName}
                                     </h3>
-                                    <p
-                                      className={`text-[11px] ${
-                                        isDark ? 'text-stone-400' : 'text-stone-500'
-                                      }`}
-                                    >
-                                      Code:{' '}
-                                      <span
-                                        className={`font-mono font-semibold ${
-                                          isDark ? 'text-stone-300' : 'text-stone-700'
-                                        }`}
-                                      >
-                                        {vendor.vendorCode}
-                                      </span>
-                                    </p>
                                   </div>
                                 </div>
 
@@ -1061,24 +1047,6 @@ export default function AdminCollectionsPage() {
                     </button>
 
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md border ${
-                            isDark
-                              ? 'text-rose-400 bg-rose-950/60 border-rose-900/50'
-                              : 'text-rose-800 bg-rose-100 border-rose-200'
-                          }`}
-                        >
-                          Vendor Filter
-                        </span>
-                        <span
-                          className={`text-xs font-mono font-semibold ${
-                            isDark ? 'text-stone-400' : 'text-stone-600'
-                          }`}
-                        >
-                          {selectedVendor.vendorCode}
-                        </span>
-                      </div>
                       <h2
                         className={`text-lg font-serif font-bold mt-0.5 ${
                           isDark ? 'text-white' : 'text-stone-900'
@@ -1278,13 +1246,6 @@ export default function AdminCollectionsPage() {
                               >
                                 <Store className="w-3 h-3" />
                                 <span>{col.vendor.businessName}</span>
-                                <span
-                                  className={`font-mono ${
-                                    isDark ? 'text-stone-500' : 'text-stone-400'
-                                  }`}
-                                >
-                                  ({col.vendor.vendorCode})
-                                </span>
                               </div>
                             )}
 

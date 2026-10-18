@@ -11,7 +11,7 @@ import {
   CollectionDetail, fetchCollection, isNotFound, isUnauthorized,
 } from '@/lib/collection/fetcher';
 
-type State = 'loading' | 'ready' | 'notfound' | 'error';
+type State = 'loading' | 'ready' | 'notfound' | 'error' | 'unauthorized';
 
 const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
@@ -35,6 +35,7 @@ export default function CollectionDetailPage() {
       .catch((e) => {
         if (!alive) return;
         if (isUnauthorized(e)) {
+          setState('unauthorized');
           // Logged out → send to login, then back here.
           router.replace(`/login?next=${encodeURIComponent(`/collections/${slug}`)}`);
         } else if (isNotFound(e)) setState('notfound');
@@ -67,6 +68,24 @@ export default function CollectionDetailPage() {
                 </div>
                 <div className="aspect-[16/10] animate-pulse rounded-3xl bg-stone-200" />
               </div>
+            </div>
+          )}
+
+          {state === 'unauthorized' && (
+            <div className="mt-8 rounded-3xl border border-stone-200 bg-white p-10 text-center max-w-md mx-auto shadow-sm space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-[#831843]">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h2 className="font-serif text-xl font-bold text-stone-900">Whole Seller Login Required</h2>
+              <p className="text-xs text-stone-600">
+                This collection is exclusive to registered whole sellers. Redirecting to login...
+              </p>
+              <Link
+                href={`/login?next=${encodeURIComponent(`/collections/${slug}`)}`}
+                className="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-[#1a1a1a] text-white text-xs font-bold uppercase tracking-wider hover:bg-black transition-colors"
+              >
+                Log In Now
+              </Link>
             </div>
           )}
 
