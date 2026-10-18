@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import {
   Plus,
@@ -11,13 +11,26 @@ import {
   Save,
   Building2,
   ChevronLeft,
+  ChevronDown,
+  Check,
+  X,
   Loader2,
   QrCode,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { useApp } from '@/lib/context/AppContext';
 import MultiColorInput from '@/components/admin/ColorPicker';
+
+const SIZE_CHART_OPTIONS = [
+  'M to 2XL',
+  'M to 3XL',
+  'M to 5XL',
+  'L to 3XL',
+  'L to 6XL',
+  '3XL to 4XL',
+  '4XL to 6XL',
+];
 
 interface Vendor {
   id: string;
@@ -97,6 +110,7 @@ interface Product {
   fabric: string;
   workType: string;
   style: string;
+  size?: string[];
   clothingType: string;
   hsnCode: string;
   lining?: string | null;
@@ -176,6 +190,7 @@ export default function AdminProductsPage() {
     fabric: '',
     workType: '',
     style: '',
+    size: [] as string[],
     clothingType: 'kurti_set',
     hsnCode: '621142',
     lining: '',
@@ -184,6 +199,30 @@ export default function AdminProductsPage() {
     color: '',
     description: ''
   });
+
+  const [isSizeChartDropdownOpen, setIsSizeChartDropdownOpen] = useState(false);
+  const sizeChartDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        sizeChartDropdownRef.current &&
+        !sizeChartDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSizeChartDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleSizeChart = (option: string) => {
+    const current = Array.isArray(formData.size) ? formData.size : [];
+    const next = current.includes(option)
+      ? current.filter((s) => s !== option)
+      : [...current, option];
+    setFormData({ ...formData, size: next });
+  };
 
   // --- Load vendor list ---
   const loadVendors = useCallback(async (search: string) => {
@@ -438,6 +477,7 @@ export default function AdminProductsPage() {
       fabric: '',
       workType: '',
       style: '',
+      size: [] as string[],
       clothingType: 'kurti_set',
       hsnCode: '621142',
       lining: '',
@@ -595,6 +635,7 @@ export default function AdminProductsPage() {
       fabric: formData.fabric,
       workType: formData.workType,
       style: formData.style,
+      size: formData.size || [],
       clothingType: formData.clothingType,
       hsnCode: formData.hsnCode,
       lining: formData.lining.trim(),
@@ -670,7 +711,7 @@ export default function AdminProductsPage() {
         addToast({
           type: 'error',
           title: isEditing ? 'Failed to update product' : 'Failed to create product',
-          message: json.error
+          message: json.error || 'Please review the inputs and try again.'
         });
       }
     } catch {
@@ -700,6 +741,7 @@ export default function AdminProductsPage() {
       fabric: product.fabric || '',
       workType: product.workType || '',
       style: product.style || '',
+      size: Array.isArray(product.size) ? product.size : [],
       clothingType: product.clothingType || 'kurti_set',
       hsnCode: product.hsnCode || '621142',
       lining: product.lining || '',
@@ -1411,6 +1453,119 @@ export default function AdminProductsPage() {
                       onChange={e => setFormData({ ...formData, style: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                     />
+                  </div>
+
+                  <div className="relative" ref={sizeChartDropdownRef}>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-stone-800">Size Charts</label>
+                      {formData.size && formData.size.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, size: [] })}
+                          className="text-[11px] text-rose-800 hover:underline font-semibold"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Trigger Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSizeChartDropdownOpen(!isSizeChartDropdownOpen)}
+                      className="w-full min-h-[42px] px-3 py-1.5 bg-stone-50 border border-stone-300 rounded-xl text-left flex items-center justify-between gap-2 focus:outline-none focus:border-rose-900 transition"
+                    >
+                      <div className="flex flex-wrap gap-1 items-center flex-1 min-w-0">
+                        {formData.size && formData.size.length > 0 ? (
+                          formData.size.map((opt) => (
+                            <span
+                              key={opt}
+                              className="inline-flex items-center gap-1 bg-rose-100 text-rose-900 border border-rose-300 text-xs font-semibold px-2 py-0.5 rounded-lg"
+                            >
+                              {opt}
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleSizeChart(opt);
+                                }}
+                                className="hover:text-rose-600 cursor-pointer ml-0.5"
+                              >
+                                &times;
+                              </span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-stone-400 text-xs">Select size charts...</span>
+                        )}
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-stone-500 shrink-0" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isSizeChartDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-stone-200 rounded-xl shadow-xl z-30 p-2 space-y-1">
+                        <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100 flex items-center justify-between">
+                          <span>Size Charts (Multi-select)</span>
+                          <span className="text-stone-500 font-normal">
+                            {formData.size?.length || 0} selected
+                          </span>
+                        </div>
+                        <div className="max-h-52 overflow-y-auto space-y-0.5 py-1">
+                          {SIZE_CHART_OPTIONS.map((opt) => {
+                            const isChecked = formData.size?.includes(opt);
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => toggleSizeChart(opt)}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition ${
+                                  isChecked
+                                    ? 'bg-rose-50 text-rose-900 font-semibold'
+                                    : 'text-stone-700 hover:bg-stone-50'
+                                }`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span
+                                    className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                      isChecked
+                                        ? 'bg-rose-900 border-rose-900 text-white'
+                                        : 'border-stone-300 bg-white'
+                                    }`}
+                                  >
+                                    {isChecked && <Check className="w-3 h-3" />}
+                                  </span>
+                                  {opt}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick-toggle pill chips */}
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {SIZE_CHART_OPTIONS.map((opt) => {
+                        const isChecked = formData.size?.includes(opt);
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => toggleSizeChart(opt)}
+                            className={`text-[10px] px-2 py-0.5 rounded-md border transition ${
+                              isChecked
+                                ? 'bg-rose-800 text-white border-rose-800 font-semibold shadow-xs'
+                                : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
+                            }`}
+                          >
+                            {isChecked ? '✓ ' : '+ '}
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 

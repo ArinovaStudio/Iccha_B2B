@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
 
   images: {
     remotePatterns: [
+            {
+        protocol: 'https',
+        hostname: 'icchastore.com',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'iccha.bestofall.in',

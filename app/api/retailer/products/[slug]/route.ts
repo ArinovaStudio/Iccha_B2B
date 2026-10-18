@@ -108,12 +108,12 @@ export async function GET(
     const platformEntity = product.vendor
       ? null
       : await prisma.billingEntity.findFirst({
-          where: {
-            code: process.env.PLATFORM_BILLING_ENTITY_CODE || "platform",
-            isActive: true,
-          },
-          select: { defaultGstRate: true },
-        });
+        where: {
+          code: process.env.PLATFORM_BILLING_ENTITY_CODE || "platform",
+          isActive: true,
+        },
+        select: { defaultGstRate: true },
+      });
     const platformGstRate = platformEntity?.defaultGstRate;
 
     const shaped = {
@@ -133,14 +133,14 @@ export async function GET(
       // Return warehouse data in the format expected by the frontend.
       warehouse: product.warehouse
         ? {
-            id: product.warehouse.id,
-            name: product.warehouse.name,
-            address: product.warehouse.address,
-            city: product.warehouse.city,
-            state: product.warehouse.state,
-            pincode: product.warehouse.pincode,
-            isActive: product.warehouse.isActive,
-          }
+          id: product.warehouse.id,
+          name: product.warehouse.name,
+          address: product.warehouse.address,
+          city: product.warehouse.city,
+          state: product.warehouse.state,
+          pincode: product.warehouse.pincode,
+          isActive: product.warehouse.isActive,
+        }
         : null,
 
       fabric: product.fabric,
@@ -148,6 +148,7 @@ export async function GET(
       lining: product.lining,
       margin: product.margin,
       style: product.style,
+      size: product.size,
       clothingType: product.clothingType,
 
       piecesPerSet: product.piecesPerSet,
@@ -170,9 +171,9 @@ export async function GET(
         product.sizes.length > 0
           ? product.sizes.map((row) => row.size)
           : product.sizeCombination
-              .split(",")
-              .map((s) => s.trim().split(/[\s(]/)[0])
-              .filter(Boolean),
+            .split(",")
+            .map((s) => s.trim().split(/[\s(]/)[0])
+            .filter(Boolean),
 
       billingEntityId: product.gstConfig?.billingEntityId ?? null,
       hsn: product.gstConfig?.hsnCode ?? product.hsnCode,
@@ -192,7 +193,7 @@ export async function GET(
       data: shaped,
     });
   } catch (error) {
-    console.error("Retailer product detail error:", error);
+    console.error("Whole Seller product detail error:", error);
 
     return NextResponse.json(
       {

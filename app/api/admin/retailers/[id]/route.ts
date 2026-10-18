@@ -19,7 +19,7 @@ export async function DELETE(
   });
 
   if (!retailer || retailer.user.role !== "RETAILER") {
-    return NextResponse.json({ success: false, error: "Retailer not found" }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Whole Seller not found" }, { status: 404 });
   }
 
   const orderCount = await prisma.orderEnquiry.count({

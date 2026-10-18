@@ -50,7 +50,7 @@ export default function RoleSwitcherBar() {
   const backendShortcuts = [
     { label: 'Admin Dashboard', href: '/admin', icon: LayoutDashboard, desc: 'Overview & Metrics' },
     { label: 'Hero Banners CMS', href: '/admin/hero', icon: Sparkles, desc: 'WebGL 3D Slides', badge: 'Live' },
-    { label: 'KYC Verification', href: '/admin/kyc', icon: FileCheck, desc: 'Retailer Approvals', badge: '2 Pending' },
+    { label: 'KYC Verification', href: '/admin/kyc', icon: FileCheck, desc: 'Whole seller Approvals', badge: '2 Pending' },
     { label: 'Order Enquiries', href: '/admin/orders', icon: ShoppingBag, desc: 'B2B Estimates' },
     { label: 'Products Catalog', href: '/admin/products', icon: Package, desc: 'Wholesale Styles' },
     { label: 'Inventory & Sets', href: '/admin/inventory', icon: Boxes, desc: 'Ratio Bundling' },
@@ -146,7 +146,7 @@ export default function RoleSwitcherBar() {
                       : 'bg-stone-800/80 border-stone-700 hover:bg-stone-700 text-stone-300'
                   }`}
                 >
-                  <div className="font-semibold text-emerald-400">2. Retailer</div>
+                  <div className="font-semibold text-emerald-400">2. Whole seller</div>
                   <div className="text-[10px] text-stone-400">Live Wholesale</div>
                 </button>
 

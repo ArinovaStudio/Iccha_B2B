@@ -120,7 +120,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRole('retailer');
     addToast({
       type: 'info',
-      title: `Switched Demo Retailer`,
+      title: `Switched Demo Whole Seller`,
       message: `Active user: ${target.businessName} (${target.status.toUpperCase().replace('_', ' ')})`
     });
   };
@@ -283,7 +283,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       type: newOverride ? 'success' : 'warning',
       title: `MOQ Override ${newOverride ? 'Activated' : 'Removed'}`,
       message: newOverride
-        ? `Retailer ${currentRetailer.businessName} now has below-MOQ checkout unlocked!`
+        ? `Whole Seller ${currentRetailer.businessName} now has below-MOQ checkout unlocked!`
         : `Default MOQ requirements restored.`
     });
   };

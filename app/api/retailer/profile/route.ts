@@ -37,14 +37,14 @@ export async function GET(request: NextRequest) {
     const pickAddress = (a: typeof billing) =>
       a
         ? {
-            street: a.street,
-            area: a.area,
-            city: a.city,
-            state: a.state,
-            stateCode: a.stateCode,
-            pincode: a.pincode,
-            landmark: a.landmark,
-          }
+          street: a.street,
+          area: a.area,
+          city: a.city,
+          state: a.state,
+          stateCode: a.stateCode,
+          pincode: a.pincode,
+          landmark: a.landmark,
+        }
         : null;
 
     return NextResponse.json({
@@ -70,32 +70,32 @@ export async function GET(request: NextRequest) {
         shippingAddress: pickAddress(shipping),
         kyc: kyc
           ? {
-              status: kyc.status,
-              gstin: kyc.gstin,
-              pan: kyc.pan,
-              submittedAt: kyc.submittedAt,
-              reviewedAt: kyc.reviewedAt,
-              rejectionReason: kyc.rejectionReason,
-              infoRequestNotes: kyc.infoRequestNotes,
-              documents: kyc.documents.map((d) => ({
-                id: d.id,
-                type: d.documentType,
-                name: d.originalFilename,
-                sizeMb: Number((d.fileSize / (1024 * 1024)).toFixed(2)),
-                uploadedAt: d.uploadedAt,
-              })),
-              activities: kyc.activities.map((a) => ({
-                id: a.id,
-                action: a.action,
-                notes: a.notes,
-                createdAt: a.createdAt,
-              })),
-            }
+            status: kyc.status,
+            gstin: kyc.gstin,
+            pan: kyc.pan,
+            submittedAt: kyc.submittedAt,
+            reviewedAt: kyc.reviewedAt,
+            rejectionReason: kyc.rejectionReason,
+            infoRequestNotes: kyc.infoRequestNotes,
+            documents: kyc.documents.map((d) => ({
+              id: d.id,
+              type: d.documentType,
+              name: d.originalFilename,
+              sizeMb: Number((d.fileSize / (1024 * 1024)).toFixed(2)),
+              uploadedAt: d.uploadedAt,
+            })),
+            activities: kyc.activities.map((a) => ({
+              id: a.id,
+              action: a.action,
+              notes: a.notes,
+              createdAt: a.createdAt,
+            })),
+          }
           : null,
       },
     });
   } catch (error) {
-    console.error("Retailer profile error:", error);
+    console.error("Whole Seller profile error:", error);
     return NextResponse.json(
       { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }

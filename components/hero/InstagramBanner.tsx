@@ -46,13 +46,13 @@ export default function InstagramBanner() {
           </h2>
           <p className="mb-8 max-w-md text-[15px] leading-relaxed text-neutral-600">
             See the latest ethnic wear drops, fabric stories and styling reels
-            from Iccha and our manufacturing partners. Verified retailers unlock
+            from Iccha and our manufacturing partners. Verified whole sellers unlock
             wholesale rates, live stock and size ratios.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/register"
               className="inline-flex items-center gap-2 rounded-full border border-black px-8 py-3.5 text-sm font-medium text-black transition-colors hover:bg-black hover:text-white">
-              Apply as a retailer
+              Apply as a whole seller
             </Link>
           </div>
           <p className="mt-5 text-sm text-neutral-500">@icchastore.official</p>

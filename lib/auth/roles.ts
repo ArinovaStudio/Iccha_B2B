@@ -10,6 +10,8 @@ export const ADMIN_AREA_ROLES = [...STAFF_ROLES, "VENDOR"] as const;
 // The /admin pages a VENDOR may open.
 export const VENDOR_ALLOWED_ADMIN_PATHS = [
   "/admin/products",
+  "/admin/collections",
+  "/admin/collection",
   "/admin/warehouses",
   "/admin/orders",
   "/admin/sample-call-requests",

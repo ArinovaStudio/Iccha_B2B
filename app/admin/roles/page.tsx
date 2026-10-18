@@ -260,7 +260,7 @@ export default function AdminRolesPage() {
         return;
       }
 
-      addToast({ type: 'success', title: 'Demoted to Retailer', message: result.message || `${demoting.businessName} is now a retailer account.` });
+      addToast({ type: 'success', title: 'Demoted to Whole Seller', message: result.message || `${demoting.businessName} is now a retailer account.` });
       setDemoting(null);
       await fetchUsers();
     } catch (err) {
@@ -324,9 +324,8 @@ export default function AdminRolesPage() {
                     <td className="p-4 font-semibold text-stone-900">{u.businessName || '—'}</td>
                     <td className="p-4 text-stone-600">{u.email}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        u.role === 'VENDOR' ? 'bg-purple-100 text-purple-900' : 'bg-stone-100 text-stone-700'
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'VENDOR' ? 'bg-purple-100 text-purple-900' : 'bg-stone-100 text-stone-700'
+                        }`}>
                         {u.role}
                       </span>
                     </td>
@@ -351,7 +350,7 @@ export default function AdminRolesPage() {
                           className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg font-bold text-[11px] shadow-sm transition inline-flex items-center gap-1.5"
                         >
                           <ArrowDownCircle className="w-3.5 h-3.5" />
-                          <span>Demote to Retailer</span>
+                          <span>Demote to Whole Seller</span>
                         </button>
                       )}
                     </td>
@@ -449,7 +448,7 @@ export default function AdminRolesPage() {
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="font-serif text-lg font-bold text-stone-900 flex items-center gap-2">
                 <UserCog className="w-5 h-5 text-[#831843]" />
-                Demote {demoting.businessName} to Retailer
+                Demote {demoting.businessName} to Whole Seller
               </h3>
               <button type="button" onClick={() => setDemoting(null)} className="text-stone-400 font-bold text-sm">
                 &times;

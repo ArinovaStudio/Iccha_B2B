@@ -312,7 +312,7 @@ export default function RetailerOrderDetailPage() {
             <div>
               <nav className="text-xs text-stone-500 mb-1 flex items-center gap-2">
                 <Link href="/retailer" className="hover:text-stone-900">
-                  Retailer Portal
+                  Whole Seller Portal
                 </Link>
                 <span>/</span>
                 <Link href="/retailer/orders" className="hover:text-stone-900">
@@ -442,24 +442,24 @@ export default function RetailerOrderDetailPage() {
                       {!["cancelled", "dispatched"].includes(
                         sellerOrder.status.toLowerCase()
                       ) && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            cancelSellerOrder(sellerOrder.id, sellerOrder.sellerName)
-                          }
-                          disabled={cancellingSellerOrderId === sellerOrder.id}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {cancellingSellerOrderId === sellerOrder.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <XCircle className="h-3.5 w-3.5" />
-                          )}
-                          {cancellingSellerOrderId === sellerOrder.id
-                            ? "Cancelling..."
-                            : "Cancel Vendor Order"}
-                        </button>
-                      )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              cancelSellerOrder(sellerOrder.id, sellerOrder.sellerName)
+                            }
+                            disabled={cancellingSellerOrderId === sellerOrder.id}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {cancellingSellerOrderId === sellerOrder.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <XCircle className="h-3.5 w-3.5" />
+                            )}
+                            {cancellingSellerOrderId === sellerOrder.id
+                              ? "Cancelling..."
+                              : "Cancel Vendor Order"}
+                          </button>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -485,11 +485,10 @@ export default function RetailerOrderDetailPage() {
                 return (
                   <div
                     key={step.title}
-                    className={`p-3.5 rounded-2xl border ${
-                      isPassed
+                    className={`p-3.5 rounded-2xl border ${isPassed
                         ? "bg-emerald-50 border-emerald-200 text-emerald-950"
                         : "bg-stone-50 border-stone-200 text-stone-400"
-                    }`}
+                      }`}
                   >
                     <div className="font-bold flex items-center gap-1.5">
                       {isPassed ? (
@@ -565,15 +564,15 @@ export default function RetailerOrderDetailPage() {
                               <div className="mt-0.5 font-bold text-stone-900">
                                 {vendors.length > 0
                                   ? vendors.map((vendor) => (
-                                      <div key={vendor.id}>
-                                        {vendor.businessName}
-                                        {vendor.contactName ? (
-                                          <span className="ml-1 font-normal text-stone-500">
-                                            • {vendor.contactName}
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                    ))
+                                    <div key={vendor.id}>
+                                      {vendor.businessName}
+                                      {vendor.contactName ? (
+                                        <span className="ml-1 font-normal text-stone-500">
+                                          • {vendor.contactName}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  ))
                                   : "Vendor information unavailable"}
                               </div>
                             </div>
@@ -615,45 +614,49 @@ export default function RetailerOrderDetailPage() {
                       </h4>
 
                       {estimateItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="p-3 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-stone-200 shrink-0">
-                                <Image
-                                  src={
-                                    item.imageUrl ||
-                                    "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400"
-                                  }
-                                  alt={item.productName}
-                                  fill
-                                  className="object-cover object-top"
-                                  referrerPolicy="no-referrer"
-                                />
-                              </div>
-
-                              <div>
-                                <strong className="text-stone-900 text-sm block">
-                                  {item.productName}
-                                </strong>
-                                <span className="text-[11px] text-stone-500 font-mono">
-                                  SKU: {item.sku} • Set:{" "}
-                                  {item.sizeCombination}
-                                </span>
-                              </div>
+                        <div
+                          key={item.id}
+                          className="p-3 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-stone-200 shrink-0">
+                              <Image
+                                src={
+                                  item.imageUrl ||
+                                  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400"
+                                }
+                                alt={item.productName}
+                                fill
+                                className="object-cover object-top"
+                                referrerPolicy="no-referrer"
+                              />
                             </div>
 
-                            <div className="text-left sm:text-right">
-                              <div className="font-bold text-stone-900">
-                                {item.sets} Sets × ₹{number(item.setRate)}
+                            <div>
+                              <strong className="text-stone-900 text-sm block">
+                                {item.productName}
+                              </strong>
+                              <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-stone-500 font-mono">
+                                <span>SKU: {item.sku}</span>
+                                {item.sizeCombination && (
+                                  <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-900 border border-rose-200 text-[10px] font-sans font-semibold px-2 py-0.5 rounded-md">
+                                    Size: {item.sizeCombination}
+                                  </span>
+                                )}
                               </div>
-                              <span className="text-[11px] font-mono text-rose-900 font-bold">
-                                = ₹{number(item.lineSubtotal)}
-                              </span>
                             </div>
                           </div>
-                        ))}
+
+                          <div className="text-left sm:text-right">
+                            <div className="font-bold text-stone-900">
+                              {item.sets} Sets × ₹{number(item.setRate)}
+                            </div>
+                            <span className="text-[11px] font-mono text-rose-900 font-bold">
+                              = ₹{number(item.lineSubtotal)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1.5 text-xs">

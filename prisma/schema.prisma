@@ -7,7 +7,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url   = env("DATABASE_URL")
+  // ↑ Left commented as in your file (correct for Prisma 7, where the URL lives in prisma.config.ts).
+  //   On Prisma 6 or older, uncomment it.
 }
 
 // =========================================================================
@@ -33,12 +35,12 @@ enum RetailerAccountStatus {
 }
 
 model VendorProfile {
-  id             String                 @id @default(uuid())
-  userId         String                 @unique
+  id             String   @id @default(uuid())
+  userId         String   @unique
   businessName   String
   contactName    String
   mobile         String
-  gstin          String                 @unique
+  gstin          String   @unique
   pan            String?
   address        String
   city           String
@@ -51,14 +53,15 @@ model VendorProfile {
   ifsc           String?
   branch         String?
   upiId          String?
-  description    String?                @db.Text
-  invoicePrefix  String                 @default("INV-VEN-")
-  defaultGstRate Decimal                @default(5.0) @db.Decimal(5, 2)
-  isActive       Boolean                @default(true)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  vendorCode     String                 @unique
+  description    String?  @db.Text
+  invoicePrefix  String   @default("INV-VEN-")
+  defaultGstRate Decimal  @default(5.0) @db.Decimal(5, 2)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  vendorCode     String   @unique
   bannerAssetId  String?
+
   bannerAsset    MediaAsset?            @relation(fields: [bannerAssetId], references: [id], onDelete: SetNull)
   categories     Category[]
   user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -66,6 +69,7 @@ model VendorProfile {
   warehouses     Warehouse[]
   sellerOrders   SellerOrder[]
   uploadSessions ProductUploadSession[]
+  collections    Collection[]
 
   @@index([businessName])
   @@index([bannerAssetId])
@@ -92,7 +96,7 @@ model Warehouse {
 
 model User {
   id           String    @id @default(uuid())
-  email        String?    @unique
+  email        String?   @unique
   passwordHash String
   name         String
   mobile       String?
@@ -109,6 +113,7 @@ model User {
   updatedSlides    HeroSlide[]       @relation("SlideUpdater")
   vendorProfile    VendorProfile?
   staffBankDetails StaffBankDetails?
+  collections      Collection[]      @relation("CollectionCreator")
 
   @@index([email])
   @@index([role])
@@ -334,7 +339,7 @@ model Category {
   slug            String   @unique
   name            String
   description     String?
-  type            String   @default("kurti_pant_set") // "kurti_pant_set" | "3_pc_suit" | "kurti_only"
+  type            String   @default("kurti_pant_set")
   billingEntityId String?
   mediaAssetId    String?
   sortOrder       Int      @default(0)
@@ -379,19 +384,44 @@ model Collection {
   slug         String    @unique
   name         String
   description  String?
+  tags         String[]
   mediaAssetId String?
   sortOrder    Int       @default(0)
   isPublished  Boolean   @default(true)
   startAt      DateTime?
   endAt        DateTime?
+  vendorId     String? // null = created by an admin
+  createdById  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id])
-  products   Product[]
+  mediaAsset MediaAsset?         @relation(fields: [mediaAssetId], references: [id])
+  vendor     VendorProfile?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdBy  User?               @relation("CollectionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  products   CollectionProduct[]
   heroSlides HeroSlide[]
 
   @@index([slug])
+  @@index([isPublished, sortOrder])
+  @@index([vendorId])
+  @@index([createdById])
+}
+
+// Links a Product to a Collection, in display order.
+// The collection cover image = image of the product with the lowest `position`.
+model CollectionProduct {
+  id           String   @id @default(uuid())
+  collectionId String
+  productId    String
+  position     Int      @default(0)
+  addedAt      DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, productId])
+  @@index([collectionId, position])
+  @@index([productId])
 }
 
 model Product {
@@ -403,7 +433,6 @@ model Product {
   description   String?
   categoryId    String
   subcategoryId String?
-  collectionId  String?
   gstConfigId   String?
 
   // Wholesale Lot & Set Architecture
@@ -418,6 +447,7 @@ model Product {
   fabric          String
   workType        String
   style           String
+  size            String[] @default([])
   clothingType    String
   hsnCode         String  @default("621142")
   minOrderSets    Int     @default(1)
@@ -443,7 +473,6 @@ model Product {
 
   category    Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   subcategory Subcategory?      @relation(fields: [subcategoryId], references: [id])
-  collection  Collection?       @relation(fields: [collectionId], references: [id])
   gstConfig   GSTConfiguration? @relation(fields: [gstConfigId], references: [id])
 
   media             ProductMedia[]
@@ -455,15 +484,16 @@ model Product {
   moqRules          MOQRule[]
   sellerRequests    SellerContactRequest[]
   heroSlides        HeroSlide[]
+  collections       CollectionProduct[]
   vendorId          String?
   vendor            VendorProfile?         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   warehouseId       String?
-  warehouse         Warehouse?             @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse?             @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
 
   @@index([sku])
   @@index([designNumber])
   @@index([categoryId])
-  @@index([collectionId])
+  @@index([vendorId])
   @@index([warehouseId])
 }
 
@@ -498,22 +528,20 @@ model ProductMedia {
 }
 
 model ProductUploadSession {
-  id          String   @id @default(uuid())
-  token       String   @unique
-  vendorId    String?
-  status      String   @default("pending") // "pending" | "uploaded" | "expired"
-  // mediaAssetId String?
-  warehouseId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  expiresAt   DateTime
-
-  vendor       VendorProfile?              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  // mediaAsset MediaAsset?   @relation(fields: [mediaAssetId], references: [id])
-  warehouse    Warehouse?                  @relation(fields: [warehouseId], references: [id])
-  mediaAssets  ProductUploadSessionAsset[]
-  mediaAsset   MediaAsset?                 @relation(fields: [mediaAssetId], references: [id])
+  id           String   @id @default(uuid())
+  token        String   @unique
+  vendorId     String?
+  status       String   @default("pending") // "pending" | "uploaded" | "expired"
+  warehouseId  String?
   mediaAssetId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  expiresAt    DateTime
+
+  vendor      VendorProfile?              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse?                  @relation(fields: [warehouseId], references: [id])
+  mediaAssets ProductUploadSessionAsset[]
+  mediaAsset  MediaAsset?                 @relation(fields: [mediaAssetId], references: [id])
 
   @@index([vendorId])
   @@index([token])
@@ -544,7 +572,7 @@ model StockAdjustment {
   adjustmentSets Int
   newSets        Int
   reason         String // "INITIAL_STOCK" | "PRODUCTION_RECEIPT" | "ORDER_FULFILLMENT" | "DAMAGED" | "MANUAL_CORRECTION"
-  size           String? // NEW
+  size           String?
   note           String?
   actorUserId    String?
   createdAt      DateTime @default(now())
@@ -650,8 +678,7 @@ model SellerContactRequest {
   updatedAt DateTime @updatedAt
 
   retailerProfile RetailerProfile @relation(fields: [retailerProfileId], references: [id], onDelete: Cascade)
-
-  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product         Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([retailerProfileId])
   @@index([productId])
@@ -813,12 +840,14 @@ model OrderItem {
   sizeCombination String
 
   orderEnquiry  OrderEnquiry @relation(fields: [orderEnquiryId], references: [id], onDelete: Cascade)
-  product       Product?     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Order lines are a financial record: keep them (with their snapshot fields) if the product is deleted.
+  product       Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
   sellerOrderId String?
   sellerOrder   SellerOrder? @relation(fields: [sellerOrderId], references: [id], onDelete: SetNull)
 
   @@index([orderEnquiryId])
   @@index([productId])
+  @@index([sellerOrderId])
 }
 
 model OrderStatusHistory {
@@ -1028,7 +1057,7 @@ model MediaAsset {
 }
 
 // =========================================================================
-// 11. AUDIT LOGS & SITE SETTINGS
+// 11. AUDIT LOGS, SITE SETTINGS & CONTACT
 // =========================================================================
 
 model AuditLog {
@@ -1059,9 +1088,42 @@ model SiteSetting {
 
   @@index([key])
 }
+
 model StoreSettings {
   id          String   @id @default("main")
   description String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ContactBranch {
+  id            String   @id @default(cuid())
+  name          String // e.g. "Mumbai Showroom"
+  tag           String? // small label above the name, e.g. "Head office"
+  contactPerson String?
+  phone         String
+  altPhone      String?
+  whatsapp      String? // digits only, with country code, e.g. 919876543210
+  email         String?
+  addressLine   String
+  city          String
+  state         String?
+  pincode       String?
+  mapUrl        String? // Google Maps link
+  hours         String? // e.g. "Mon–Sat, 10:30 am – 7:30 pm"
+  closedDays    String? // e.g. "Sunday closed"
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("contact_branches")
+}
+
+model CategoriesTitle {
+  id       String   @id @default(cuid())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

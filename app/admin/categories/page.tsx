@@ -66,6 +66,12 @@ export default function AdminCategoriesPage() {
 
   const vendorLoadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // ── Categories title (single input) ──────────────────────────────
+  const [categoriesTitle, setCategoriesTitle] = useState({title: '', id: ''});
+  const [titleExists, setTitleExists] = useState(false); // true once a record exists in DB -> PUT from then on
+  const [titleLoading, setTitleLoading] = useState(true);
+  const [titleSaving, setTitleSaving] = useState(false);
+
   const loadCategories = async (owner = selectedOwner) => {
     setLoading(true);
 
@@ -153,12 +159,74 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const loadCategoriesTitle = async () => {
+    setTitleLoading(true);
+    try {
+      const res = await fetch('/api/categoriesTitle');
+      const json = await res.json();
+
+      if (json) {
+
+        setCategoriesTitle({title: json[0]?.title || '', id: json[0]?.id || ''});
+        setTitleExists(true);
+      }
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Network error',
+        message: 'Could not load categories title.',
+      });
+    } finally {
+      setTitleLoading(false);
+    }
+  };
+
+  const saveCategoriesTitle = async (value: string) => {
+    setTitleSaving(true);
+    try {
+      const res = await fetch('/api/categoriesTitle', {
+        method: titleExists ? 'PUT' : 'POST', // first time POST, then PUT only
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: value.trim(), id: categoriesTitle.id }),
+      });
+      const json = await res.json();
+
+      console.log(json);
+      
+      if (json) {
+        setTitleExists(true);
+        setCategoriesTitle({title: value.trim(), id: json.id});
+        addToast({
+          type: 'success',
+          title: 'Title Saved',
+          message: 'Categories title updated.',
+        });
+      } else {
+        addToast({ type: 'error', title: 'Save failed', message: json.error });
+      }
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Network error',
+        message: 'Could not save categories title.',
+      });
+    } finally {
+      setTitleSaving(false);
+    }
+  };
+
+  const handleClearTitle = async () => {
+    setCategoriesTitle({title: '', id: ''});
+    if (titleExists) await saveCategoriesTitle('');
+  };
+
   useEffect(() => {
     // ?vendorId=<id> (set by the product form's "Create" link) preselects that vendor.
     const presetVendorId = new URLSearchParams(window.location.search).get("vendorId");
     if (presetVendorId) setSelectedOwner(presetVendorId);
 
     loadVendors();
+    loadCategoriesTitle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -318,7 +386,7 @@ export default function AdminCategoriesPage() {
               Taxonomy & Categorization
             </span>
             <h1 className="font-serif text-3xl font-bold text-stone-900 mt-1">
-              Wholesale Kurti Categories ({categories.length})
+              Wholesale Categories ({categories.length})
             </h1>
             <p className="text-xs text-stone-500 mt-0.5">
               Manage product classifications and catalogue filters.
@@ -335,6 +403,40 @@ export default function AdminCategoriesPage() {
           </button>
         </div>
 
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm text-xs space-y-2">
+          <label className="block font-bold text-stone-800">Categories Title</label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={categoriesTitle.title}
+              onChange={e => setCategoriesTitle({...categoriesTitle, title: e.target.value})}
+              disabled={titleLoading || titleSaving}
+              placeholder="e.g. Shop by Category"
+              className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-rose-900 disabled:opacity-60"
+            />
+            <button
+              type="button"
+              onClick={() => saveCategoriesTitle(categoriesTitle.title)}
+              disabled={titleLoading || titleSaving}
+              className="px-4 py-2 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {titleSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={handleClearTitle}
+              disabled={titleLoading || titleSaving || (!categoriesTitle && !titleExists)}
+              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold disabled:opacity-60"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
         {isStaff && (
           <div className="mt-8 space-y-5">
             <div>
@@ -467,6 +569,9 @@ export default function AdminCategoriesPage() {
             )}
           </div>
         )}
+
+        {/* Categories title — single input, POST first time then PUT only */}
+
 
         <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm text-xs">
           <div className="relative">

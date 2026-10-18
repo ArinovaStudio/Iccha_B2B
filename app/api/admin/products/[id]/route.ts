@@ -19,6 +19,10 @@ const updateProductSchema = z.object({
   fabric: z.string().min(1).optional(),
   workType: z.string().min(1).optional(),
   style: z.string().min(1).optional(),
+  size: z.union([
+    z.array(z.string()),
+    z.string().transform((s) => (s.trim() ? [s.trim()] : [])),
+  ]).optional(),
   clothingType: z.string().min(1).optional(),
   hsnCode: z.string().optional(),
   lining: z.string().trim().max(200).nullable().optional(),

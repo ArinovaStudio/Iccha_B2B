@@ -54,7 +54,7 @@ export default function RetailerProfilePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
           <nav className="text-xs text-stone-500 mb-1 flex items-center gap-2">
-            <Link href="/retailer" className="hover:text-stone-900">Retailer Portal</Link>
+            <Link href="/retailer" className="hover:text-stone-900">Whole Seller Portal</Link>
             <span>/</span>
             <span className="text-stone-900 font-semibold">Boutique Profile</span>
           </nav>

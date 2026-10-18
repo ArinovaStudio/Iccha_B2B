@@ -228,14 +228,14 @@ export default function AdminRetailersPage() {
       if (!response.ok || !result.success) {
         addToast({
           type: "error",
-          title: "Retailer creation failed",
+          title: "Whole Seller creation failed",
           message: result.error || "Please check the details and try again.",
         });
         return;
       }
       addToast({
         type: "success",
-        title: "Retailer created",
+        title: "Whole Seller created",
         message: "The account is approved and ready for login.",
       });
       setCreateForm({
@@ -267,7 +267,7 @@ export default function AdminRetailersPage() {
       console.error("Create retailer error:", error);
       addToast({
         type: "error",
-        title: "Retailer creation failed",
+        title: "Whole Seller creation failed",
         message: "Something went wrong. Please try again.",
       });
     } finally {
@@ -285,10 +285,10 @@ export default function AdminRetailersPage() {
               B2B Accounts & Wholesalers
             </span>
             <h1 className="font-serif text-3xl font-bold text-stone-900 mt-1">
-              Registered Retailers Directory
+              Registered Whole sellers Directory
             </h1>
             <p className="text-xs text-stone-500 mt-0.5">
-              Manage retailer account statuses, verified GSTIN records, and configure tailored MOQ policies.
+              Manage whole seller account statuses, verified GSTIN records, and configure tailored MOQ policies.
             </p>
           </div>
         </div>
@@ -297,7 +297,7 @@ export default function AdminRetailersPage() {
           onClick={() => setShowCreateForm(true)}
           className="shrink-0 px-4 py-2.5 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold text-xs shadow transition"
         >
-          + Create Retailer
+          + Create Whole seller
         </button>
         <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex items-center justify-between gap-3 text-xs">
           <div className="relative flex-1">
@@ -313,7 +313,7 @@ export default function AdminRetailersPage() {
         </div>
         {loading ? (
           <div className="p-16 bg-white rounded-3xl border border-stone-200 text-center text-xs text-stone-500">
-            Loading retailer accounts...
+            Loading whole seller accounts...
           </div>
         ) : retailers.length > 0 ? (
           <>
@@ -405,12 +405,12 @@ export default function AdminRetailersPage() {
               </div>
             </div>
             <div ref={loadMoreRef} className="h-8 flex items-center justify-center text-[10px] text-stone-400">
-              {loadingMore ? 'Loading more retailers...' : ''}
+              {loadingMore ? 'Loading more whole sellers...' : ''}
             </div>
           </>
         ) : (
           <div className="p-16 bg-white rounded-3xl border border-stone-200 text-center text-xs text-stone-500">
-            No retailer accounts found.
+            No whole seller accounts found.
           </div>
         )}
       </main>
@@ -482,7 +482,7 @@ export default function AdminRetailersPage() {
               <div className="flex items-start justify-between border-b border-stone-100 pb-4">
                 <div>
                   <h2 className="font-serif text-2xl font-bold text-stone-900">
-                    Create Retailer Account
+                    Create Whole seller Account
                   </h2>
                   <p className="text-xs text-stone-500 mt-1">
                     The account will be approved immediately after successful creation.
@@ -680,7 +680,7 @@ export default function AdminRetailersPage() {
                   disabled={creatingRetailer}
                   className="px-5 py-3 rounded-xl bg-[#831843] hover:bg-rose-900 text-white font-bold text-sm disabled:opacity-50"
                 >
-                  {creatingRetailer ? "Creating account..." : "Create & Approve Retailer"}
+                  {creatingRetailer ? "Creating account..." : "Create & Approve Whole Seller"}
                 </button>
               </div>
             </form>

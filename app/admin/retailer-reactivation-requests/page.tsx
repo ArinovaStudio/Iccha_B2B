@@ -136,10 +136,10 @@ export default function RetailerReactivationRequestsPage() {
 
       addToast({
         type: "success",
-        title: "Retailer reactivated",
+        title: "Whole seller reactivated",
         message:
           result.message ||
-          `${request.businessName} can now access the retailer portal.`,
+          `${request.businessName} can now access the whole seller portal.`,
       });
     } catch (error) {
       console.error(error);
@@ -242,7 +242,7 @@ export default function RetailerReactivationRequestsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-6">
           <div>
             <span className="text-xs uppercase font-bold tracking-widest text-[#831843]">
-              Retailer Accounts
+              Whole seller Accounts
             </span>
 
             <h1 className="font-serif text-3xl font-bold text-stone-900 mt-1">
@@ -250,7 +250,7 @@ export default function RetailerReactivationRequestsPage() {
             </h1>
 
             <p className="text-xs text-stone-500 mt-1">
-              Review retailers whose accounts were deactivated due to
+              Review whole sellers whose accounts were deactivated due to
               inactivity and process their reactivation requests.
             </p>
           </div>

@@ -75,26 +75,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const normalizedSize = selectedSize?.trim() || NO_SIZE;
+  if (!selectedSize || !selectedSize.trim() || selectedSize === NO_SIZE) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Please select a size before adding this product.",
+      },
+      { status: 400 }
+    );
+  }
 
-  // Keep size-selection validation, but do not limit cart quantities by stock.
-  if (product.category.requiresSize) {
-    if (!selectedSize) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Please select a size before adding this product.",
-        },
-        { status: 400 }
+  const normalizedSize = selectedSize.trim();
+
+  // Validate selected size against product.size (Size Charts) or product.sizes
+  if (Array.isArray(product.size) && product.size.length > 0) {
+    const inputSizes = normalizedSize.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const valid = inputSizes.every((inSz) =>
+      product.size.some((s) => s.toLowerCase() === inSz)
+    );
+    if (!valid && product.category.requiresSize) {
+      const allExistInSizes = inputSizes.every((inSz) =>
+        product.sizes.some((s) => s.size.toLowerCase() === inSz)
       );
+      if (!allExistInSizes) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "One or more selected sizes are not available for this product.",
+          },
+          { status: 409 }
+        );
+      }
     }
-
-    const sizeRow = product.sizes.find(
-      (row) =>
-        row.size.toLowerCase() === selectedSize.trim().toLowerCase()
+  } else if (product.category.requiresSize) {
+    const inputSizes = normalizedSize.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const allExistInSizes = inputSizes.every((inSz) =>
+      product.sizes.some((s) => s.size.toLowerCase() === inSz)
     );
 
-    if (!sizeRow) {
+    if (!allExistInSizes) {
       return NextResponse.json(
         {
           success: false,
@@ -103,14 +122,6 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-  } else if (selectedSize) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "This product does not require size selection.",
-      },
-      { status: 400 }
-    );
   }
 
   // Normalise the request into one line per colour (merging duplicates).

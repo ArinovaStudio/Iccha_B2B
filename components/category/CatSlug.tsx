@@ -28,10 +28,15 @@ export default function CategoryDetailPage({ slug }: {slug: string}) {
         }
       }
 
-    useEffect(() => {
-        getData()
-    }, [])
+  useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: 'instant',
+  });
 
+  getData();
+}, [slug]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -53,7 +58,7 @@ export default function CategoryDetailPage({ slug }: {slug: string}) {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
               
               <div className="md:col-span-8 space-y-4">
-                <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">
+                <h1 className="font-serif text-xl sm:text-4xl font-bold text-stone-900">
                   {category.name}
                 </h1>
 
@@ -63,22 +68,12 @@ export default function CategoryDetailPage({ slug }: {slug: string}) {
 
               </div>
 
-              <div className="md:col-span-4 relative aspect-[4/3] rounded-2xl overflow-hidden shadow border border-stone-200">
-                <Image
-                  src={category.image || "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=900&auto=format&fit=crop&q=80"}
-                  alt={category.name}
-                  fill
-                  className="object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl font-bold text-stone-900">
+              <h2 className="font-serif text-xs font-bold text-stone-900">
                 Featured Representative Designs ({products.length})
               </h2>
               <Link href="/categories" className="text-xs font-semibold text-rose-900 hover:underline flex items-center gap-1">

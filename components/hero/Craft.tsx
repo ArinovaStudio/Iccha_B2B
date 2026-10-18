@@ -52,7 +52,7 @@ const btnOnDark =
                   style={{ '--reveal-delay': '80ms' } as React.CSSProperties}
                 >
                   Thoughtful fabric selection, controlled finishing, and careful inspection
-                  turn every production lot into something retailers can confidently put on
+                  turn every production lot into something whole sellers can confidently put on
                   the floor.
                 </p>
 
@@ -86,7 +86,7 @@ const btnOnDark =
                 <div className="flex items-center gap-1.5 mb-4">
                   <Lock className="w-3.5 h-3.5 text-black" />
                   <span className="text-[11px] font-semibold text-neutral-500">
-                    Retailer access
+                    Whole seller access
                   </span>
                 </div>
 

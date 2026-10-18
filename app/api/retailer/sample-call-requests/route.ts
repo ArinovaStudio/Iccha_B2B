@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
     const body = createSchema.parse(await request.json());
 
-   
+
     const product = await prisma.product.findFirst({
       where: {
         id: body.productId,
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
 }
 
 /*
- * Retailer can see their own requests.
+ * Whole Seller can see their own requests.
  *
  * This is what lets the retailer see:
  *

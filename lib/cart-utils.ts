@@ -28,7 +28,7 @@ const CART_ITEM_INCLUDE = {
                 },
             },
             gstConfig: true,
-            category: { select: { requiresSize: true, gst:true } },
+            category: { select: { requiresSize: true, gst: true } },
             sizes: { orderBy: { sortOrder: "asc" } },
         },
     },
@@ -144,7 +144,7 @@ export async function serializeCartFull(cart: CartWithItems, retailerProfileId: 
     // The three lookups below are independent of each other, so run them concurrently
     // (one round-trip of waiting instead of three in a row).
     const [address, platform, moq] = await Promise.all([
-        // Retailer's default billing address, for interstate GST determination
+        // Whole Seller's default billing address, for interstate GST determination
         prisma.retailerAddress.findFirst({
             where: { retailerProfileId },
             orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],

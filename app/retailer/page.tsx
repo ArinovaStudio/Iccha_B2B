@@ -83,13 +83,13 @@ export default function RetailerDashboardPage() {
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-400/30">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Verified KYC Retailer
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Verified KYC Whole seller
                 </div>
                 <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold">
                   {loading ? (
                     <span className={skeleton}>Welcome, Business Name</span>
                   ) : (
-                    <>Welcome, {retailer?.businessName ?? 'Retailer'}</>
+                    <>Welcome, {retailer?.businessName ?? 'Whole seller'}</>
                   )}
                 </h1>
                 <p className="text-xs sm:text-sm text-stone-300 max-w-xl">

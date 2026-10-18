@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
                           </div>
 
                           <div className="text-stone-600 mt-1">
-                            Retailer:{' '}
+                            Whole Seller:{' '}
                             <strong>
                               {order.retailerBusinessName}
                             </strong>

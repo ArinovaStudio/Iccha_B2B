@@ -218,9 +218,11 @@ export default function GSTEntityBreakdown({
 
                           <p className="text-xs text-stone-600 mt-1 break-words">
                             {item.product.fabric} •{' '}
-                            {item.product.requiresSize && item.selectedSize
+                            {item.selectedSize && item.selectedSize !== 'NO_SIZE' && item.selectedSize !== '__NO_SIZE__'
                               ? `Size: ${item.selectedSize}`
-                              : 'Size: Not Required'}
+                              : item.product.requiresSize && item.selectedSize
+                              ? `Size: ${item.selectedSize}`
+                              : 'Size: Standard / Free Size'}
                           </p>
 
                           <div className="text-[11px] text-stone-700 font-medium mt-1.5 leading-relaxed">

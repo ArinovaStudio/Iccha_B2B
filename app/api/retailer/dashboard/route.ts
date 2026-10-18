@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Retailer dashboard error:", error);
+    console.error("Whole Seller dashboard error:", error);
     return NextResponse.json(
       { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }

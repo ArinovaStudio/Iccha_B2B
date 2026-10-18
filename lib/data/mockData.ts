@@ -1160,7 +1160,7 @@ export const MOCK_KYC_APPLICATIONS: KYCApplication[] = [
     retailerId: 'ret-101',
     businessName: 'Rajeshwari Ethnic Boutique & Wholesale',
     applicantName: 'Rajeshwari Sharma',
-    businessType: 'Wholesale Retailer',
+    businessType: 'Wholesale Whole Seller',
     mobile: '+91 98290 12345',
     whatsapp: '+91 98290 12345',
     email: 'rajeshwari.kurtis@gmail.com',
@@ -1400,7 +1400,7 @@ export const MOCK_ORDERS: OrderEnquiry[] = [
       {
         status: 'enquiry_received',
         timestamp: '2026-08-28T14:10:00Z',
-        note: 'Order Enquiry submitted by Retailer via Web Portal.',
+        note: 'Order Enquiry submitted by Whole Seller via Web Portal.',
         actor: 'Rajeshwari Sharma'
       },
       {

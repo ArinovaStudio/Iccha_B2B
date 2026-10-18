@@ -17,7 +17,7 @@ const addressSchema = z.object({
   stateCode: z.string().trim().min(1, "State code is required"),
   pincode: z.string().trim().min(4, "Valid pincode is required"),
   area: z.string().trim().nullish(),
-landmark: z.string().trim().nullish(),
+  landmark: z.string().trim().nullish(),
 });
 const submitSchema = z.object({
   billingAddress: addressSchema,
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
           },
         });
         if (!retailer) {
-          throw new Error("Retailer profile not found");
+          throw new Error("Whole Seller profile not found");
         }
         const cart = await tx.cart.findUnique({
           where: { retailerProfileId },
@@ -401,7 +401,7 @@ export async function POST(request: NextRequest) {
             existing.gst += gstAmount;
             existing.items.push(item);
           } else {
-            entityGroups.set(entity.id,{
+            entityGroups.set(entity.id, {
               entity,
               subtotal: lineSubtotal,
               totalSets: item.sets,
@@ -451,7 +451,7 @@ export async function POST(request: NextRequest) {
             status: "ENQUIRY_RECEIVED",
             actorUserId: guard.retailerProfile.userId,
             actorName: retailer.applicantName,
-            notes: "Retailer submitted master order enquiry with Cash on Delivery payment method.",
+            notes: "Whole Seller submitted master order enquiry with Cash on Delivery payment method.",
           },
         });
         // Placing an order counts as meaningful activity — reset the inactivity clock.
@@ -527,7 +527,10 @@ export async function POST(request: NextRequest) {
             const sizeRow = product.sizes.find(
               (row) => row.size.toLowerCase() === item.selectedSize.toLowerCase()
             );
-            if (!sizeRow) {
+            const inProductSize = Array.isArray(product.size) && product.size.some(
+              (s) => s.toLowerCase() === item.selectedSize.toLowerCase()
+            );
+            if (!sizeRow && !inProductSize) {
               throw new Error(`Size ${selectedSize} is no longer available for ${product.name}`);
             }
           }
@@ -559,7 +562,7 @@ export async function POST(request: NextRequest) {
                   : colorNames(product.color).join(", ") || product.color,
               sizeCombination: selectedSize,
             },
-         });
+          });
         }
         for (const [index, group] of Array.from(entityGroups.values()).entries()) {
           const isInterState = shippingAddress.stateCode !== group.entity.stateCode;

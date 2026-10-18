@@ -48,7 +48,6 @@ function toCategory(c: DbCategory): Category {
 const productInclude = {
   category: { select: { name: true } },
   subcategory: { select: { name: true } },
-  collection: { select: { name: true } },
   media: {
     include: { mediaAsset: { select: { publicUrl: true } } },
     orderBy: { sortOrder: 'asc' },
@@ -85,7 +84,6 @@ function toProduct(p: DbProduct): Product {
     sizeCombination: p.sizeCombination,
     sizes: [],
     colors: colorNames(p.color),
-    collectionName: p.collection?.name || 'General Wholesale',
     billingEntityId: undefined,
     hsn: p.hsnCode,
     gstRate: 5,

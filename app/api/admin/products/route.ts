@@ -28,6 +28,7 @@ function formatZodIssue(issue: z.ZodIssue): string {
         fabric: "Fabric",
         workType: "Work / embroidery",
         style: "Style",
+        size: "Size charts",
         clothingType: "Clothing type",
         hsnCode: "HSN code",
         lining: "Lining",
@@ -140,6 +141,10 @@ const productFieldsSchema = z.object({
     fabric: z.string(),
     workType: z.string(),
     style: z.string(),
+    size: z.union([
+        z.array(z.string()),
+        z.string().transform((s) => (s.trim() ? [s.trim()] : [])),
+    ]).optional().default([]),
     clothingType: z.string(),
     hsnCode: z.string(),
     lining: z.string().trim().max(200).optional(),
@@ -398,8 +403,6 @@ export async function POST(request: NextRequest) {
                 description: data.description,
                 categoryId: data.categoryId,
                 subcategoryId: data.subcategoryId,
-                collectionId: data.collectionId,
-
                 wholesalePricePerPiece: data.wholesalePricePerPiece,
                 piecesPerSet: data.piecesPerSet,
                 wholesalePricePerSet: data.wholesalePricePerSet,
@@ -414,6 +417,7 @@ export async function POST(request: NextRequest) {
                 fabric: data.fabric,
                 workType: data.workType,
                 style: data.style,
+                size: data.size ?? [],
                 clothingType: data.clothingType,
                 hsnCode: data.hsnCode,
                 lining: data.lining || null,
@@ -584,131 +588,131 @@ export async function PATCH(request: NextRequest) {
 
             const product = await prisma.$transaction(
                 async (tx) => {
-                const current = await tx.product.findUnique({
-                    where: { id: data.productId },
-                    select: {
-                        id: true,
-                        availableSets: true,
-                        sizes: {
-                            select: { id: true, size: true, availableSets: true, sortOrder: true },
-                            orderBy: { sortOrder: "asc" },
+                    const current = await tx.product.findUnique({
+                        where: { id: data.productId },
+                        select: {
+                            id: true,
+                            availableSets: true,
+                            sizes: {
+                                select: { id: true, size: true, availableSets: true, sortOrder: true },
+                                orderBy: { sortOrder: "asc" },
+                            },
                         },
-                    },
-                });
+                    });
 
-                if (!current) throw new Error("Product not found");
+                    if (!current) throw new Error("Product not found");
 
-                let totalAvailableSets = current.availableSets;
+                    let totalAvailableSets = current.availableSets;
 
-                if (category.requiresSize) {
-                    for (const adjustment of sizeStockAdjustments) {
-                        if (adjustment.availableSets <= 0) continue;
+                    if (category.requiresSize) {
+                        for (const adjustment of sizeStockAdjustments) {
+                            if (adjustment.availableSets <= 0) continue;
 
-                        const existingSize = current.sizes.find(
-                            (row) => row.size.toLowerCase() === adjustment.size.toLowerCase()
-                        );
+                            const existingSize = current.sizes.find(
+                                (row) => row.size.toLowerCase() === adjustment.size.toLowerCase()
+                            );
 
-                        if (existingSize) {
-                            await tx.productSize.update({
-                                where: { id: existingSize.id },
-                                data: { availableSets: { increment: adjustment.availableSets } },
-                            });
-                        } else {
-                            await tx.productSize.create({
-                                data: {
-                                    productId: current.id,
-                                    size: adjustment.size.toUpperCase(),
-                                    availableSets: adjustment.availableSets,
-                                    sortOrder: current.sizes.length,
-                                },
-                            });
+                            if (existingSize) {
+                                await tx.productSize.update({
+                                    where: { id: existingSize.id },
+                                    data: { availableSets: { increment: adjustment.availableSets } },
+                                });
+                            } else {
+                                await tx.productSize.create({
+                                    data: {
+                                        productId: current.id,
+                                        size: adjustment.size.toUpperCase(),
+                                        availableSets: adjustment.availableSets,
+                                        sortOrder: current.sizes.length,
+                                    },
+                                });
+                            }
                         }
+
+                        const updatedSizes = await tx.productSize.findMany({
+                            where: { productId: current.id },
+                            select: { availableSets: true },
+                        });
+                        totalAvailableSets = updatedSizes.reduce(
+                            (sum, row) => sum + row.availableSets,
+                            0
+                        );
+                    } else {
+                        totalAvailableSets = current.availableSets + stockAdjustment;
                     }
 
-                    const updatedSizes = await tx.productSize.findMany({
-                        where: { productId: current.id },
-                        select: { availableSets: true },
-                    });
-                    totalAvailableSets = updatedSizes.reduce(
-                        (sum, row) => sum + row.availableSets,
-                        0
-                    );
-                } else {
-                    totalAvailableSets = current.availableSets + stockAdjustment;
-                }
+                    const totalAvailablePieces = totalAvailableSets * data.piecesPerSet;
+                    const finalSizes = category.requiresSize
+                        ? await tx.productSize.findMany({
+                            where: { productId: current.id },
+                            orderBy: { sortOrder: "asc" },
+                            select: { size: true },
+                        })
+                        : [];
 
-                const totalAvailablePieces = totalAvailableSets * data.piecesPerSet;
-                const finalSizes = category.requiresSize
-                    ? await tx.productSize.findMany({
-                        where: { productId: current.id },
-                        orderBy: { sortOrder: "asc" },
-                        select: { size: true },
-                    })
-                    : [];
-
-                const updated = await tx.product.update({
-                    where: { id: current.id },
-                    data: {
-                        sku: data.sku,
-                        designNumber: data.designNumber,
-                        name: data.name,
-                        slug: data.slug,
-                        description: data.description,
-                        categoryId: data.categoryId,
-                        subcategoryId: data.subcategoryId,
-                        collectionId: data.collectionId,
-                        wholesalePricePerPiece: data.wholesalePricePerPiece,
-                        piecesPerSet: data.piecesPerSet,
-                        wholesalePricePerSet: data.wholesalePricePerSet,
-                        availableSets: totalAvailableSets,
-                        minOrderSets: data.minOrderSets,
-                        totalAvailablePieces,
-                        sizeCombination: finalSizes.map((row) => row.size).join(", "),
-                        color: data.color,
-                        fabric: data.fabric,
-                        workType: data.workType,
-                        style: data.style,
-                        clothingType: data.clothingType,
-                        hsnCode: data.hsnCode,
-                        lining: data.lining || null,
-                        margin: data.margin || null,
-                        gstConfigId,
-                        vendorId,
-                        warehouseId: data.warehouseId ?? null,
-                        ...(data.mediaAssetIds && data.mediaAssetIds.length > 0
-                            ? {
-                                media: {
-                                    deleteMany: {},
-                                    create: data.mediaAssetIds.map((mediaAssetId, index) => ({
-                                        mediaAssetId,
-                                        mediaType: index === 0 ? "MAIN_IMAGE" : "ALTERNATE_IMAGE",
-                                        isPrimary: index === 0,
-                                    })),
-                                },
-                            }
-                            : {}),
-                    },
-                    include: productInclude,
-                });
-
-                const adjustmentTotal = category.requiresSize
-                    ? sizeStockAdjustments.reduce((sum, row) => sum + row.availableSets, 0)
-                    : stockAdjustment;
-
-                if (adjustmentTotal > 0) {
-                    await tx.stockAdjustment.create({
+                    const updated = await tx.product.update({
+                        where: { id: current.id },
                         data: {
-                            productId: current.id,
-                            previousSets: current.availableSets,
-                            adjustmentSets: adjustmentTotal,
-                            newSets: totalAvailableSets,
-                            reason: "PRODUCTION_RECEIPT",
-                            actorUserId: auth.user.id,
+                            sku: data.sku,
+                            designNumber: data.designNumber,
+                            name: data.name,
+                            slug: data.slug,
+                            description: data.description,
+                            categoryId: data.categoryId,
+                            subcategoryId: data.subcategoryId,
+                            wholesalePricePerPiece: data.wholesalePricePerPiece,
+                            piecesPerSet: data.piecesPerSet,
+                            wholesalePricePerSet: data.wholesalePricePerSet,
+                            availableSets: totalAvailableSets,
+                            minOrderSets: data.minOrderSets,
+                            totalAvailablePieces,
+                            sizeCombination: finalSizes.map((row) => row.size).join(", "),
+                            color: data.color,
+                            fabric: data.fabric,
+                            workType: data.workType,
+                            style: data.style,
+                            ...(data.size !== undefined ? { size: data.size } : {}),
+                            clothingType: data.clothingType,
+                            hsnCode: data.hsnCode,
+                            lining: data.lining || null,
+                            margin: data.margin || null,
+                            gstConfigId,
+                            vendorId,
+                            warehouseId: data.warehouseId ?? null,
+                            ...(data.mediaAssetIds && data.mediaAssetIds.length > 0
+                                ? {
+                                    media: {
+                                        deleteMany: {},
+                                        create: data.mediaAssetIds.map((mediaAssetId, index) => ({
+                                            mediaAssetId,
+                                            mediaType: index === 0 ? "MAIN_IMAGE" : "ALTERNATE_IMAGE",
+                                            isPrimary: index === 0,
+                                        })),
+                                    },
+                                }
+                                : {}),
                         },
+                        include: productInclude,
                     });
-                }
 
-                return updated;
+                    const adjustmentTotal = category.requiresSize
+                        ? sizeStockAdjustments.reduce((sum, row) => sum + row.availableSets, 0)
+                        : stockAdjustment;
+
+                    if (adjustmentTotal > 0) {
+                        await tx.stockAdjustment.create({
+                            data: {
+                                productId: current.id,
+                                previousSets: current.availableSets,
+                                adjustmentSets: adjustmentTotal,
+                                newSets: totalAvailableSets,
+                                reason: "PRODUCTION_RECEIPT",
+                                actorUserId: auth.user.id,
+                            },
+                        });
+                    }
+
+                    return updated;
                 },
                 {
                     maxWait: 10000,
@@ -740,7 +744,6 @@ export async function PATCH(request: NextRequest) {
 
                 categoryId: data.categoryId,
                 subcategoryId: data.subcategoryId,
-                collectionId: data.collectionId,
 
                 wholesalePricePerPiece: data.wholesalePricePerPiece,
                 piecesPerSet: data.piecesPerSet,
@@ -756,6 +759,7 @@ export async function PATCH(request: NextRequest) {
                 fabric: data.fabric,
                 workType: data.workType,
                 style: data.style,
+                ...(data.size !== undefined ? { size: data.size } : {}),
                 clothingType: data.clothingType,
                 hsnCode: data.hsnCode,
                 lining: data.lining || null,

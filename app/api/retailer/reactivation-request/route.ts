@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Retailer access required",
+          error: "Whole Seller access required",
         },
         { status: 403 }
       );
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Retailer profile not found",
+          error: "Whole Seller profile not found",
         },
         { status: 404 }
       );
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         metadataJson: JSON.stringify({
           requestedAt: new Date().toISOString(),
           reason:
-            "Retailer requested reactivation after automatic inactivity deactivation",
+            "Whole Seller requested reactivation after automatic inactivity deactivation",
         }),
       },
     });

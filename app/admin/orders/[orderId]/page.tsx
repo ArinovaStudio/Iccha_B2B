@@ -177,15 +177,14 @@ export default function AdminOrderDetailPage({
 
         const response = isVendorUser
           ? await fetch(
-              `/api/vendor/order-enquiries?orderId=${encodeURIComponent(order!.id)}`,
-              { cache: "no-store" }
-            )
+            `/api/vendor/order-enquiries?orderId=${encodeURIComponent(order!.id)}`,
+            { cache: "no-store" }
+          )
           : await fetch(
-              `/api/admin/order-enquiries/${encodeURIComponent(order!.id)}/seller-orders${
-                vendorId ? `?vendorId=${encodeURIComponent(vendorId)}` : ""
-              }`,
-              { cache: "no-store" }
-            );
+            `/api/admin/order-enquiries/${encodeURIComponent(order!.id)}/seller-orders${vendorId ? `?vendorId=${encodeURIComponent(vendorId)}` : ""
+            }`,
+            { cache: "no-store" }
+          );
 
         const json = await response.json();
 
@@ -346,10 +345,10 @@ export default function AdminOrderDetailPage({
                 current.map(item =>
                   item.id === sellerOrder.id
                     ? {
-                        ...item,
-                        status: normalizedStatus,
-                        updatedAt: new Date().toISOString(),
-                      }
+                      ...item,
+                      status: normalizedStatus,
+                      updatedAt: new Date().toISOString(),
+                    }
                     : item
                 )
               );
@@ -376,7 +375,7 @@ export default function AdminOrderDetailPage({
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-3xl border border-stone-200 p-5">
-            <p className="text-[10px] uppercase tracking-widest text-stone-400">Retailer</p>
+            <p className="text-[10px] uppercase tracking-widest text-stone-400">Whole Seller</p>
             <p className="font-bold mt-2">{order.retailerBusinessName}</p>
             <p className="text-xs text-stone-500 mt-1">{order.retailerApplicantName}</p>
             <p className="text-xs text-stone-500 mt-1">{order.retailerContact}</p>
@@ -463,7 +462,7 @@ export default function AdminOrderDetailPage({
                     {(item.sizeCombination || item.hsn) && (
                       <p className="text-xs text-stone-500 mt-1">
                         {[
-                          item.sizeCombination ? `Sizes ${item.sizeCombination}` : null,
+                          item.sizeCombination ? `Size: ${item.sizeCombination}` : null,
                           item.hsn ? `HSN ${item.hsn}` : null,
                         ].filter(Boolean).join(" · ")}
                       </p>

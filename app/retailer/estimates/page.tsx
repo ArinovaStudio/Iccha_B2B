@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Receipt, 
-  Printer, 
-  Building2, 
+import {
+  Receipt,
+  Printer,
+  Building2,
 } from 'lucide-react';
 import RetailerHeader from '@/components/layout/RetailerHeader';
 import Footer from '@/components/layout/Footer';
@@ -152,12 +152,12 @@ export default function RetailerEstimatesPage() {
 
       <main className="flex-1 py-8 bg-[#faf8f5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          
+
           {/* Breadcrumbs */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <nav className="text-xs text-stone-500 mb-1 flex items-center gap-2">
-                <Link href="/retailer" className="hover:text-stone-900">Retailer Portal</Link>
+                <Link href="/retailer" className="hover:text-stone-900">Whole Seller Portal</Link>
                 <span>/</span>
                 <span className="text-stone-900 font-semibold">Proforma Estimates</span>
               </nav>
@@ -169,9 +169,8 @@ export default function RetailerEstimatesPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSellerFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                  sellerFilter === 'all' ? 'bg-[#831843] text-white' : 'bg-white border border-stone-200 text-stone-700'
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${sellerFilter === 'all' ? 'bg-[#831843] text-white' : 'bg-white border border-stone-200 text-stone-700'
+                  }`}
               >
                 All Sellers
               </button>
@@ -179,9 +178,8 @@ export default function RetailerEstimatesPage() {
                 <button
                   key={seller.id}
                   onClick={() => setSellerFilter(seller.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                    sellerFilter === seller.id ? 'bg-[#831843] text-white' : 'bg-white border border-stone-200 text-stone-700'
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${sellerFilter === seller.id ? 'bg-[#831843] text-white' : 'bg-white border border-stone-200 text-stone-700'
+                    }`}
                 >
                   {seller.code === 'platform' ? 'IcchaStore' : seller.tradeName || seller.legalName}
                 </button>
@@ -205,9 +203,8 @@ export default function RetailerEstimatesPage() {
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className={`px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase text-white flex items-center gap-1 ${
-                          'bg-[#831843]'
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase text-white flex items-center gap-1 ${'bg-[#831843]'
+                          }`}>
                           <Building2 className="w-3 h-3" />
                           {isPlatform ? 'IcchaStore' : 'Vendor'}
                         </span>

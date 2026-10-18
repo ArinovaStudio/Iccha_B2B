@@ -171,7 +171,7 @@ function ApplicationStatusContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs uppercase font-bold tracking-[0.2em] text-[#831843]">
-              Retailer Onboarding
+              Whole Seller Onboarding
             </span>
 
             <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">

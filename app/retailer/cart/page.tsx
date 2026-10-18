@@ -82,7 +82,7 @@ export default function RetailerCartPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <nav className="text-xs text-stone-500 mb-1 flex items-center gap-2">
-                <Link href="/retailer" className="hover:text-stone-900">Retailer Portal</Link>
+                <Link href="/retailer" className="hover:text-stone-900">Whole seller Portal</Link>
                 <span>/</span>
                 <span className="text-stone-900 font-semibold">Wholesale Cart</span>
               </nav>

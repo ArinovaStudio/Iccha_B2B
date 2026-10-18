@@ -83,13 +83,12 @@ export default async function HomePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`View ${reel.tag} on Instagram`}
-                    className={`reveal relative aspect-[9/16] overflow-hidden border border-white/10 group block ${
-                      idx === 0
+                    className={`reveal relative aspect-[9/16] overflow-hidden border border-white/10 group block ${idx === 0
                         ? 'bg-black'
                         : idx === 1
                           ? 'bg-[#E8E4F2]'
                           : 'bg-[#292929]'
-                    }`}
+                      }`}
                     style={
                       {
                         '--reveal-delay': `${idx * 70}ms`,
@@ -147,7 +146,7 @@ export default async function HomePage() {
                 href="/login"
                 className={`${btnOutline} w-full sm:w-auto`}
               >
-                Retailer login
+                Whole Seller login
               </Link>
             </div>
 

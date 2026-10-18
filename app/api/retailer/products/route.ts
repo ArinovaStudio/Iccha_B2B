@@ -28,12 +28,12 @@ export async function GET(request: NextRequest) {
             : {}),
         ...(search
           ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { sku: { contains: search, mode: "insensitive" } },
-                { designNumber: { contains: search, mode: "insensitive" } },
-              ],
-            }
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { sku: { contains: search, mode: "insensitive" } },
+              { designNumber: { contains: search, mode: "insensitive" } },
+            ],
+          }
           : {}),
       },
       // id as a tie-breaker keeps cursor pagination stable when createdAt values match
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: shaped, nextCursor });
   } catch (error) {
-    console.error("Retailer products list error:", error);
+    console.error("Whole Seller products list error:", error);
     return NextResponse.json(
       { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }

@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { 
-  X, 
-  Printer, 
-  Download, 
-  Building2, 
-  Receipt, 
-  ShieldCheck, 
-  CheckCircle, 
-  FileText 
+import {
+  X,
+  Printer,
+  Download,
+  Building2,
+  Receipt,
+  ShieldCheck,
+  CheckCircle,
+  FileText
 } from 'lucide-react';
 import { EstimateDocument } from '@/lib/types';
 
@@ -28,7 +28,7 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
       <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto">
-        
+
         {/* Modal Action Bar (Hidden on print) */}
         <div className="no-print p-4 bg-stone-900 text-white rounded-t-3xl flex items-center justify-between border-b border-stone-800">
           <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
 
         {/* Printable Estimate Document Body */}
         <div id="printable-estimate" className="p-8 text-stone-900 bg-white text-xs space-y-6">
-          
+
           {/* Document Header */}
           <div className="border-b-2 border-stone-900 pb-5 flex flex-col sm:flex-row items-start justify-between gap-4">
             <div>
@@ -100,11 +100,11 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
             </div>
           </div>
 
-          {/* Billed To / Retailer Info */}
+          {/* Billed To / Whole Seller Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-200">
             <div>
               <span className="text-[10px] uppercase font-bold text-stone-400 block mb-1">
-                Retailer (Billed To):
+                Whole Seller (Billed To):
               </span>
               <div className="font-bold text-sm text-stone-950">
                 {estimate.retailer.businessName}
@@ -158,7 +158,7 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
                     <td className="p-2.5 border-r border-stone-200 font-medium">
                       <div className="font-semibold text-stone-900">{item.productName}</div>
                       <div className="text-[10px] text-stone-500 font-mono">
-                        SKU: {item.sku} &bull; Design: {item.designNumber} &bull; Sizes: {item.sizeCombination}
+                        SKU: {item.sku} &bull; Design: {item.designNumber} &bull; Size: {item.sizeCombination}
                       </div>
                     </td>
                     <td className="p-2.5 border-r border-stone-200 text-center font-mono text-[11px] text-stone-600">{item.hsn}</td>
@@ -175,7 +175,7 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
 
           {/* Tax & Grand Total Computation */}
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-2">
-            
+
             {/* Bank Details */}
             <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-1.5 flex-1 max-w-sm">
               <span className="text-[10px] uppercase font-bold text-stone-500 block">

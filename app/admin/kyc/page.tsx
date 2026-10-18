@@ -159,13 +159,13 @@ function AdminKYCContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-6">
           <div>
             <span className="text-xs uppercase font-bold tracking-widest text-[#831843]">
-              Retailer Onboarding Verification
+              Whole seller Onboarding Verification
             </span>
             <h1 className="font-serif text-3xl font-bold text-stone-900 mt-1">
               KYC & Trade License Applications
             </h1>
             <p className="text-xs text-stone-500 mt-0.5">
-              Verify GSTINs, proof documents, and activate wholesale pricing access for verified retailers.
+              Verify GSTINs, proof documents, and activate wholesale pricing access for verified whole sellers.
             </p>
           </div>
         </div>
@@ -405,7 +405,7 @@ function AdminKYCContent() {
 
             <div className="space-y-1">
               <label className="block font-bold text-stone-800">
-                Compliance Reviewer Remarks (Visible to Retailer):
+                Compliance Reviewer Remarks (Visible to Whole seller):
               </label>
               <textarea
                 rows={2}
@@ -425,7 +425,7 @@ function AdminKYCContent() {
                   className="flex-1 py-3 bg-rose-800 hover:bg-rose-900 text-white rounded-xl font-bold shadow flex items-center justify-center gap-1.5 disabled:opacity-60"
                 >
                   <XCircle className="w-4 h-4" />
-                  <span>Suspend Retailer Access</span>
+                  <span>Suspend Whole seller Access</span>
                 </button>
               ) : selectedApp.status === 'REJECTED' ? (
                 <>

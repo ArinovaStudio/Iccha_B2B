@@ -187,7 +187,7 @@ export default function PublicHeader() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full text-center py-3 px-4 border border-black/20 text-[#1a1a1a] font-bold uppercase text-[10px] tracking-[0.2em] hover:bg-black/5"
                 >
-                  Retailer Login
+                  Whole Seller Login
                 </Link>
               </>
             )}

@@ -21,7 +21,7 @@ export default function Footer() {
     { label: 'Contact Us', href: '/contact' },
   ];
   const retailerLinks = [
-    { label: 'Apply as Retailer', href: '/register' },
+    { label: 'Apply as Whole seller', href: '/register' },
     { label: 'Submit KYC', href: '/register/kyc' },
     { label: 'Application Status', href: '/application-status' },
     { label: 'Terms & Conditions', href: '/terms' },
@@ -44,7 +44,7 @@ export default function Footer() {
     {
       icon: ShieldCheck,
       title: 'Verified B2B Portal',
-      body: 'Secure wholesale pricing for approved retailers.',
+      body: 'Secure wholesale pricing for approved whole sellers.',
     },
     {
       icon: Truck,
@@ -118,7 +118,7 @@ export default function Footer() {
 
 
             <p className="mt-6 text-[12px] leading-[1.8] text-stone-500 max-w-sm">
-              A wholesale destination for retailers looking for thoughtfully
+              A wholesale destination for whole sellers looking for thoughtfully
               curated women's ethnic wear. Discover stitched 2-piece and
               3-piece sets, kurtis, pants and dupattas at B2B prices.
             </p>
@@ -156,11 +156,11 @@ export default function Footer() {
           </div>
 
 
-          {/* RETAILER */}
+          {/* WHOLE SELLER */}
           <div className="lg:col-span-2">
 
             <h4 className="text-[12px] uppercase tracking-[0.16em] text-white font-semibold mb-5">
-              Retailer Portal
+              Whole seller Portal
             </h4>
 
             <ul className="space-y-3">
@@ -240,7 +240,7 @@ export default function Footer() {
             href="/register"
             className="inline-flex items-center gap-2 rounded-lg bg-white text-[#151515] px-4 py-2.5 text-[11px] font-semibold hover:bg-stone-200 transition-colors duration-200"
           >
-            Apply as Retailer
+            Apply as Whole seller
             <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
 

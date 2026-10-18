@@ -83,7 +83,7 @@ export default function RetailerHeader() {
   const visibleAccountLinks: NavItem[] = canOrder
     ? accountLinks
     : [{ label: panelLabel, href: '/admin', icon: LayoutDashboard }];
-  const roleBadge = canOrder ? 'Approved Retailer' : viewerRole === 'VENDOR' ? 'Vendor' : 'Admin';
+  const roleBadge = canOrder ? 'Approved Whole seller' : viewerRole === 'VENDOR' ? 'Vendor' : 'Admin';
 
   // Real logged-in retailer, from the session (not the demo/mock context)
   const [account, setAccount] = useState<Account | null>(null);
@@ -107,7 +107,7 @@ export default function RetailerHeader() {
         });
       })
       .catch(() => {
-        // Header falls back to generic "Retailer Account" text.
+        // Header falls back to generic "Whole Seller Account" text.
       });
     return () => {
       cancelled = true;
@@ -159,7 +159,7 @@ export default function RetailerHeader() {
     };
   }, [mobileNavOpen]);
 
-  const displayName = account?.businessName || account?.name || (canOrder ? 'Retailer Account' : 'Account');
+  const displayName = account?.businessName || account?.name || (canOrder ? 'Whole Seller Account' : 'Account');
   const initial = (account?.businessName || account?.name || 'R').charAt(0).toUpperCase();
   const cartCount = cart?.items?.length || 0;
   const cartActive = pathname.startsWith('/retailer/cart');
@@ -190,9 +190,8 @@ export default function RetailerHeader() {
   return (
     // -top-9 lets the 36px utility bar scroll away while the main bar stays stuck
     <header
-      className={`sticky -top-9 z-50 w-full text-[#f8f5ef] transition-shadow duration-300 ${
-        scrolled ? 'shadow-[0_10px_40px_rgba(0,0,0,0.35)]' : 'shadow-[0_8px_30px_rgba(0,0,0,0.15)]'
-      }`}
+      className={`sticky -top-9 z-50 w-full text-[#f8f5ef] transition-shadow duration-300 ${scrolled ? 'shadow-[0_10px_40px_rgba(0,0,0,0.35)]' : 'shadow-[0_8px_30px_rgba(0,0,0,0.15)]'
+        }`}
     >
       {/* =========================================================
           UTILITY BAR
@@ -226,9 +225,8 @@ export default function RetailerHeader() {
           MAIN BAR  (logo | centred nav | actions)
       ========================================================= */}
       <div
-        className={`border-b border-white/[0.08] transition-colors duration-300 ${
-          scrolled ? 'bg-[#171717]/90 backdrop-blur-xl' : 'bg-[#171717]'
-        }`}
+        className={`border-b border-white/[0.08] transition-colors duration-300 ${scrolled ? 'bg-[#171717]/90 backdrop-blur-xl' : 'bg-[#171717]'
+          }`}
       >
         <div className="mx-auto grid h-[68px] max-w-[1400px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:px-8">
           {/* LOGO */}
@@ -258,18 +256,16 @@ export default function RetailerHeader() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`group flex items-center gap-2 rounded-full px-4 py-2 text-[10.5px] font-medium uppercase tracking-[0.14em] transition-all duration-200 ${focusRing} ${
-                    active
-                      ? 'bg-amber-300/10 text-amber-300 shadow-[inset_0_0_0_1px_rgba(252,211,77,0.25)]'
-                      : 'text-stone-400 hover:bg-white/[0.05] hover:text-stone-100'
-                  }`}
+                  className={`group flex items-center gap-2 rounded-full px-4 py-2 text-[10.5px] font-medium uppercase tracking-[0.14em] transition-all duration-200 ${focusRing} ${active
+                    ? 'bg-amber-300/10 text-amber-300 shadow-[inset_0_0_0_1px_rgba(252,211,77,0.25)]'
+                    : 'text-stone-400 hover:bg-white/[0.05] hover:text-stone-100'
+                    }`}
                 >
                   <Icon
                     size={14}
                     strokeWidth={1.6}
-                    className={`transition-colors ${
-                      active ? 'text-amber-300' : 'text-stone-500 group-hover:text-stone-300'
-                    }`}
+                    className={`transition-colors ${active ? 'text-amber-300' : 'text-stone-500 group-hover:text-stone-300'
+                      }`}
                   />
                   <span>{item.label}</span>
                 </Link>
@@ -281,28 +277,27 @@ export default function RetailerHeader() {
           <div className="col-start-3 flex items-center gap-2 justify-self-end">
             {canOrder && (
               <>
-            {/* CART */}
-            <Link
-              href="/retailer/cart"
-              aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}
-              className={`group relative flex h-10 items-center gap-2.5 rounded-full border px-3.5 transition-all duration-200 ${focusRing} ${
-                cartActive
-                  ? 'border-amber-300/40 bg-amber-300/[0.08] text-amber-300'
-                  : 'border-white/10 text-stone-400 hover:border-white/25 hover:bg-white/[0.05] hover:text-white'
-              }`}
-            >
-              <div className="relative">
-                <ShoppingBag size={17} strokeWidth={1.7} />
-                {cartCount > 0 && (
-                  <span className="absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-300 px-1 text-[8px] font-bold text-[#171717] shadow">
-                    {cartCount > 99 ? '99+' : cartCount}
+                {/* CART */}
+                <Link
+                  href="/retailer/cart"
+                  aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}
+                  className={`group relative flex h-10 items-center gap-2.5 rounded-full border px-3.5 transition-all duration-200 ${focusRing} ${cartActive
+                    ? 'border-amber-300/40 bg-amber-300/[0.08] text-amber-300'
+                    : 'border-white/10 text-stone-400 hover:border-white/25 hover:bg-white/[0.05] hover:text-white'
+                    }`}
+                >
+                  <div className="relative">
+                    <ShoppingBag size={17} strokeWidth={1.7} />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-300 px-1 text-[8px] font-bold text-[#171717] shadow">
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden text-[9px] font-medium uppercase tracking-[0.14em] xl:block">
+                    Cart
                   </span>
-                )}
-              </div>
-              <span className="hidden text-[9px] font-medium uppercase tracking-[0.14em] xl:block">
-                Cart
-              </span>
-            </Link>
+                </Link>
 
                 <div className="mx-1 hidden h-7 w-px bg-white/[0.08] sm:block" />
               </>
@@ -315,11 +310,10 @@ export default function RetailerHeader() {
                 aria-haspopup="menu"
                 aria-expanded={userDropdownOpen}
                 onClick={() => setUserDropdownOpen((prev) => !prev)}
-                className={`flex h-10 items-center gap-2.5 rounded-full border py-1 pl-1 pr-2.5 transition-all duration-200 ${focusRing} ${
-                  userDropdownOpen
-                    ? 'border-white/20 bg-white/[0.07]'
-                    : 'border-transparent hover:border-white/10 hover:bg-white/[0.04]'
-                }`}
+                className={`flex h-10 items-center gap-2.5 rounded-full border py-1 pl-1 pr-2.5 transition-all duration-200 ${focusRing} ${userDropdownOpen
+                  ? 'border-white/20 bg-white/[0.07]'
+                  : 'border-transparent hover:border-white/10 hover:bg-white/[0.04]'
+                  }`}
               >
                 <Avatar label={initial} size="sm" />
 
@@ -334,9 +328,8 @@ export default function RetailerHeader() {
 
                 <ChevronDown
                   size={14}
-                  className={`hidden text-stone-500 transition-transform duration-200 sm:block ${
-                    userDropdownOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`hidden text-stone-500 transition-transform duration-200 sm:block ${userDropdownOpen ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
 
@@ -444,11 +437,10 @@ export default function RetailerHeader() {
                     key={item.href}
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${focusRing} ${
-                      active
-                        ? 'border-amber-300/30 bg-amber-300/[0.08] text-amber-300'
-                        : 'border-white/[0.06] text-stone-400 hover:bg-white/[0.04] hover:text-white'
-                    }`}
+                    className={`flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${focusRing} ${active
+                      ? 'border-amber-300/30 bg-amber-300/[0.08] text-amber-300'
+                      : 'border-white/[0.06] text-stone-400 hover:bg-white/[0.04] hover:text-white'
+                      }`}
                   >
                     <Icon size={16} strokeWidth={1.6} />
                     <span className="text-[10px] font-medium uppercase tracking-[0.12em]">
@@ -461,24 +453,23 @@ export default function RetailerHeader() {
 
             {/* cart */}
             {canOrder && (
-            <Link
-              href="/retailer/cart"
-              className={`mt-2 flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${focusRing} ${
-                cartActive
+              <Link
+                href="/retailer/cart"
+                className={`mt-2 flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${focusRing} ${cartActive
                   ? 'border-amber-300/30 bg-amber-300/[0.08] text-amber-300'
                   : 'border-white/[0.06] text-stone-400 hover:bg-white/[0.04] hover:text-white'
-              }`}
-            >
-              <ShoppingBag size={16} strokeWidth={1.6} />
-              <span className="text-[10px] font-medium uppercase tracking-[0.12em]">
-                Wholesale Cart
-              </span>
-              {cartCount > 0 && (
-                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-300 px-1.5 text-[8px] font-bold text-[#171717]">
-                  {cartCount > 99 ? '99+' : cartCount}
+                  }`}
+              >
+                <ShoppingBag size={16} strokeWidth={1.6} />
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em]">
+                  Wholesale Cart
                 </span>
-              )}
-            </Link>
+                {cartCount > 0 && (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-300 px-1.5 text-[8px] font-bold text-[#171717]">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </Link>
             )}
 
             {/* account links */}

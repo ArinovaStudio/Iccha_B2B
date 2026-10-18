@@ -216,7 +216,7 @@ export default function RetailerCheckoutPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Breadcrumbs */}
           <nav className="text-xs text-stone-500 flex items-center gap-2">
-            <Link href="/retailer" className="hover:text-stone-900">Retailer Portal</Link>
+            <Link href="/retailer" className="hover:text-stone-900">Whole Seller Portal</Link>
             <span>/</span>
             <Link href="/retailer/cart" className="hover:text-stone-900">Cart</Link>
             <span>/</span>
@@ -236,11 +236,11 @@ export default function RetailerCheckoutPage() {
           <form onSubmit={handleSubmitOrderEnquiry} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Addresses & Logistics */}
             <div className="lg:col-span-7 space-y-6 text-xs">
-              {/* Retailer Identity Box */}
+              {/* Whole Seller Identity Box */}
               <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-serif text-base font-bold text-stone-900">
-                    1\. Verified Retailer Credentials
+                    1\. Verified Whole Seller Credentials
                   </h3>
                   <span className="text-[10px] bg-emerald-100 text-emerald-900 font-bold px-2 py-0.5 rounded flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> Approved KYC

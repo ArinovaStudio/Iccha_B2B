@@ -95,7 +95,7 @@ export default function DeactivatedRetailerPage() {
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-stone-600">
-            Your retailer account has been automatically deactivated
+            Your whole seller account has been automatically deactivated
             because there was no meaningful activity on your account
             for the allowed inactivity period.
           </p>

@@ -40,7 +40,7 @@ export default function AdminMOQRulesPage() {
   const [minOrderValue, setMinOrderValue] = useState(0);
   const [allowSampleOrders, setAllowSampleOrders] = useState(true);
 
-  // Retailer overrides
+  // Whole Seller overrides
   const [retailers, setRetailers] = useState<RetailerRow[]>([]);
   const [retailerSearch, setRetailerSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -317,7 +317,7 @@ export default function AdminMOQRulesPage() {
           <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-4 text-xs">
             <div className="border-b border-stone-100 pb-3">
               <h2 className="font-serif text-lg font-bold text-stone-900">
-                2. Retailer Custom Overrides
+                2. Whole Seller Custom Overrides
               </h2>
               <p className="text-stone-500 text-[11px] mt-0.5">
                 Grant a lower minimum to premium boutique clients or new trial accounts (approved retailers only).

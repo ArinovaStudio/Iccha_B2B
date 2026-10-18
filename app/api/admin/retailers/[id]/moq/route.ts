@@ -33,7 +33,7 @@ export async function PATCH(
     select: { id: true, businessName: true },
   });
   if (!retailer) {
-    return NextResponse.json({ success: false, error: "Retailer not found" }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Whole Seller not found" }, { status: 404 });
   }
 
   const { permittedMinSets, reason } = parsed.data;

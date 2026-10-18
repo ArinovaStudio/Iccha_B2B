@@ -69,7 +69,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Retailer not found.",
+          error: "Whole Seller not found.",
         },
         { status: 404 }
       );
@@ -111,7 +111,7 @@ export async function PATCH(
     if (
       !latestReactivationEvent ||
       latestReactivationEvent.action !==
-        "RETAILER_REACTIVATION_REQUESTED"
+      "RETAILER_REACTIVATION_REQUESTED"
     ) {
       return NextResponse.json(
         {

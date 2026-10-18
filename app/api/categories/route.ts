@@ -33,11 +33,6 @@ const productInclude = {
       name: true,
     },
   },
-  collection: {
-    select: {
-      name: true,
-    },
-  },
   media: {
     include: {
       mediaAsset: {
@@ -112,8 +107,6 @@ function toProduct(p: DbProduct): Product {
     sizes: [],
 
     colors: colorNames(p.color),
-
-    collectionName: p.collection?.name || "General Wholesale",
 
     billingEntityId: undefined,
 

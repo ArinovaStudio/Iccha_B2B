@@ -25,6 +25,7 @@ import {
   X,
   PhoneCall,
   FileText,
+  Layers,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -52,8 +53,8 @@ const STAFF_ONLY_LINKS: NavLink[] = [
   // { label: 'About Page', href: '/admin/content/about', icon: FileText },
   // { label: 'Contact Page', href: '/admin/content/contact', icon: PhoneCall },
   // { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
-  { label: 'Retailers', href: '/admin/retailers', icon: Users },
-  { label: 'Reactivation Requests', href: '/admin/retailer-reactivation-requests', icon: ClipboardCheck, },
+  { label: 'Whole sellers', href: '/admin/retailers', icon: Users },
+  { label: 'Whole seller Reactivations', href: '/admin/retailer-reactivation-requests', icon: ClipboardCheck, },
   { label: 'Vendors', href: '/admin/vendors', icon: Store },
   { label: 'KYC Applications', href: '/admin/kyc', icon: FileCheck },
   { label: 'User', href: '/admin/roles', icon: UserCog },
@@ -62,12 +63,13 @@ const STAFF_ONLY_LINKS: NavLink[] = [
 const STAFF_ONLY_HOME_CHANGES: NavLink[] = [
   { label: 'Hero Banners', href: '/admin/hero', icon: Sparkles },
   { label: 'About Page', href: '/admin/content/about', icon: FileText },
-  { label: 'Contact Page', href: '/admin/content/contact', icon: PhoneCall },
+  { label: 'Contact Page', href: '/admin/contact', icon: PhoneCall },
   { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
 ];
 
 const SHARED_LINKS: NavLink[] = [
   { label: 'Products', href: '/admin/products', icon: Package },
+  { label: 'Collections', href: '/admin/collections', icon: Layers },
   { label: 'Warehouses', href: '/admin/warehouses', icon: Boxes },
   { label: 'Order Enquiries', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Sample Call Requests', href: '/admin/sample-call-requests', icon: PhoneCall },
