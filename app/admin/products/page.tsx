@@ -117,7 +117,7 @@ interface Product {
   margin?: string | null;
   minOrderSets: number;
   isActive: boolean;
-  media?: { mediaAsset: { publicUrl: string } }[]
+  media?: { mediaAsset: { id: string; publicUrl: string } }[]
   sizes?: { id: string; size: string; availableSets: number; sortOrder: number }[]
 }
 
@@ -164,6 +164,10 @@ export default function AdminProductsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  // Photos the product already has (edit mode). Removing one here drops it when the product is saved.
+  // Full-size preview of a current photo, shown on top of the form (same page).
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [existingMedia, setExistingMedia] = useState<{ id: string; url: string }[]>([]);
 
   const [qrMediaAssets, setQrMediaAssets] = useState<{ id: string; url: string }[]>([]);
   const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -492,6 +496,7 @@ export default function AdminProductsPage() {
     setSizeStockAdditions([]);
     setImageFiles([]);
     setQrMediaAssets([]);
+    setExistingMedia([]);
     setIsModalOpen(true);
   };
 
@@ -581,7 +586,17 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const mediaAssetIds: string[] = [...qrMediaAssets.map(m => m.id)];
+    if (editingProduct && existingMedia.length + imageFiles.length + qrMediaAssets.length < 1) {
+      addToast({
+        type: 'error',
+        title: 'Photo needed',
+        message: 'A product must keep at least 1 photo. Add a new photo before saving.'
+      });
+      return;
+    }
+
+    // Kept existing photos first (so the primary photo stays primary), then new ones.
+    const mediaAssetIds: string[] = [...existingMedia.map(m => m.id), ...qrMediaAssets.map(m => m.id)];
 
     if (imageFiles.length > 0) {
       setUploading(true);
@@ -761,6 +776,11 @@ export default function AdminProductsPage() {
     );
     setImageFiles([]);
     setQrMediaAssets([]);
+    setExistingMedia(
+      (product.media || [])
+        .filter(m => m.mediaAsset?.id && m.mediaAsset?.publicUrl)
+        .map(m => ({ id: m.mediaAsset.id, url: m.mediaAsset.publicUrl }))
+    );
     setIsModalOpen(true);
   };
 
@@ -1261,6 +1281,42 @@ export default function AdminProductsPage() {
                       Scan to upload from phone
                     </button>
                   </div>
+                  {editingProduct && existingMedia.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1.5">
+                        Current photos — remove any you want to replace
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {existingMedia.map((m, idx) => (
+                          <div key={m.id} className="relative w-16 h-20 rounded-lg overflow-hidden border border-stone-300 bg-stone-100">
+                            {/* Plain <img> on purpose: works for any image host (next/image only allows hosts listed in next.config.ts). Click shows a preview on this page. */}
+                            <button
+                              type="button"
+                              title="View photo"
+                              onClick={() => setPreviewImage(m.url)}
+                              className="absolute inset-0 w-full h-full cursor-zoom-in"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={m.url} alt={`Current photo ${idx + 1}`} className="w-full h-full object-contain" />
+                            </button>
+                            {idx === 0 && (
+                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5 uppercase tracking-wider">
+                                Main
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              aria-label={`Remove current photo ${idx + 1}`}
+                              onClick={() => setExistingMedia(prev => prev.filter(x => x.id !== m.id))}
+                              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white/90 text-rose-700 hover:bg-rose-600 hover:text-white text-xs font-bold leading-none flex items-center justify-center shadow"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <input
                     type="file"
                     multiple
@@ -1272,13 +1328,16 @@ export default function AdminProductsPage() {
                     }}
                     className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-[11px]"
                   />
-                  <p className={`text-[10px] mt-1 ${!editingProduct && imageFiles.length + qrMediaAssets.length < 2
+                  <p className={`text-[10px] mt-1 ${(!editingProduct && imageFiles.length + qrMediaAssets.length < 2) ||
+                    (editingProduct && existingMedia.length + imageFiles.length + qrMediaAssets.length < 1)
                     ? 'text-amber-700'
                     : 'text-emerald-700'
                     }`}>
-                    {imageFiles.length + qrMediaAssets.length} photo{imageFiles.length + qrMediaAssets.length === 1 ? '' : 's'} selected
+                    {editingProduct
+                      ? `${existingMedia.length + imageFiles.length + qrMediaAssets.length} photo${existingMedia.length + imageFiles.length + qrMediaAssets.length === 1 ? '' : 's'} in total (${existingMedia.length} current, ${imageFiles.length + qrMediaAssets.length} new)`
+                      : `${imageFiles.length + qrMediaAssets.length} photo${imageFiles.length + qrMediaAssets.length === 1 ? '' : 's'} selected`}
                     {!editingProduct && imageFiles.length + qrMediaAssets.length < 2 && ' — at least 2 required'}
-                    {editingProduct && ' — existing photos will be preserved'}
+                    {editingProduct && existingMedia.length + imageFiles.length + qrMediaAssets.length < 1 && ' — at least 1 photo required'}
                   </p>
                   {(imageFiles.length > 0 || qrMediaAssets.length > 0) && (
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -1791,6 +1850,36 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
+      {/* Full-size preview of a current product photo (stays on this page) */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setPreviewImage(null); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo preview"
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+        >
+          <button
+            type="button"
+            aria-label="Close preview"
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white text-stone-900 text-xl font-bold leading-none flex items-center justify-center shadow-lg hover:bg-rose-50"
+          >
+            &times;
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewImage}
+            alt="Product photo preview"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full rounded-xl shadow-2xl object-contain"
+          />
+        </div>
+      )}
+
       {/* QR "Scan to upload from phone" modal */}
       {qrModalOpen && qrToken && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">

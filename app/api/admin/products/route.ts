@@ -305,12 +305,13 @@ const productInclude = {
         },
     },
 
+    // All photos, primary first, so the edit form can show/remove them.
+    // (The list thumbnail uses media[0], which is therefore still the primary photo.)
     media: {
-        where: { isPrimary: true },
-        take: 1,
+        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
         include: {
             mediaAsset: {
-                select: { publicUrl: true },
+                select: { id: true, publicUrl: true },
             },
         },
     },
@@ -446,6 +447,7 @@ export async function POST(request: NextRequest) {
                                     ? "MAIN_IMAGE"
                                     : "ALTERNATE_IMAGE",
                             isPrimary: index === 0,
+                            sortOrder: index,
                         })
                     ),
                 },
@@ -687,6 +689,7 @@ export async function PATCH(request: NextRequest) {
                                             mediaAssetId,
                                             mediaType: index === 0 ? "MAIN_IMAGE" : "ALTERNATE_IMAGE",
                                             isPrimary: index === 0,
+                                            sortOrder: index,
                                         })),
                                     },
                                 }
@@ -794,6 +797,7 @@ export async function PATCH(request: NextRequest) {
                                             ? "MAIN_IMAGE"
                                             : "ALTERNATE_IMAGE",
                                     isPrimary: index === 0,
+                                    sortOrder: index,
                                 })
                             ),
                         },
