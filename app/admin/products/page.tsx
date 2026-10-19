@@ -1031,6 +1031,17 @@ export default function AdminProductsPage() {
             </button>
           </form>
 
+          <button
+            type="button"
+            onClick={() => loadProducts(selectedVendor?.id ?? null, productSearch, undefined, sortBy)}
+            disabled={productsLoading}
+            title="Reload the product list"
+            className="px-3 py-2.5 bg-white border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 shadow-sm hover:border-rose-900 hover:text-rose-900 transition disabled:opacity-60 flex items-center gap-1.5 self-start sm:self-auto"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${productsLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+
           <select
             value={sortBy}
             onChange={e => handleSortChange(e.target.value as SortKey)}
