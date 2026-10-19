@@ -172,16 +172,19 @@ export default function RetailerProductDetailPage() {
   // remains identical on every render.
 
   useEffect(() => {
+  if (!product) return;
 
-    if (!product) return;
+  const minOrderSets = Math.max(1, product.minOrderSets || 1);
+  setSetsToAdd(minOrderSets);
+  setHasInitializedSets(true);
 
-    const minOrderSets = Math.max(1, product.minOrderSets || 1);
-
-    setSetsToAdd(minOrderSets);
-
-    setHasInitializedSets(true);
-
-  }, [product]);
+  const firstColor = product.colorOptions?.[0]?.name;
+  if (firstColor) {
+    setColorQty((cur) =>
+      Object.keys(cur).length ? cur : { [firstColor]: minOrderSets }
+    );
+  }
+}, [product]);
 
   const availableSizes: string[] = React.useMemo(() => {
     if (!product) return [];
@@ -851,7 +854,7 @@ export default function RetailerProductDetailPage() {
 
                         {colorOptions.map((c) => {
 
-                          const qty = colorQty[c.name] || 1;
+                          const qty = colorQty[c.name] ?? 0;
 
                           return (
 
@@ -905,7 +908,7 @@ export default function RetailerProductDetailPage() {
 
                                     type="number"
 
-                                    min={1}
+                                    min={0}
 
                                     value={qty}
 

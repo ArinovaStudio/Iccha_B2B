@@ -34,9 +34,7 @@ export default function RetailerCartPage() {
     addToast
   } = useApp();
 
-  const [orderNotes, setOrderNotes] = useState(
-    'Please pack in heavy cardboard bales for interstate road transport. Request fast dispatch.'
-  );
+  const [orderNotes, setOrderNotes] = useState('');
 
   const handleProceedToCheckout = () => {
     if (cart.items.length === 0) {
@@ -146,18 +144,26 @@ export default function RetailerCartPage() {
                     Transporter & Packaging Instructions
                   </h4>
                   <p className="text-xs text-stone-500">
-                    Specify preferred transport agency (e.g. V-Trans, TCI, ARC, Navata, SafeXpress) or delivery terms.
+                    Enter the transport or courier service you would like us to use for your order
+                    (e.g. V-Trans, TCI, ARC, Navata, SafeXpress).
                   </p>
+
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-amber-900">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
+                    <span>
+                      <strong>Note:</strong> Courier charges will be calculated at the time of final payment.
+                    </span>
+                  </div>
+
                   <textarea
                     rows={3}
                     value={orderNotes}
                     onChange={e => setOrderNotes(e.target.value)}
-                    placeholder="Enter transport preferences, packaging requests..."
+                    placeholder="Enter the transport or courier you prefer, e.g. V-Trans, TCI, Navata..."
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-rose-900 font-medium"
                   />
                 </div>
               </div>
-
               {/* Right Column: Master Order Commercial Summary */}
               <div className="lg:col-span-4 space-y-6">
                 <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-md space-y-5 text-xs">
@@ -211,10 +217,8 @@ export default function RetailerCartPage() {
                     ))}
 
                     <div className="flex justify-between">
-                      <span>Est. Surface Freight:</span>
-                      <span className="font-mono text-stone-800">
-                        ₹{cart.shippingEstimate.toLocaleString('en-IN')}
-                      </span>
+                      <span>Courier Charges:</span>
+                      <span className="text-stone-500">Calculated at final payment</span>
                     </div>
 
                     {/* Seller-wise payable amounts */}

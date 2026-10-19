@@ -116,6 +116,7 @@ interface Product {
   lining?: string | null;
   margin?: string | null;
   minOrderSets: number;
+  isActive: boolean;
   media?: { mediaAsset: { publicUrl: string } }[]
   sizes?: { id: string; size: string; availableSets: number; sortOrder: number }[]
 }
@@ -763,6 +764,44 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  const handleToggleProductStatus = async (product: Product) => {
+    const nextStatus = !product.isActive;
+    setStatusUpdatingId(product.id);
+
+    // Optimistic update; rolled back if the server rejects it.
+    setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, isActive: nextStatus } : p)));
+
+    try {
+      const res = await fetch(`/api/admin/products/${encodeURIComponent(product.id)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: nextStatus }),
+      });
+      const json = await res.json();
+
+      if (!res.ok || !json.success) throw new Error(json.error || 'Please try again.');
+
+      addToast({
+        type: 'success',
+        title: nextStatus ? 'Product Activated' : 'Product Deactivated',
+        message: nextStatus
+          ? `${product.name} is now visible to retailers.`
+          : `${product.name} is now hidden from retailers.`,
+      });
+    } catch (err) {
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, isActive: product.isActive } : p)));
+      addToast({
+        type: 'error',
+        title: 'Could not update status',
+        message: err instanceof Error ? err.message : 'Please try again.',
+      });
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
   const handleDeleteProduct = async (product: Product) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${product.name}"? This action cannot be undone.`
@@ -1000,19 +1039,20 @@ export default function AdminProductsPage() {
                       <th className="p-4">Category</th>
                       <th className="p-4">Warehouse</th>
                       <th className="p-4">Piece / Set Rate</th>
+                      <th className="p-4">Status</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100 text-stone-700 font-medium">
                     {products.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-stone-400">
+                        <td colSpan={7} className="p-8 text-center text-stone-400">
                           No products found.
                         </td>
                       </tr>
                     )}
                     {products.map((p) => (
-                      <tr key={p.id} className="hover:bg-stone-50/80 transition">
+                      <tr key={p.id} className={`hover:bg-stone-50/80 transition ${p.isActive ? '' : 'opacity-60'}`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200">
@@ -1068,6 +1108,24 @@ export default function AdminProductsPage() {
                           <span className="font-mono text-rose-900 text-[11px]">
                             ₹{Number(p.wholesalePricePerSet).toLocaleString('en-IN')} /set ({p.piecesPerSet} pcs)
                           </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={p.isActive}
+                              aria-label={p.isActive ? `Deactivate ${p.name}` : `Activate ${p.name}`}
+                              disabled={statusUpdatingId === p.id}
+                              onClick={() => handleToggleProductStatus(p)}
+                              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition disabled:opacity-50 ${p.isActive ? 'bg-emerald-600' : 'bg-stone-300'}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${p.isActive ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                            </button>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${p.isActive ? 'text-emerald-700' : 'text-stone-500'}`}>
+                              {p.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
