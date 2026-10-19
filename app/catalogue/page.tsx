@@ -70,6 +70,8 @@ interface Filters {
   search: string;
 }
 
+const ALL_SELLERS = 'all';
+
 function RetailerCatalogueContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -101,8 +103,10 @@ function RetailerCatalogueContent() {
 
   // Vendor selection is 100% URL-driven with query parameter ?vendor=<vendorId>
   const vendorParam = searchParams.get('vendor') || '';
-  // On desktop: default to first vendor if none in URL. On mobile: strictly require manual selection (no default).
-  const selectedVendor = isMobile ? vendorParam : (vendorParam || (vendors[0]?.id ?? ''));
+  // Default (no ?vendor=): ALL sellers - the admin's own products plus every vendor's.
+  // Picking a seller narrows the catalogue to just that seller ('icchastore' = the admin/house products).
+  const selectedVendor = vendorParam || ALL_SELLERS;
+  const allProductCount = vendors.reduce((sum, v) => sum + (v.productCount || 0), 0);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -147,9 +151,8 @@ function RetailerCatalogueContent() {
       });
   }, [canOrder]);
 
-  // One-time data: vendors + cart
-  useEffect(() => {
-    fetch('/api/retailer/vendors')
+  const loadVendors = useCallback(() => {
+    fetch('/api/retailer/vendors', { cache: 'no-store' })
       .then(res => res.json())
       .then(json => {
         if (json.success) setVendors(json.data);
@@ -157,28 +160,43 @@ function RetailerCatalogueContent() {
       .catch(() => {
         // Vendor filter list will just be empty.
       });
+  }, []);
+
+  // One-time data: vendors + cart
+  useEffect(() => {
+    loadVendors();
     refreshCart();
 
     return () => abortRef.current?.abort();
-  }, [refreshCart]);
+  }, [loadVendors, refreshCart]);
 
-  // Keep URL parameter in sync: on DESKTOP ONLY, auto-set to first vendor if not in URL
+  // Re-sync when the retailer comes back to this tab, so products an admin/vendor
+  // re-activated in the meantime show up without a manual reload.
+  const filtersRef = useRef<Filters | null>(null);
   useEffect(() => {
-    if (vendors.length === 0 || isMobile) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      loadVendors();
+      if (filtersRef.current?.vendorId) {
+        setNextCursor(null);
+        loadProductsRef.current?.(filtersRef.current);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadVendors]);
+
+  // If the URL points at a seller that no longer has active products, fall back to "All sellers".
+  useEffect(() => {
+    if (vendors.length === 0) return;
     const currentVendor = searchParams.get('vendor');
-    if (!currentVendor || !vendors.some(v => v.id === currentVendor)) {
+    if (currentVendor && !vendors.some(v => v.id === currentVendor)) {
       const params = new URLSearchParams(searchParams.toString());
-      params.set('vendor', vendors[0].id);
-      router.replace(`${pathname}?${params.toString()}`);
+      params.delete('vendor');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
     }
-  }, [vendors, searchParams, router, pathname, isMobile]);
-
-  // On MOBILE ONLY: show floating vendor selection window first when no vendor is selected
-  useEffect(() => {
-    if (isMobile && vendors.length > 0 && !vendorParam) {
-      setIsMobileVendorModalOpen(true);
-    }
-  }, [isMobile, vendors.length, vendorParam]);
+  }, [vendors, searchParams, router, pathname]);
 
   const loadProducts = useCallback(async (f: Filters, cursor?: string) => {
     abortRef.current?.abort();
@@ -212,17 +230,12 @@ function RetailerCatalogueContent() {
           return [...prev, ...incoming.filter(p => !seen.has(p.id))];
         });
 
-        // Accumulate categories that have products
-        setCategoryMap(prev => {
-          let next = prev;
-          for (const p of incoming) {
-            if (p.categoryId && p.category?.name && !next[p.categoryId]) {
-              if (next === prev) next = { ...prev };
-              next[p.categoryId] = p.category.name;
-            }
-          }
-          return next;
-        });
+        // Categories are sent by the server with the first page (all active products of this seller).
+        if (!cursor && Array.isArray(json.categories)) {
+          setCategoryMap(
+            Object.fromEntries((json.categories as { id: string; name: string }[]).map((c) => [c.id, c.name]))
+          );
+        }
 
         setNextCursor(json.nextCursor ?? null);
       }
@@ -237,6 +250,12 @@ function RetailerCatalogueContent() {
       }
     }
   }, []);
+
+  const loadProductsRef = useRef(loadProducts);
+  useEffect(() => {
+    loadProductsRef.current = loadProducts;
+    filtersRef.current = filters;
+  }, [loadProducts, filters]);
 
   // Reload from page 1 whenever any filter changes
   useEffect(() => {
@@ -280,9 +299,11 @@ function RetailerCatalogueContent() {
     setSelectedCategory('all'); // category may not exist for the new vendor
     setCategoryMap({});         // rebuild categories from this vendor's products
     const params = new URLSearchParams(searchParams.toString());
-    params.set('vendor', vendorId);
+    if (vendorId === ALL_SELLERS) params.delete('vendor');
+    else params.set('vendor', vendorId);
     params.delete('category');
-    router.push(`${pathname}?${params.toString()}`);
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
     setIsMobileVendorModalOpen(false);
   }, [router, pathname, searchParams]);
 
@@ -389,7 +410,7 @@ function RetailerCatalogueContent() {
                     Wholesale Vendors
                   </h2>
                   <p className="text-[10px] sm:text-[11px] text-stone-500 hidden sm:block">
-                    Tap any manufacturer to browse their exclusive collection directly
+                    Showing every seller by default - tap one to see only their designs
                   </p>
                 </div>
               </div>
@@ -421,6 +442,26 @@ function RetailerCatalogueContent() {
               className="flex items-stretch gap-2 sm:gap-3 overflow-x-auto pb-1.5 pt-0.5 -mx-1 px-1 scroll-smooth snap-x snap-mandatory"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
+              {/* All sellers */}
+              <button
+                type="button"
+                onClick={() => handleVendorChange(ALL_SELLERS)}
+                className={`snap-start shrink-0 transition-all flex cursor-pointer text-left items-center min-w-[170px] p-2 rounded-lg border gap-2 ${selectedVendor === ALL_SELLERS
+                  ? 'border-[#831843] bg-rose-50/90 shadow-2xs ring-1 ring-[#831843]/20'
+                  : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/60'
+                  }`}
+              >
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center shrink-0">
+                  <Store className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-serif font-bold text-xs text-stone-900 truncate">All Sellers</div>
+                  <span className="block text-[9px] text-stone-400 font-medium">
+                    {allProductCount ? `${allProductCount} designs` : 'Everything'}
+                  </span>
+                </div>
+              </button>
+
               {/* Vendor Cards List */}
               {vendors.map((v) => {
                 const isSelected = selectedVendor === v.id;
@@ -495,7 +536,7 @@ function RetailerCatalogueContent() {
                 <div className="flex items-center gap-1.5 text-stone-700 truncate">
                   <span className="text-stone-500 shrink-0">Browsing:</span>
                   <strong className="text-stone-900 truncate">
-                    {vendors.find((v) => v.id === selectedVendor)?.name || 'Selected Vendor'}
+                    {selectedVendor === ALL_SELLERS ? 'All Sellers' : vendors.find((v) => v.id === selectedVendor)?.name || 'Selected Vendor'}
                   </strong>
                   {vendors.find((v) => v.id === selectedVendor)?.specialty && (
                     <span className="text-stone-500 hidden sm:inline whitespace-normal">
@@ -505,8 +546,10 @@ function RetailerCatalogueContent() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[10px] sm:text-[11px] text-stone-400 font-medium">
-                    {vendors.find((v) => v.id === selectedVendor)?.productCount
-                      ? `${vendors.find((v) => v.id === selectedVendor)?.productCount} designs`
+                    {(selectedVendor === ALL_SELLERS
+                      ? allProductCount
+                      : vendors.find((v) => v.id === selectedVendor)?.productCount)
+                      ? `${selectedVendor === ALL_SELLERS ? allProductCount : vendors.find((v) => v.id === selectedVendor)?.productCount} designs`
                       : ''}
                   </span>
                   <button
@@ -559,6 +602,21 @@ function RetailerCatalogueContent() {
                     Vendor ({vendors.length})
                   </label>
                   <div className="max-h-64 overflow-y-auto space-y-0.5 -mx-1 pr-1">
+                    <button
+                      type="button"
+                      onClick={() => handleVendorChange(ALL_SELLERS)}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md transition text-xs flex items-center justify-between ${selectedVendor === ALL_SELLERS
+                        ? 'bg-[#831843] text-white font-semibold'
+                        : 'text-stone-600 hover:bg-stone-100'
+                        }`}
+                    >
+                      <span className="block truncate">All Sellers</span>
+                      {allProductCount ? (
+                        <span className={`text-[10px] ${selectedVendor === ALL_SELLERS ? 'text-rose-200' : 'text-stone-400'}`}>
+                          {allProductCount}
+                        </span>
+                      ) : null}
+                    </button>
                     {vendors.map(v => (
                       <button
                         key={v.id}
@@ -656,6 +714,24 @@ function RetailerCatalogueContent() {
                       Vendor ({vendors.length})
                     </label>
                     <div className="max-h-48 overflow-y-auto space-y-1 -mx-1 pr-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleVendorChange(ALL_SELLERS);
+                          setIsMobileFilterOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center justify-between ${selectedVendor === ALL_SELLERS
+                          ? 'bg-[#831843] text-white font-semibold'
+                          : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+                          }`}
+                      >
+                        <span className="truncate">All Sellers</span>
+                        {allProductCount ? (
+                          <span className={`text-[10px] ${selectedVendor === ALL_SELLERS ? 'text-rose-200' : 'text-stone-400'}`}>
+                            {allProductCount} designs
+                          </span>
+                        ) : null}
+                      </button>
                       {vendors.map(v => (
                         <button
                           key={v.id}
@@ -772,6 +848,24 @@ function RetailerCatalogueContent() {
 
                   {/* Vendor List */}
                   <div className="overflow-y-auto py-2.5 space-y-2 flex-1 pr-0.5">
+                    <button
+                      type="button"
+                      onClick={() => handleVendorChange(ALL_SELLERS)}
+                      className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${selectedVendor === ALL_SELLERS
+                        ? 'border-[#831843] bg-rose-50/90'
+                        : 'border-stone-200 bg-white hover:border-stone-300'
+                        }`}
+                    >
+                      <span className="font-serif font-bold text-xs sm:text-sm text-stone-900">
+                        All Sellers
+                        <span className="ml-2 text-[10px] text-stone-400 font-medium">
+                          {allProductCount ? `${allProductCount} designs` : ''}
+                        </span>
+                      </span>
+                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${selectedVendor === ALL_SELLERS ? 'bg-[#831843] text-white' : 'bg-stone-100 text-stone-700'}`}>
+                        {selectedVendor === ALL_SELLERS ? 'Selected' : 'Select'}
+                      </span>
+                    </button>
                     {vendors.map((v) => {
                       const isSelected = selectedVendor === v.id;
                       const initials = v.name
