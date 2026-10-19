@@ -235,6 +235,18 @@ function RetailerCatalogueContent() {
           setCategoryMap(
             Object.fromEntries((json.categories as { id: string; name: string }[]).map((c) => [c.id, c.name]))
           );
+        } else {
+          // Fallback (also covers an older API that doesn't send `categories`):
+          // accumulate the categories of every product loaded so far.
+          setCategoryMap(prev => {
+            const next = { ...prev };
+            for (const p of incoming) {
+              if (p.categoryId && p.category?.name && !next[p.categoryId]) {
+                next[p.categoryId] = p.category.name;
+              }
+            }
+            return next;
+          });
         }
 
         setNextCursor(json.nextCursor ?? null);
@@ -442,26 +454,6 @@ function RetailerCatalogueContent() {
               className="flex items-stretch gap-2 sm:gap-3 overflow-x-auto pb-1.5 pt-0.5 -mx-1 px-1 scroll-smooth snap-x snap-mandatory"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {/* All sellers */}
-              <button
-                type="button"
-                onClick={() => handleVendorChange(ALL_SELLERS)}
-                className={`snap-start shrink-0 transition-all flex cursor-pointer text-left items-center min-w-[170px] p-2 rounded-lg border gap-2 ${selectedVendor === ALL_SELLERS
-                  ? 'border-[#831843] bg-rose-50/90 shadow-2xs ring-1 ring-[#831843]/20'
-                  : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/60'
-                  }`}
-              >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center shrink-0">
-                  <Store className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-serif font-bold text-xs text-stone-900 truncate">All Sellers</div>
-                  <span className="block text-[9px] text-stone-400 font-medium">
-                    {allProductCount ? `${allProductCount} designs` : 'Everything'}
-                  </span>
-                </div>
-              </button>
-
               {/* Vendor Cards List */}
               {vendors.map((v) => {
                 const isSelected = selectedVendor === v.id;
