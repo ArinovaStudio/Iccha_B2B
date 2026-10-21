@@ -85,6 +85,17 @@ type ProductDetail = Product & {
 
 };
 
+const CLOTHING_TYPE_LABELS: Record<string, string> = {
+  kurti_only: 'Kurti Only',
+  '2_piece': '2-Piece (Kurti + Pant)',
+  '3_piece': '3-Piece (Kurti + Pant + Dupatta)',
+  co_ord_set: 'Co-ord Set',
+  chudidar_set: 'Chudidar Set',
+};
+
+const formatClothingType = (v?: string | null) =>
+  !v ? '—' : CLOTHING_TYPE_LABELS[v] ?? v.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
 export default function RetailerProductDetailPage() {
 
   const params = useParams();
@@ -520,6 +531,11 @@ export default function RetailerProductDetailPage() {
                 </div>
 
               )}
+
+              {/* Image disclaimer */}
+              <p className="text-[11px] leading-relaxed text-stone-500 italic">
+                Note: The actual product may vary slightly from the images shown due to lighting effects and AI editing.
+              </p>
 
             </div>
 
@@ -1289,9 +1305,7 @@ export default function RetailerProductDetailPage() {
                       Clothing Type
                     </span>
                     <strong className="text-stone-800 text-xs sm:text-sm truncate block">
-                      {product.clothingType === '3_piece'
-                        ? '3-Piece (Kurti + Pant + Dupatta)'
-                        : '2-Piece (Kurti + Pant)'}
+                      {formatClothingType(product.clothingType)}
                     </strong>
                   </div>
 

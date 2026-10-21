@@ -30,6 +30,9 @@ interface RetailerProductCardProps {
   onCartChanged?: () => void;
 }
 
+const formatClothingType = (v?: string) =>
+  v ? v.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : v;
+
 /**
  * One rounded container: photo on top, info panel overlapping the photo's
  * bottom edge with a gradient blend so the two read as a single card.
@@ -49,7 +52,7 @@ export default function RetailerProductCard({ product, cartItem }: RetailerProdu
     { label: 'Fabric', value: product.fabric },
     { label: 'Work', value: product.workType },
     { label: 'Style', value: product.style },
-    { label: 'Type', value: product.clothingType },
+    { label: 'Type', value: formatClothingType(product.clothingType) },
     { label: 'Sizes', value: product.sizeCombination },
     { label: 'Pcs / Set', value: product.piecesPerSet },
   ].filter(d => d.value !== undefined && d.value !== null && String(d.value).trim() !== '');

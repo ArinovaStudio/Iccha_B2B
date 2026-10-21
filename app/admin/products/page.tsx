@@ -123,6 +123,14 @@ interface Product {
 
 type SortKey = 'newest' | 'oldest' | 'price_high' | 'price_low';
 
+const CLOTHING_TYPES = [
+  { value: 'kurti_only', label: 'Kurti Only' },
+  { value: '2_piece', label: '2 Piece Set' },
+  { value: '3_piece', label: '3 Piece Set' },
+  { value: 'co_ord_set', label: 'Co-ord Set' },
+  { value: 'chudidar_set', label: 'Chudidar Set' },
+];
+
 export default function AdminProductsPage() {
   const { addToast } = useApp();
 
@@ -164,6 +172,13 @@ export default function AdminProductsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  // Local preview URLs for the files picked in the form (created/revoked in an effect so React strict mode is safe).
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  useEffect(() => {
+    const urls = imageFiles.map(f => URL.createObjectURL(f));
+    setImagePreviews(urls);
+    return () => urls.forEach(u => URL.revokeObjectURL(u));
+  }, [imageFiles]);
   // Photos the product already has (edit mode). Removing one here drops it when the product is saved.
   // Full-size preview of a current photo, shown on top of the form (same page).
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -196,7 +211,7 @@ export default function AdminProductsPage() {
     workType: '',
     style: '',
     size: [] as string[],
-    clothingType: 'kurti_set',
+    clothingType: '',
     hsnCode: '621142',
     lining: '',
     margin: '',
@@ -483,7 +498,7 @@ export default function AdminProductsPage() {
       workType: '',
       style: '',
       size: [] as string[],
-      clothingType: 'kurti_set',
+      clothingType: '',
       hsnCode: '621142',
       lining: '',
       margin: '',
@@ -758,7 +773,7 @@ export default function AdminProductsPage() {
       workType: product.workType || '',
       style: product.style || '',
       size: Array.isArray(product.size) ? product.size : [],
-      clothingType: product.clothingType || 'kurti_set',
+      clothingType: product.clothingType || '',
       hsnCode: product.hsnCode || '621142',
       lining: product.lining || '',
       margin: product.margin || '',
@@ -1353,8 +1368,16 @@ export default function AdminProductsPage() {
                   {(imageFiles.length > 0 || qrMediaAssets.length > 0) && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {qrMediaAssets.map((asset, idx) => (
-                        <div key={asset.id} className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-lg px-2 py-1">
-                          <Image src={asset.url} alt="Uploaded from phone" width={20} height={20} className="w-5 h-5 rounded object-cover" />
+                        <div key={asset.id} className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-full pl-1 pr-2.5 py-1">
+                          <button
+                            type="button"
+                            title="View photo"
+                            onClick={() => setPreviewImage(asset.url)}
+                            className="shrink-0 w-7 h-7 rounded-full overflow-hidden border border-rose-300 bg-white cursor-zoom-in"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={asset.url} alt="Uploaded from phone" className="w-full h-full object-cover object-top" />
+                          </button>
                           <span className="text-[10px] text-rose-900 font-medium">From phone</span>
                           <button
                             type="button"
@@ -1366,7 +1389,20 @@ export default function AdminProductsPage() {
                         </div>
                       ))}
                       {imageFiles.map((file, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 bg-stone-100 border border-stone-300 rounded-lg px-2 py-1">
+                        <div key={idx} className="flex items-center gap-1.5 bg-stone-100 border border-stone-300 rounded-full pl-1 pr-2.5 py-1">
+                          {imagePreviews[idx] ? (
+                            <button
+                              type="button"
+                              title="View photo"
+                              onClick={() => setPreviewImage(imagePreviews[idx])}
+                              className="shrink-0 w-7 h-7 rounded-full overflow-hidden border border-stone-300 bg-white cursor-zoom-in"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={imagePreviews[idx]} alt={file.name} className="w-full h-full object-cover object-top" />
+                            </button>
+                          ) : (
+                            <span className="shrink-0 w-7 h-7 rounded-full bg-stone-200" />
+                          )}
                           <span className="text-[10px] text-stone-700 truncate max-w-[100px]">{file.name}</span>
                           <button
                             type="button"
@@ -1581,6 +1617,21 @@ export default function AdminProductsPage() {
                       onChange={e => setFormData({ ...formData, style: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-800 mb-1">Clothing Type *</label>
+                    <select
+                      required
+                      value={formData.clothingType}
+                      onChange={e => setFormData({ ...formData, clothingType: e.target.value })}
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
+                    >
+                      <option value="">Select type...</option>
+                      {CLOTHING_TYPES.map(t => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="relative" ref={sizeChartDropdownRef}>

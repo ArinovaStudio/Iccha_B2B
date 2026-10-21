@@ -317,6 +317,37 @@ const productInclude = {
     },
 } as const;
 
+/**
+ * Product names don't have to be unique, but the slug (used in /catalogue/<slug>) does.
+ * If the slug is already taken by another product, append -2, -3, ... until it is free.
+ */
+async function ensureUniqueSlug(
+    client: {
+        product: {
+            findFirst: (args: {
+                where: { slug: string; id?: { not: string } };
+                select: { id: true };
+            }) => Promise<{ id: string } | null>;
+        };
+    },
+    base: string,
+    excludeId?: string
+): Promise<string> {
+    const root = base || "product";
+    let slug = root;
+    let n = 1;
+    while (
+        await client.product.findFirst({
+            where: { slug, ...(excludeId ? { id: { not: excludeId } } : {}) },
+            select: { id: true },
+        })
+    ) {
+        n += 1;
+        slug = `${root}-${n}`;
+    }
+    return slug;
+}
+
 export async function POST(request: NextRequest) {
     try {
         const auth = await authenticateEither(request);
@@ -400,7 +431,7 @@ export async function POST(request: NextRequest) {
                 sku: data.sku,
                 designNumber: data.designNumber,
                 name: data.name,
-                slug: data.slug,
+                slug: await ensureUniqueSlug(prisma, data.slug),
                 description: data.description,
                 categoryId: data.categoryId,
                 subcategoryId: data.subcategoryId,
@@ -658,7 +689,7 @@ export async function PATCH(request: NextRequest) {
                             sku: data.sku,
                             designNumber: data.designNumber,
                             name: data.name,
-                            slug: data.slug,
+                            slug: await ensureUniqueSlug(tx, data.slug, data.productId),
                             description: data.description,
                             categoryId: data.categoryId,
                             subcategoryId: data.subcategoryId,
@@ -742,7 +773,7 @@ export async function PATCH(request: NextRequest) {
                 sku: data.sku,
                 designNumber: data.designNumber,
                 name: data.name,
-                slug: data.slug,
+                slug: await ensureUniqueSlug(prisma, data.slug, data.productId),
                 description: data.description,
 
                 categoryId: data.categoryId,

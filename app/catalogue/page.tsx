@@ -942,7 +942,7 @@ function RetailerCatalogueContent() {
               <div className="flex items-center justify-between text-[11px] text-stone-500 gap-4">
                 <span>
                   {selectedVendor
-                    ? <>Showing <strong>{products.length}</strong> wholesale kurti designs</>
+                    ? <>Showing <strong>{products.length}</strong> wholesale designs</>
                     : <>Select a manufacturer to view designs</>}
                 </span>
               </div>

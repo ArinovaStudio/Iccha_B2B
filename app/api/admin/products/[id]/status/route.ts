@@ -7,8 +7,6 @@ const statusSchema = z.object({
   isActive: z.boolean({ message: "isActive must be true or false" }),
 });
 
-// Staff (admin) may change the status of ANY product — their own (vendorId = null)
-// and every vendor's. A vendor may change the status of their OWN products only.
 async function authenticateEither(request: NextRequest) {
   const staffResult = await requireStaff(request);
   if (!("error" in staffResult)) {
