@@ -24,7 +24,7 @@ const updateProductSchema = z.object({
     z.string().transform((s) => (s.trim() ? [s.trim()] : [])),
   ]).optional(),
   clothingType: z.string().min(1).optional(),
-  hsnCode: z.string().optional(),
+  hsnCode: z.string().regex(/^\d{4,8}$/, "HSN code must be 4 to 8 digits").optional(),
   lining: z.string().trim().max(200).nullable().optional(),
   margin: z.string().trim().max(200).nullable().optional(),
   isActive: z.boolean().optional(),

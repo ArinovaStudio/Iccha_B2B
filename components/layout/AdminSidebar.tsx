@@ -232,7 +232,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
         data-admin-sidebar
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-64 min-h-screen shrink-0
+          w-64 h-dvh lg:h-auto lg:min-h-screen shrink-0
           bg-stone-950 text-stone-300
           flex flex-col border-r border-stone-800
           transition-transform duration-300
@@ -272,7 +272,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
           </div>
         </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 min-h-0 py-4 px-3 space-y-1 overflow-y-auto">
           <div className="text-[10px] uppercase font-bold tracking-wider text-stone-400 px-3 mb-2">
             {isVendor ? 'My Catalogue' : 'Management & Verification'}
           </div>
@@ -316,7 +316,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
           })}
         </nav>
 
-        <div className="p-3 border-t border-stone-800 bg-stone-900/60 space-y-2 shrink-0">
+        <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-stone-800 bg-stone-900/60 space-y-2 shrink-0">
           <Link
             href="/"
             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-medium bg-stone-800 hover:bg-stone-700 text-stone-200 transition"

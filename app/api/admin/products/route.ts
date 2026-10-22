@@ -146,7 +146,7 @@ const productFieldsSchema = z.object({
         z.string().transform((s) => (s.trim() ? [s.trim()] : [])),
     ]).optional().default([]),
     clothingType: z.string(),
-    hsnCode: z.string(),
+    hsnCode: z.string().regex(/^\d{4,8}$/, "HSN code must be 4 to 8 digits"),
     lining: z.string().trim().max(200).optional(),
     margin: z.string().trim().max(200).optional(),
     // Billing entity is resolved server-side from the product owner.

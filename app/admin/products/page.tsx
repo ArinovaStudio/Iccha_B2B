@@ -1259,6 +1259,23 @@ export default function AdminProductsPage() {
                     The smallest number of sets a retailer can order for this design in one go — separate from the site-wide minimum order quantity. Set to 1 if there's no per-design minimum.
                   </p>
                 </div>
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">HSN Code *</label>
+                  <input
+                    type="text"
+                    required
+                    inputMode="numeric"
+                    pattern="[0-9]{4,8}"
+                    maxLength={8}
+                    title="HSN code must be 4 to 8 digits"
+                    value={formData.hsnCode}
+                    onChange={e => setFormData({ ...formData, hsnCode: e.target.value.replace(/\D/g, '') })}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono font-bold focus:outline-none focus:border-rose-900"
+                  />
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Printed on invoices and estimates. Defaults to 621142 — change it if this product falls under a different HSN. Editing it only affects new orders; existing orders keep the HSN they were placed with.
+                  </p>
+                </div>
                 {previewEntity && (
                   <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 space-y-1.5">
                     <div className="flex items-center gap-2 font-bold text-stone-800 mb-1">
