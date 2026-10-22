@@ -53,6 +53,7 @@ body {
    page's main region owns vertical scrolling, regardless of content length. */
 body:has([data-admin-sidebar]) {
   height: 100vh;
+  height: 100dvh; /* mobile: visible height, excludes browser toolbars */
   overflow: hidden;
 }
 
@@ -60,11 +61,13 @@ body:has([data-admin-sidebar]) [data-admin-sidebar] {
   position: fixed !important;
   inset: 0 auto 0 0;
   height: 100vh;
+  height: 100dvh;
   min-height: 0;
 }
 
 body:has([data-admin-sidebar]) main {
   height: 100vh;
+  height: 100dvh;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;

@@ -1272,9 +1272,6 @@ export default function AdminProductsPage() {
                     onChange={e => setFormData({ ...formData, hsnCode: e.target.value.replace(/\D/g, '') })}
                     className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono font-bold focus:outline-none focus:border-rose-900"
                   />
-                  <p className="text-[10px] text-stone-400 mt-1">
-                    Printed on invoices and estimates. Defaults to 621142 — change it if this product falls under a different HSN. Editing it only affects new orders; existing orders keep the HSN they were placed with.
-                  </p>
                 </div>
                 {previewEntity && (
                   <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 space-y-1.5">
