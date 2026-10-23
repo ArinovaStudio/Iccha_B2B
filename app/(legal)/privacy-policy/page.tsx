@@ -24,7 +24,7 @@ const policy: Policy = {
   "label": "Privacy Policy",
   "title": "Privacy Policy",
   "subtitle": "How ICCHA Store handles business registration details, verification records and product enquiries.",
-  "effectiveDate": "[Insert publication date]",
+  "effectiveDate": "23 October 2026",
   "sections": [
     {
       "heading": "1. Introduction",
@@ -169,7 +169,7 @@ const policy: Policy = {
       "heading": "17. Contact and Grievance Redressal",
       "paragraphs": [
         "For privacy requests, questions or complaints, contact ICCHA Store. Insert the current legal entity name, business address and designated privacy or grievance contact before publishing.",
-        "Website: https://icchastore.com\nPrivacy and compliance: compliance@icchastore.com\nCommercial enquiries: wholesale@icchastore.com\nPhone: +91 98251 44550 / +91 94140 88220\nBusiness address: [Confirm and insert the current business address]\nPrivacy or Grievance Contact: [Insert designated name and designation]\nAdditional contact details: [Insert postal address and any legally required details]",
+        "Website: https://icchastore.com\nPrivacy and compliance: compliance@icchastore.com\nCommercial enquiries: wholesale@icchastore.com\nPhone: +91 98251 44550 / +91 94140 88220",
         "We will review and respond to requests in accordance with applicable law and the procedures established for privacy and grievance handling."
       ]
     }

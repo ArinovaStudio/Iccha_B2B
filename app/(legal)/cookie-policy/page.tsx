@@ -24,7 +24,7 @@ const policy: Policy = {
   "label": "Cookie Policy",
   "title": "Cookie Policy",
   "subtitle": "How cookies and similar technologies may support sessions, preferences and site performance.",
-  "effectiveDate": "[Insert publication date]",
+  "effectiveDate": "23 October 2026",
   "sections": [
     {
       "heading": "1. Introduction",
@@ -104,7 +104,7 @@ const policy: Policy = {
       "heading": "10. Contact",
       "paragraphs": [
         "For questions about this Cookie Policy or the use of cookies on the Website, contact ICCHA Store.",
-        "Website: https://icchastore.com\nPrivacy and compliance: compliance@icchastore.com\nCommercial enquiries: wholesale@icchastore.com\nPhone: +91 98251 44550 / +91 94140 88220\nBusiness address: [Confirm and insert the current business address]\nPrivacy Contact: [Insert designated name and designation]"
+        "Website: https://icchastore.com\nPrivacy and compliance: compliance@icchastore.com\nCommercial enquiries: wholesale@icchastore.com\nPhone: +91 98251 44550 / +91 94140 88220"
       ]
     }
   ]

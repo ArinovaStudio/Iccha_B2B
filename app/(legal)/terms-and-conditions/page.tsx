@@ -24,7 +24,7 @@ const policy: Policy = {
   "label": "Terms & Conditions",
   "title": "Terms and Conditions",
   "subtitle": "Rules for using ICCHA Store’s B2B wholesale catalogue and enquiry platform.",
-  "effectiveDate": "[Insert publication date]",
+  "effectiveDate": "23 October 2026",
   "sections": [
     {
       "heading": "1. Introduction",
@@ -193,7 +193,7 @@ const policy: Policy = {
       "heading": "21. Grievance Redressal and Contact",
       "paragraphs": [
         "For questions, complaints or concerns relating to the Website or these Terms, please contact ICCHA Store using the details below. Insert the current legal entity name, business address and designated grievance contact before publishing.",
-        "Email: wholesale@icchastore.com (commercial enquiries) · compliance@icchastore.com (privacy and compliance)\nPhone: +91 98251 44550 / +91 94140 88220\nBusiness address: [Confirm and insert the current business address]\nGrievance Officer: [Insert full name and designation]\nGrievance email: [Insert designated grievance email]",
+        "Email: wholesale@icchastore.com (commercial enquiries) · compliance@icchastore.com (privacy and compliance)\nPhone: +91 98251 44550 / +91 94140 88220",
         "Complaints will be acknowledged and addressed within the timelines required by applicable law. If any provision of these Terms is held unenforceable, the remaining provisions will continue to apply to the extent permitted by law."
       ]
     }
