@@ -24,8 +24,9 @@ export default function Footer() {
     { label: 'Apply as Whole seller', href: '/register' },
     { label: 'Submit KYC', href: '/register/kyc' },
     { label: 'Application Status', href: '/application-status' },
-    { label: 'Terms & Conditions', href: '/terms' },
+    { label: 'Terms & Conditions', href: '/terms-and-conditions' },
     { label: 'Privacy Policy', href: '/privacy-policy' },
+    { label: 'Cookie Policy', href: '/cookie-policy' },
   ];
   const categories = [
     { label: '2-Piece Kurtis', href: '/products?category=2-piece-kurtis' },

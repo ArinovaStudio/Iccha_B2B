@@ -193,10 +193,6 @@ export default function PrivacyPolicyPage() {
     <main className="min-h-screen bg-white text-slate-900">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-12">
-          <a href="/" aria-label="ICCHA Store home" className="inline-flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-semibold tracking-[0.18em] text-white">I</span>
-            <span className="truncate text-sm font-semibold tracking-[0.2em] text-slate-950">ICCHA STORE</span>
-          </a>
           <button
             type="button"
             onClick={handleBack}
