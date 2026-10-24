@@ -169,7 +169,7 @@ export default function AdminRetailersPage() {
     const ifscCode = createForm.ifscCode.trim().toUpperCase();
     const bankAccountNumber = createForm.bankAccountNumber.trim();
 
-    if (!/^[0-9A-Z]{15}$/.test(gstin)) {
+    if (gstin && !/^[0-9A-Z]{15}$/.test(gstin)) {
       addToast({ type: "error", title: "Invalid GSTIN", message: "GSTIN must be exactly 15 uppercase letters and numbers." });
       return;
     }
@@ -193,14 +193,6 @@ export default function AdminRetailersPage() {
     const selectedDocuments = Object.entries(createDocuments).filter(
       ([, file]) => file !== null
     );
-    if (selectedDocuments.length === 0) {
-      addToast({
-        type: "error",
-        title: "KYC document required",
-        message: "Upload at least one KYC document.",
-      });
-      return;
-    }
     setCreatingRetailer(true);
     try {
       const formData = new FormData();
@@ -514,15 +506,10 @@ export default function AdminRetailersPage() {
                     <label key={key} className="block space-y-1">
                       <span className="text-xs font-semibold text-stone-600">
                         {label}
-                        {["businessName", "applicantName", "email", "mobile", "gstin"].includes(key)
-                          ? " *"
-                          : ""}
                       </span>
                       <input
-                        required={["businessName", "applicantName", "email", "mobile", "gstin"].includes(key)}
                         type={key === "email" ? "email" : "text"}
                         maxLength={key === "gstin" ? 15 : key === "pan" ? 10 : undefined}
-                        minLength={key === "gstin" ? 15 : key === "pan" ? 10 : undefined}
                         pattern={key === "gstin" ? "[A-Za-z0-9]{15}" : key === "pan" ? "[A-Za-z]{5}[0-9]{4}[A-Za-z]" : undefined}
                         autoCapitalize={key === "gstin" || key === "pan" ? "characters" : undefined}
                         value={createForm[key]}
@@ -540,10 +527,9 @@ export default function AdminRetailersPage() {
                   ))}
                   <label className="block space-y-1 sm:col-span-2">
                     <span className="text-xs font-semibold text-stone-600">
-                      Login password *
+                      Login password
                     </span>
                     <input
-                      required
                       type="password"
                       minLength={8}
                       autoComplete="new-password"
@@ -557,7 +543,7 @@ export default function AdminRetailersPage() {
                       className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm outline-none focus:border-rose-900"
                     />
                     <span className="text-[11px] text-stone-500">
-                      Minimum 8 characters. Share the password securely with the retailer.
+                      If provided, minimum 8 characters. Leave blank to create the account without a usable login.
                     </span>
                   </label>
                 </div>
@@ -574,10 +560,9 @@ export default function AdminRetailersPage() {
                   ] as const).map(([key, label]) => (
                     <label key={key} className="block space-y-1">
                       <span className="text-xs font-semibold text-stone-600">
-                        {label} *
+                        {label}
                       </span>
                       <input
-                        required
                         value={createForm[key]}
                         onChange={(event) =>
                           setCreateForm((previous) => ({
@@ -631,9 +616,9 @@ export default function AdminRetailersPage() {
               </section>
               <section className="space-y-3">
                 <div>
-                  <h3 className="font-bold text-stone-800">KYC documents *</h3>
+                  <h3 className="font-bold text-stone-800">KYC documents (optional)</h3>
                   <p className="text-xs text-stone-500 mt-1">
-                    Upload at least one document. PAN is entered above; do not upload a PAN card here. PDF, JPEG, PNG or WebP; maximum 5 MB per file.
+                    Upload any documents you have. PAN is entered above; do not upload a PAN card here. PDF, JPEG, PNG or WebP; maximum 5 MB per file.
                   </p>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">

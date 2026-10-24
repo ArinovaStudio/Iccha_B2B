@@ -35,12 +35,10 @@ export default async function HomePage() {
 
         <HomeFeaturesGrid />
 
-        {/* 6. CRAFT, FACTORY VIDEO & REELS */}
+        {/* 6. CRAFT, FACTORY VIDEO & REELS (hidden: Showcase + Recent lookbooks)
         <section className="relative bg-black text-white overflow-hidden border-t border-white/10">
-          {/* Full-bleed photo hero */}
-          {/*<Showcase />*/}
+          <Showcase />
 
-          {/* Instagram / Lookbooks Gallery Strip */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
             <div className="pt-12 border-t border-white/10">
               <div className="reveal flex items-center justify-between mb-6">
@@ -114,6 +112,7 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+        */}
 
         {/* 7. RETAILER REGISTRATION CTA */}
         <section className="py-28 sm:py-36 bg-white border-t border-neutral-200">
@@ -138,7 +137,7 @@ export default async function HomePage() {
                 href="/register"
                 className={`${btnFill} w-full sm:w-auto`}
               >
-                Apply as a retailer
+                Apply as a whole seller
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
 

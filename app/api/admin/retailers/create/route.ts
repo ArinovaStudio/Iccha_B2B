@@ -1,6 +1,6 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/db";
 import { requireStaff } from "@/lib/auth/guard";
 import { hashPassword } from "@/lib/auth/password";
@@ -22,21 +22,64 @@ const ALLOWED_DOCUMENT_TYPES = [
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
+// Every field is optional. Blank strings are normalised to undefined so that
+// "optional" inputs left empty in the form never fail validation.
+const optionalText = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
 const createRetailerSchema = z.object({
-  email: z.string().trim().email("Enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  businessName: z.string().trim().min(1, "Business name is required"),
-  applicantName: z.string().trim().min(1, "Applicant name is required"),
-  mobile: z.string().trim().min(10, "Enter a valid mobile number"),
-  whatsapp: z.string().trim().optional(),
-  gstin: z.string().trim().min(1, "GSTIN is required"),
-  pan: z.string().trim().optional(),
-  businessType: z.string().trim().default("boutique"),
-  street: z.string().trim().min(1, "Address is required"),
-  city: z.string().trim().min(1, "City is required"),
-  state: z.string().trim().min(1, "State is required"),
-  stateCode: z.string().trim().min(1, "State code is required"),
-  pincode: z.string().trim().min(1, "Pincode is required"),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value.toLowerCase() : undefined))
+    .refine(
+      (value) => !value || z.string().email().safeParse(value).success,
+      "Enter a valid email"
+    ),
+  password: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value : undefined))
+    .refine(
+      (value) => !value || value.length >= 8,
+      "Password must be at least 8 characters"
+    ),
+  businessName: optionalText,
+  applicantName: optionalText,
+  mobile: optionalText,
+  whatsapp: optionalText,
+  gstin: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value.toUpperCase() : undefined))
+    .refine(
+      (value) => !value || /^[0-9A-Z]{15}$/.test(value),
+      "GSTIN must be exactly 15 letters and numbers"
+    ),
+  pan: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value.toUpperCase() : undefined))
+    .refine(
+      (value) => !value || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value),
+      "Enter a valid PAN, e.g. ABCDE1234F"
+    ),
+  businessType: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || "boutique"),
+  street: optionalText,
+  city: optionalText,
+  state: optionalText,
+  stateCode: optionalText,
+  pincode: optionalText,
 });
 
 type UploadedDocument = {
@@ -67,20 +110,20 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     const parsed = createRetailerSchema.safeParse({
-      email: formData.get("email"),
-      password: formData.get("password"),
-      businessName: formData.get("businessName"),
-      applicantName: formData.get("applicantName"),
-      mobile: formData.get("mobile"),
-      whatsapp: formData.get("whatsapp") || undefined,
-      gstin: formData.get("gstin"),
-      pan: formData.get("pan") || undefined,
-      businessType: formData.get("businessType") || "boutique",
-      street: formData.get("street"),
-      city: formData.get("city"),
-      state: formData.get("state"),
-      stateCode: formData.get("stateCode"),
-      pincode: formData.get("pincode"),
+      email: formData.get("email") ?? undefined,
+      password: formData.get("password") ?? undefined,
+      businessName: formData.get("businessName") ?? undefined,
+      applicantName: formData.get("applicantName") ?? undefined,
+      mobile: formData.get("mobile") ?? undefined,
+      whatsapp: formData.get("whatsapp") ?? undefined,
+      gstin: formData.get("gstin") ?? undefined,
+      pan: formData.get("pan") ?? undefined,
+      businessType: formData.get("businessType") ?? undefined,
+      street: formData.get("street") ?? undefined,
+      city: formData.get("city") ?? undefined,
+      state: formData.get("state") ?? undefined,
+      stateCode: formData.get("stateCode") ?? undefined,
+      pincode: formData.get("pincode") ?? undefined,
     });
 
     if (!parsed.success) {
@@ -94,16 +137,16 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
-    data.email = data.email.toLowerCase();
 
     const rawFiles = formData.getAll("files");
     const rawTypes = formData.getAll("documentTypes");
 
-    if (rawFiles.length === 0 || rawFiles.length !== rawTypes.length) {
+    // KYC documents are optional, but every uploaded file needs a document type.
+    if (rawFiles.length !== rawTypes.length) {
       return NextResponse.json(
         {
           success: false,
-          error: "Upload at least one KYC document and provide its document type.",
+          error: "Each uploaded KYC document needs a document type.",
         },
         { status: 400 }
       );
@@ -155,28 +198,32 @@ export async function POST(request: NextRequest) {
       documents.push({ file, documentType });
     }
 
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: data.email },
-      select: { id: true },
-    });
+    if (data.email) {
+      const existingEmail = await prisma.user.findUnique({
+        where: { email: data.email },
+        select: { id: true },
+      });
 
-    if (existingEmail) {
-      return NextResponse.json(
-        { success: false, error: "An account with this email already exists." },
-        { status: 409 }
-      );
+      if (existingEmail) {
+        return NextResponse.json(
+          { success: false, error: "An account with this email already exists." },
+          { status: 409 }
+        );
+      }
     }
 
-    const existingGstin = await prisma.retailerProfile.findUnique({
-      where: { gstin: data.gstin },
-      select: { id: true },
-    });
+    if (data.gstin) {
+      const existingGstin = await prisma.retailerProfile.findUnique({
+        where: { gstin: data.gstin },
+        select: { id: true },
+      });
 
-    if (existingGstin) {
-      return NextResponse.json(
-        { success: false, error: "This GSTIN is already registered." },
-        { status: 409 }
-      );
+      if (existingGstin) {
+        return NextResponse.json(
+          { success: false, error: "This GSTIN is already registered." },
+          { status: 409 }
+        );
+      }
     }
 
     // Upload the private files first. If the database operation fails,
@@ -202,50 +249,65 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const passwordHash = await hashPassword(data.password);
+    // The DB requires a password hash. When no password is given, store a hash of
+    // a random secret so the account exists but cannot be logged into until an
+    // admin sets a real password.
+    const passwordHash = await hashPassword(
+      data.password ?? randomBytes(24).toString("hex")
+    );
     const now = new Date();
+    const displayName =
+      data.applicantName || data.businessName || data.email || "Wholesaler";
+    const hasAddress = Boolean(
+      data.street || data.city || data.state || data.stateCode || data.pincode
+    );
 
     const created = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: data.email,
           passwordHash,
-          name: data.applicantName,
-          mobile: data.mobile,
+          name: displayName,
+          mobile: data.mobile ?? null,
           role: "RETAILER",
           isActive: true,
 
           retailerProfile: {
             create: {
-              businessName: data.businessName,
-              applicantName: data.applicantName,
-              mobile: data.mobile,
-              whatsapp: data.whatsapp || null,
-              gstin: data.gstin,
-              pan: data.pan || null,
+              businessName: data.businessName ?? "",
+              applicantName: data.applicantName ?? "",
+              mobile: data.mobile ?? "",
+              whatsapp: data.whatsapp ?? null,
+              gstin: data.gstin ?? null,
+              pan: data.pan ?? null,
               businessType: data.businessType,
               status: "APPROVED",
 
-              addresses: {
-                create: {
-                  type: "billing",
-                  street: data.street,
-                  city: data.city,
-                  state: data.state,
-                  stateCode: data.stateCode,
-                  pincode: data.pincode,
-                  isDefault: true,
-                },
-              },
+              // Only create an address row when at least one address field was given.
+              ...(hasAddress
+                ? {
+                    addresses: {
+                      create: {
+                        type: "billing",
+                        street: data.street ?? "",
+                        city: data.city ?? "",
+                        state: data.state ?? "",
+                        stateCode: data.stateCode ?? "",
+                        pincode: data.pincode ?? "",
+                        isDefault: true,
+                      },
+                    },
+                  }
+                : {}),
 
               kycApplications: {
                 create: {
-                  gstin: data.gstin,
-                  pan: data.pan || null,
-                  businessName: data.businessName,
-                  applicantName: data.applicantName,
-                  mobile: data.mobile,
-                  email: data.email,
+                  gstin: data.gstin ?? null,
+                  pan: data.pan ?? null,
+                  businessName: data.businessName ?? "",
+                  applicantName: data.applicantName ?? "",
+                  mobile: data.mobile ?? "",
+                  email: data.email ?? null,
                   status: "APPROVED",
                   reviewedByUserId: guard.user.id,
                   reviewedAt: now,
