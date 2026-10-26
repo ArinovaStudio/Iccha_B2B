@@ -43,8 +43,6 @@ import { Product } from '@/lib/types';
 
 import { useApp } from '@/lib/context/AppContext';
 
-const PRODUCT_RETURN_KEY = 'iccha:return-from-product';
-
 type ProductDetail = Product & {
 
   billingEntityCode?: string | null;
@@ -105,11 +103,6 @@ export default function RetailerProductDetailPage() {
   const productSlug = params?.productSlug as string;
 
   const { addToCart, cart, openSellerModal } = useApp();
-
-  useEffect(() => {
-    // The browser may restore a stale scroll offset for the home history entry.
-    window.sessionStorage.setItem(PRODUCT_RETURN_KEY, '1');
-  }, []);
 
   const { canOrder } = useCatalogueViewer();
 

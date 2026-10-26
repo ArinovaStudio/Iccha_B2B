@@ -11,7 +11,6 @@ import RevealInit from '@/components/ui/RevealInit';
 //import Showcase from '@/components/hero/Showcase';
 import HomeElements from '@/components/hero/Main';
 import HomeFeaturesGrid from '@/components/home/HomeFeaturesGrid';
-import HomeScrollReset from '@/components/common/HomeScrollReset';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +26,6 @@ const btnOnDark =
 export default async function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <HomeScrollReset />
       <RevealInit />
       <PublicHeader />
 

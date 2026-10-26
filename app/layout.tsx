@@ -4,6 +4,7 @@ import { AppProvider } from '@/lib/context/AppContext';
 import ToastContainer from '@/components/common/ToastContainer';
 import SellerRequestModal from '@/components/cart/SellerRequestModal';
 import ChunkRecovery from '@/components/common/ChunkRecovery';
+import ProductReturnScrollReset from '@/components/common/ProductReturnScrollReset';
 
 export const metadata: Metadata = {
   title: "IcchaStore - B2B Women's Kurti Wholesale Platform",
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#f9f7f2] text-[#1a1a1a] antialiased flex flex-col selection:bg-[#1a1a1a] selection:text-[#f9f7f2]" suppressHydrationWarning>
         <AppProvider>
           <ChunkRecovery />
+          <ProductReturnScrollReset />
           <div className="flex-1 flex flex-col">
             {children}
           </div>
