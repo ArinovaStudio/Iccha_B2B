@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { Instagram, Lock, MapPin, ShieldCheck, X } from 'lucide-react';
+import { Instagram, Lock, MapPin, ShieldCheck, X, LogIn } from 'lucide-react';
 
 export interface RailVendor {
   id: string;
@@ -121,28 +121,25 @@ export default function VendorRail({
                 {/* Dim closed cards */}
                 <div
                   aria-hidden
-                  className={`absolute inset-0 bg-[#18140D] opacity-0 transition-opacity duration-500 ${
-                    isActive ? 'lg:opacity-0' : 'lg:opacity-30'
-                  }`}
+                  className={`absolute inset-0 bg-[#18140D] opacity-0 transition-opacity duration-500 ${isActive ? 'lg:opacity-0' : 'lg:opacity-30'
+                    }`}
                 />
 
                 {/* Closed strip: vertical name on large screens */}
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute bottom-6 left-1/2 hidden max-h-[75%] -translate-x-1/2 rotate-180 overflow-hidden text-ellipsis whitespace-nowrap font-serif text-[20px] text-white transition-opacity duration-300 [writing-mode:vertical-rl] lg:block ${
-                    isActive ? 'opacity-0' : 'opacity-100 delay-200'
-                  }`}
+                  className={`pointer-events-none absolute bottom-6 left-1/2 hidden max-h-[75%] -translate-x-1/2 rotate-180 overflow-hidden text-ellipsis whitespace-nowrap font-serif text-[20px] text-white transition-opacity duration-300 [writing-mode:vertical-rl] lg:block ${isActive ? 'opacity-0' : 'opacity-100 delay-200'
+                    }`}
                 >
                   {vendor.name}
                 </span>
 
                 {/* Top row: verified badge and index */}
                 <div
-                  className={`absolute inset-x-3 top-3 flex items-center justify-between gap-2 transition-opacity duration-300 lg:inset-x-4 lg:top-4 ${
-                    isActive
-                      ? 'lg:opacity-100 lg:delay-200'
-                      : 'lg:opacity-0'
-                  }`}
+                  className={`absolute inset-x-3 top-3 flex items-center justify-between gap-2 transition-opacity duration-300 lg:inset-x-4 lg:top-4 ${isActive
+                    ? 'lg:opacity-100 lg:delay-200'
+                    : 'lg:opacity-0'
+                    }`}
                 >
                   <span className={glassPill}>
                     <ShieldCheck className="h-3.5 w-3.5 text-[#D9AE68]" />
@@ -156,11 +153,10 @@ export default function VendorRail({
 
                 {/* Floating glass information panel */}
                 <div
-                  className={`absolute inset-x-3 bottom-3 overflow-hidden rounded-[18px] border border-white/15 bg-[#18140D]/60 text-white backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform] duration-500 ease-out ${
-                    isActive
-                      ? 'lg:translate-y-0 lg:opacity-100 lg:delay-200'
-                      : 'lg:translate-y-3 lg:opacity-0'
-                  }`}
+                  className={`absolute inset-x-3 bottom-3 overflow-hidden rounded-[18px] border border-white/15 bg-[#18140D]/60 text-white backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform] duration-500 ease-out ${isActive
+                    ? 'lg:translate-y-0 lg:opacity-100 lg:delay-200'
+                    : 'lg:translate-y-3 lg:opacity-0'
+                    }`}
                 >
                   <div className="p-3.5 sm:p-4 lg:min-w-[300px] lg:p-5">
                     <span className="hidden text-[11px] font-medium text-[#D9AE68] sm:block">
@@ -252,14 +248,27 @@ export default function VendorRail({
               </p>
 
               <div className="mt-6 flex flex-col gap-3">
-                <Link
-                  href="/login"
-                  onClick={() => setLockedVendor(null)}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-6 py-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-neutral-800"
-                >
-                  <Lock className="h-4 w-4" />
-                  Apply for Access
-                </Link>
+
+                <div className="grid w-full grid-cols-2 gap-2">
+                  <Link
+                    href="/register"
+                    onClick={() => setLockedVendor(null)}
+                    className="inline-flex min-w-0 w-full items-center justify-center gap-2 rounded-full bg-black px-3 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                  >
+                    <Lock className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Apply for Access</span>
+                  </Link>
+
+                  <Link
+                    href="/login"
+                    onClick={() => setLockedVendor(null)}
+                    className="inline-flex min-w-0 w-full items-center justify-center gap-2 rounded-full border border-neutral-300 bg-white px-3 py-3.5 text-sm font-semibold text-black shadow-sm transition-colors duration-200 hover:border-black hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                  >
+                    <LogIn className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Member Login</span>
+                  </Link>
+                </div>
+
 
                 {lockedInstagramUrl && (
                   <a
