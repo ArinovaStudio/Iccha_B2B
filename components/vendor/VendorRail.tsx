@@ -253,7 +253,7 @@ export default function VendorRail({
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link
-                  href="/register"
+                  href="/login"
                   onClick={() => setLockedVendor(null)}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-6 py-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-neutral-800"
                 >

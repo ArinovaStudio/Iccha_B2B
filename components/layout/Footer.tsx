@@ -234,7 +234,7 @@ export default function Footer() {
 
 
           {/* CONTACT */}
-          <section className="min-w-0 lg:col-span-4 lg:pl-7" aria-labelledby="footer-contact-heading">
+          <section className="min-w-0 lg:col-span-4 lg:pl-20" aria-labelledby="footer-contact-heading">
 
             <h4 id="footer-contact-heading" className="text-[12px] uppercase tracking-[0.16em] text-white font-semibold mb-5">
               Contact
