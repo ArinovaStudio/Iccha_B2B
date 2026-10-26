@@ -173,12 +173,7 @@ function BranchCard({ b }: { b: Branch }) {
   );
 }
 
-function FaqItem({
-  q,
-  a,
-  open,
-  onToggle,
-}: {
+function FaqItem({ q, a, open, onToggle,}: {
   q: string;
   a: string;
   open: boolean;

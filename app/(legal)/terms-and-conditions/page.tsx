@@ -193,7 +193,7 @@ const policy: Policy = {
       "heading": "21. Grievance Redressal and Contact",
       "paragraphs": [
         "For questions, complaints or concerns relating to the Website or these Terms, please contact ICCHA Store using the details below. Insert the current legal entity name, business address and designated grievance contact before publishing.",
-        "Email: wholesale@icchastore.com (commercial enquiries) · compliance@icchastore.com (privacy and compliance)\nPhone: +91 98251 44550 / +91 94140 88220",
+        "Email: Icchabyprime@gmail.com (commercial enquiries) · Icchabyprime@gmail.com (privacy and compliance)\nPhone: +91 98251 44550 / +91 94140 88220",
         "Complaints will be acknowledged and addressed within the timelines required by applicable law. If any provision of these Terms is held unenforceable, the remaining provisions will continue to apply to the extent permitted by law."
       ]
     }
@@ -273,7 +273,7 @@ export default function TermsAndConditionsPage() {
             </div>
             <div className="my-5 border-t border-slate-100" />
             <p className="px-2 text-xs leading-5 text-slate-500">
-              Questions about these policies? Contact <a className="underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="mailto:compliance@icchastore.com">compliance@icchastore.com</a>.
+              Questions about these policies? Contact <a className="underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="mailto:Icchabyprime@gmail.com">Icchabyprime@gmail.com</a>.
             </p>
           </nav>
         </aside>
@@ -309,7 +309,7 @@ export default function TermsAndConditionsPage() {
             ))}
           </div>
           <div className="border-t border-slate-200 bg-slate-50/60 px-6 py-6 sm:px-10 lg:px-12">
-            <p className="text-sm leading-6 text-slate-600">For questions about this policy, contact <a className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900" href="mailto:compliance@icchastore.com">compliance@icchastore.com</a>.</p>
+            <p className="text-sm leading-6 text-slate-600">For questions about this policy, contact <a className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900" href="mailto:Icchabyprime@gmail.com">Icchabyprime@gmail.com</a>.</p>
           </div>
         </article>
       </div>
@@ -324,7 +324,7 @@ export default function TermsAndConditionsPage() {
             {policyLinks.map((item) => (
               <a key={item.href} href={item.href} className="transition hover:text-slate-950">{item.label}</a>
             ))}
-            <a href="mailto:compliance@icchastore.com" className="transition hover:text-slate-950">Contact</a>
+            <a href="mailto:Icchabyprime@gmail.com" className="transition hover:text-slate-950">Contact</a>
           </nav>
         </div>
         <div className="border-t border-slate-100">

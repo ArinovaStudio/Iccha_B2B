@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Building2,
@@ -6,12 +8,61 @@ import {
   Truck,
   FileText,
   Phone,
-  Mail,
   MapPin,
-  Lock,
   ArrowUpRight,
 } from 'lucide-react';
+import { defaultContact } from '@/lib/site-content';
+
+type ContactBranch = {
+  id: string;
+  name: string;
+  tag?: string | null;
+  contactPerson?: string | null;
+  phone: string;
+  altPhone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  addressLine: string;
+  city: string;
+  state?: string | null;
+  pincode?: string | null;
+  mapUrl?: string | null;
+  hours?: string | null;
+  closedDays?: string | null;
+};
+
+const phoneDigits = (value: string) => value.replace(/[^+\d]/g, '');
+
+const fallbackContactBranch: ContactBranch = {
+  id: 'fallback',
+  name: defaultContact.showroomTitle,
+  phone: defaultContact.phone,
+  whatsapp: defaultContact.whatsapp,
+  addressLine: defaultContact.address,
+  city: '',
+  mapUrl: defaultContact.directionsUrl,
+  hours: defaultContact.hours,
+  closedDays: defaultContact.closed,
+};
+
 export default function Footer() {
+  const [contacts, setContacts] = useState<ContactBranch[] | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/contact', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setContacts(json.data);
+          return;
+        }
+
+        // Match /contact's configured fallback when no branch records exist.
+        setContacts([fallbackContactBranch]);
+      })
+      .catch(() => setContacts([fallbackContactBranch]));
+  }, []);
+
   const quickLinks = [
     { label: 'Home', href: '/' },
     { label: 'New Arrivals', href: '/products?sort=newest' },
@@ -102,7 +153,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
 
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-12 lg:gap-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-10">
 
           {/* BRAND */}
           <div className="lg:col-span-4">
@@ -120,7 +171,7 @@ export default function Footer() {
 
             <p className="mt-6 text-[12px] leading-[1.8] text-stone-500 max-w-sm">
               A wholesale destination for whole sellers looking for thoughtfully
-              curated women's ethnic wear. Discover stitched 2-piece and
+              curated women&apos;s ethnic wear. Discover stitched 2-piece and
               3-piece sets, kurtis, pants and dupattas at B2B prices.
             </p>
 
@@ -183,42 +234,42 @@ export default function Footer() {
 
 
           {/* CONTACT */}
-          <div className="lg:col-span-2">
+          <section className="min-w-0 lg:col-span-4 lg:pl-7" aria-labelledby="footer-contact-heading">
 
-            <h4 className="text-[12px] uppercase tracking-[0.16em] text-white font-semibold mb-5">
+            <h4 id="footer-contact-heading" className="text-[12px] uppercase tracking-[0.16em] text-white font-semibold mb-5">
               Contact
             </h4>
 
-            <div className="space-y-4">
+            {contacts === null ? (
+              <div className="flex gap-5 overflow-hidden" aria-label="Loading contact details">
+                {[0, 1].map((item) => <div key={item} className="h-20 w-56 shrink-0 animate-pulse" />)}
+              </div>
+            ) : contacts.length > 0 ? (
+              <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain pb-2">
+                {contacts.map((contact) => {
+                  const location = [contact.city, contact.state].filter(Boolean).join(', ');
+                  const cityLine = [location, contact.pincode].filter(Boolean).join(' ');
 
-              <a
-                href="tel:+919825144550"
-                className="flex items-start gap-2.5 group"
-              >
-                <Phone className="w-3.5 h-3.5 mt-0.5 text-stone-600 group-hover:text-stone-300 transition-colors" />
+                  return (
+                    <article key={contact.id} className="w-52 shrink-0 snap-start border-l border-white/10 pl-4 first:border-l-0 first:pl-0">
+                      <h5 className="break-words text-sm font-semibold leading-snug text-white">{contact.name}</h5>
+                      <a className="mt-2 inline-flex items-center gap-2 text-xs text-stone-300 hover:text-white" href={`tel:${phoneDigits(contact.phone)}`}>
+                        <Phone className="h-3.5 w-3.5 shrink-0 text-stone-500" />
+                        <span className="break-words">{contact.phone}</span>
+                      </a>
+                      <p className="mt-2 flex min-w-0 items-start gap-2 text-xs leading-relaxed text-stone-400">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-500" />
+                        <span className="min-w-0 break-words">{[contact.addressLine, cityLine].filter(Boolean).join(', ')}</span>
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-stone-500">Contact details are temporarily unavailable. <Link className="text-stone-300 underline underline-offset-4 hover:text-white" href="/contact">Visit our contact page</Link>.</p>
+            )}
 
-                <span className="text-[11px] leading-relaxed text-stone-500 group-hover:text-stone-300 transition-colors">
-                  +91 98251 44550
-                  <br />
-                  +91 94140 88220
-                </span>
-              </a>
-
-
-              <a
-                href="mailto:wholesale@icchastore.com"
-                className="flex items-start gap-2.5 group"
-              >
-                <Mail className="w-3.5 h-3.5 mt-0.5 text-stone-600 group-hover:text-stone-300 transition-colors" />
-
-                <span className="text-[11px] text-stone-500 group-hover:text-stone-300 transition-colors break-all">
-                  wholesale@icchastore.com
-                </span>
-              </a>
-
-            </div>
-
-          </div>
+          </section>
 
         </div>
 

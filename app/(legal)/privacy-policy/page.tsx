@@ -169,7 +169,7 @@ const policy: Policy = {
       "heading": "17. Contact and Grievance Redressal",
       "paragraphs": [
         "For privacy requests, questions or complaints, contact ICCHA Store. Insert the current legal entity name, business address and designated privacy or grievance contact before publishing.",
-        "Website: https://icchastore.com\nPrivacy and compliance: compliance@icchastore.com\nCommercial enquiries: wholesale@icchastore.com\nPhone: +91 98251 44550 / +91 94140 88220",
+        "Website: https://icchastore.com\nPrivacy and compliance: Icchabyprime@gmail.com\nCommercial enquiries: Icchabyprime@gmail.com\nPhone: +91 98251 44550 / +91 94140 88220",
         "We will review and respond to requests in accordance with applicable law and the procedures established for privacy and grievance handling."
       ]
     }
@@ -249,7 +249,7 @@ export default function PrivacyPolicyPage() {
             </div>
             <div className="my-5 border-t border-slate-100" />
             <p className="px-2 text-xs leading-5 text-slate-500">
-              Questions about these policies? Contact <a className="underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="mailto:compliance@icchastore.com">compliance@icchastore.com</a>.
+              Questions about these policies? Contact <a className="underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="mailto:Icchabyprime@gmail.com">Icchabyprime@gmail.com</a>.
             </p>
           </nav>
         </aside>
@@ -285,7 +285,7 @@ export default function PrivacyPolicyPage() {
             ))}
           </div>
           <div className="border-t border-slate-200 bg-slate-50/60 px-6 py-6 sm:px-10 lg:px-12">
-            <p className="text-sm leading-6 text-slate-600">For questions about this policy, contact <a className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900" href="mailto:compliance@icchastore.com">compliance@icchastore.com</a>.</p>
+            <p className="text-sm leading-6 text-slate-600">For questions about this policy, contact <a className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900" href="mailto:Icchabyprime@gmail.com">Icchabyprime@gmail.com</a>.</p>
           </div>
         </article>
       </div>
@@ -300,7 +300,7 @@ export default function PrivacyPolicyPage() {
             {policyLinks.map((item) => (
               <a key={item.href} href={item.href} className="transition hover:text-slate-950">{item.label}</a>
             ))}
-            <a href="mailto:compliance@icchastore.com" className="transition hover:text-slate-950">Contact</a>
+            <a href="mailto:Icchabyprime@gmail.com" className="transition hover:text-slate-950">Contact</a>
           </nav>
         </div>
         <div className="border-t border-slate-100">
