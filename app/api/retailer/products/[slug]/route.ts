@@ -123,6 +123,7 @@ export async function GET(
       designNumber: product.designNumber,
       name: product.name,
       description: product.description ?? "",
+      socialLink: product.socialLink,
 
       categoryId: product.categoryId,
       categoryName: product.category?.name ?? "",

@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   Check,
   Video,
+  Share2,
+  ExternalLink,
 
   ArrowLeft,
 
@@ -127,6 +129,22 @@ export default function RetailerProductDetailPage() {
   const [hasInitializedSets, setHasInitializedSets] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  const [shareMessage, setShareMessage] = useState('');
+
+  const handleShareProduct = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product?.name, url });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setShareMessage('Product link copied');
+        window.setTimeout(() => setShareMessage(''), 2500);
+      }
+    } catch {
+      // Ignore a cancelled share action.
+    }
+  };
 
   useEffect(() => {
 
@@ -578,6 +596,29 @@ export default function RetailerProductDetailPage() {
                   {product.name}
 
                 </h1>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleShareProduct}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    Share
+                  </button>
+                  {product.socialLink && (
+                    <a
+                      href={product.socialLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-900 hover:bg-rose-100"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Social Link
+                    </a>
+                  )}
+                  {shareMessage && <span role="status" className="text-xs text-emerald-700">{shareMessage}</span>}
+                </div>
 
                 {product.description && (
 

@@ -75,6 +75,7 @@ interface Product {
   designNumber: string;
   name: string;
   description?: string | null;
+  socialLink?: string | null;
   categoryId: string;
   category?: { name: string };
   vendor?: { id: string; businessName: string } | null;
@@ -217,7 +218,8 @@ export default function AdminProductsPage() {
     margin: '',
     minOrderSets: 1,
     color: '',
-    description: ''
+    description: '',
+    socialLink: ''
   });
 
   const [isSizeChartDropdownOpen, setIsSizeChartDropdownOpen] = useState(false);
@@ -672,7 +674,8 @@ export default function AdminProductsPage() {
       lining: formData.lining.trim(),
       margin: formData.margin.trim(),
       minOrderSets: Number(formData.minOrderSets),
-      description: formData.description
+      description: formData.description,
+      socialLink: formData.socialLink.trim() || null
     };
 
     // Vendor edits are stock additions, not stock replacements.
@@ -779,7 +782,8 @@ export default function AdminProductsPage() {
       margin: product.margin || '',
       minOrderSets: Math.max(1, Number(product.minOrderSets) || 1),
       color: product.color || '',
-      description: product.description || ''
+      description: product.description || '',
+      socialLink: product.socialLink || ''
     });
 
     setSizeStocks(
@@ -1891,6 +1895,17 @@ export default function AdminProductsPage() {
                     rows={2}
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Social Link</label>
+                  <input
+                    type="url"
+                    value={formData.socialLink}
+                    onChange={e => setFormData({ ...formData, socialLink: e.target.value })}
+                    placeholder="https://..."
                     className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                   />
                 </div>

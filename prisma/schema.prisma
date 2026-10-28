@@ -431,6 +431,7 @@ model Product {
   name          String
   slug          String  @unique
   description   String?
+  socialLink    String?
   categoryId    String
   subcategoryId String?
   gstConfigId   String?

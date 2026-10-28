@@ -158,6 +158,7 @@ export interface Product {
   categoryName: string;
   subcategory: string;
   description: string;
+  socialLink?: string | null;
   fabric: string;
   workType: string; // e.g., 'Hand Embroidery', 'Zari Foil Print', 'Mirror Work', 'Digital Print'
   lining?: string | null; // e.g., 'Premium Crepe Attached'
