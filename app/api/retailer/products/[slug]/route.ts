@@ -24,6 +24,7 @@ export async function GET(
       where: {
         slug,
         isActive: true,
+        vendor: { isActive: true },
       },
       include: {
         category: {

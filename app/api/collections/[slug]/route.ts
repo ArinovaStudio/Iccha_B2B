@@ -31,7 +31,10 @@ export async function GET(req: NextRequest, context: RouteContext) {
     // Fetch collection by slug or ID
     const collection = await prisma.collection.findFirst({
       where: {
-        OR: [{ slug: decoded }, { id: decoded }],
+        AND: [
+          { OR: [{ slug: decoded }, { id: decoded }] },
+          { OR: [{ vendorId: null }, { vendor: { is: { isActive: true } } }] },
+        ],
       },
       select: detailSelect,
     });

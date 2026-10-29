@@ -71,9 +71,9 @@ const vendorSelect = {
   city: true,
   state: true,
   bannerAsset: { select: { publicUrl: true } },
-  _count: { select: { products: { where: { isActive: true } } } },
+  _count: { select: { products: { where: { isActive: true, vendor: { isActive: true } } } } },
   products: {
-    where: { isActive: true },
+    where: { isActive: true, vendor: { isActive: true } },
     take: 4,
     orderBy: { createdAt: "desc" },
     include: productInclude,

@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
       where: {
         AND: [
           publicWhere(),
+          { OR: [{ vendorId: null }, { vendor: { is: { isActive: true } } }] },
           tag ? { tags: { has: tag } } : {},
           vendorId ? { vendorId } : {},
         ],

@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    include: { category: { select: { requiresSize: true } }, sizes: true },
+    include: { category: { select: { requiresSize: true } }, sizes: true, vendor: { select: { isActive: true } } },
   });
 
-  if (!product || !product.isActive) {
+  if (!product || !product.isActive || (product.vendorId && !product.vendor?.isActive)) {
     return NextResponse.json(
       { success: false, error: "Product not found or unavailable" },
       { status: 404 }

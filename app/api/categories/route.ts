@@ -4,6 +4,8 @@ import { Category, Product } from "@/lib/types";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+const publicProductWhere = { isActive: true, vendor: { isActive: true } } satisfies Prisma.ProductWhereInput;
+
 const categoryInclude = {
   subcategories: {
     select: {
@@ -17,7 +19,7 @@ const categoryInclude = {
   },
   _count: {
     select: {
-      products: true,
+      products: { where: publicProductWhere },
     },
   },
 } satisfies Prisma.CategoryInclude;
@@ -45,7 +47,9 @@ const productInclude = {
       sortOrder: "asc",
     },
   },
+  vendor: { select: { isActive: true } },
 } satisfies Prisma.ProductInclude;
+
 
 type DbProduct = Prisma.ProductGetPayload<{
   include: typeof productInclude;
@@ -178,10 +182,7 @@ export async function GET(req: NextRequest) {
         },
         include: {
           ...categoryInclude,
-
-          products: {
-            include: productInclude,
-          },
+          products: { where: publicProductWhere, include: productInclude },
         },
       });
 
@@ -217,7 +218,10 @@ export async function GET(req: NextRequest) {
       where: {
         isActive: true,
       },
-      include: categoryInclude,
+      include: {
+        ...categoryInclude,
+        products: { where: publicProductWhere, include: productInclude },
+      },
       orderBy: {
         createdAt: "desc",
       },

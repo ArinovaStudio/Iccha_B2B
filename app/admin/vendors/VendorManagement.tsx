@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Search, ArrowDownCircle, Trash2, Loader2, Eye, ImagePlus } from "lucide-react";
+import { Search, ArrowDownCircle, Trash2, Loader2, Eye, ImagePlus, Power } from "lucide-react";
 import Image from "next/image";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import CreateVendorButton from "@/components/admin/vendors/CreateVendorButton";
@@ -113,6 +113,36 @@ export default function VendorManagement() {
       addToast({ type: "success", title: "Vendor demoted", message: `${vendor.businessName} is now a retailer.` });
     } catch {
       addToast({ type: "error", title: "Demotion failed", message: "Something went wrong." });
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleToggleActive = async (vendor: Vendor) => {
+    const isActive = !vendor.isActive;
+    setActionId(vendor.id);
+    try {
+      const res = await fetch(`/api/admin/vendors/${vendor.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        addToast({ type: "error", title: "Status update failed", message: result.error || "Please try again." });
+        return;
+      }
+
+      const updateVendor = (item: Vendor) => item.id === vendor.id ? { ...item, isActive } : item;
+      setVendors((current) => current.map(updateVendor));
+      setSelectedVendor((current) => current ? updateVendor(current) : null);
+      addToast({
+        type: "success",
+        title: isActive ? "Vendor activated" : "Vendor deactivated",
+        message: isActive ? `${vendor.businessName} can sign in and list products again.` : `${vendor.businessName} can no longer sign in and their products are hidden from customers.`,
+      });
+    } catch {
+      addToast({ type: "error", title: "Status update failed", message: "Something went wrong." });
     } finally {
       setActionId(null);
     }
@@ -262,6 +292,16 @@ export default function VendorManagement() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          disabled={actionId === vendor.id}
+                          onClick={() => handleToggleActive(vendor)}
+                          className={`px-3 py-1.5 rounded-lg font-bold text-[11px] inline-flex items-center gap-1.5 disabled:opacity-50 ${vendor.isActive ? "bg-amber-50 hover:bg-amber-100 text-amber-800" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800"}`}
+                          aria-label={vendor.isActive ? `Deactivate ${vendor.businessName}` : `Activate ${vendor.businessName}`}
+                        >
+                          {actionId === vendor.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Power className="w-3.5 h-3.5" />}
+                          {vendor.isActive ? "Deactivate" : "Activate"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => setSelectedVendor(vendor)}

@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
         >();
         for (const item of cart.items) {
           const product = item.product;
-          if (!product.isActive) {
+          if (!product.isActive || (product.vendorId && !product.vendor?.isActive)) {
             throw new Error(`${product.name} is no longer available`);
           }
           let entity: BillingEntity;

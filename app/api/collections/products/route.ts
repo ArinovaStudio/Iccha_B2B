@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
+      vendor: { isActive: true },
     };
 
     // Strict vendor scoping:

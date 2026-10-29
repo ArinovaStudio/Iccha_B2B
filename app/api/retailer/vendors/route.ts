@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // an empty vendor filter option would be a dead end for the whole seller.
     const [vendors, storeProducts, storeProductCount] = await Promise.all([
       prisma.vendorProfile.findMany({
-        where: { products: { some: { isActive: true } } },
+        where: { isActive: true, products: { some: { isActive: true } } },
         select: {
           id: true,
           businessName: true,

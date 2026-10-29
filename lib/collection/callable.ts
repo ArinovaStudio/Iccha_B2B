@@ -16,7 +16,7 @@ const imageArgs = {
   select: { mediaAsset: { select: { publicUrl: true } } },
 } satisfies Prisma.ProductMediaFindManyArgs;
 
-const activeProduct = { product: { isActive: true } } satisfies Prisma.CollectionProductWhereInput;
+const activeProduct = { product: { isActive: true, vendor: { isActive: true } } } satisfies Prisma.CollectionProductWhereInput;
 
 export const listSelect = {
   id: true,
@@ -204,6 +204,7 @@ export async function productsAllowed(actor: Actor, ids: string[], targetVendorI
   const where: Prisma.ProductWhereInput = {
     id: { in: ids },
     isActive: true,
+    vendor: { isActive: true },
   };
 
   if (!actor.isAdmin) {
