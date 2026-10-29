@@ -506,7 +506,8 @@ export default function AdminProductsPage() {
       margin: '',
       minOrderSets: 1,
       color: '',
-      description: ''
+      description: '',
+      socialLink: ''
     });
     setSizeStocks([]);
     setStockAddition(0);
@@ -675,7 +676,7 @@ export default function AdminProductsPage() {
       margin: formData.margin.trim(),
       minOrderSets: Number(formData.minOrderSets),
       description: formData.description,
-      socialLink: formData.socialLink.trim() || null
+      socialLink: formData.socialLink?.trim() || null
     };
 
     // Vendor edits are stock additions, not stock replacements.
