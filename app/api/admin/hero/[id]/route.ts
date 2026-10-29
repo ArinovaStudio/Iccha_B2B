@@ -12,6 +12,8 @@ const updateHeroSlideSchema = z.object({
   description: z.string().optional(),
   desktopImage: z.string().url().optional(),
   mobileImage: z.string().url().optional(),
+  desktopAssetId: z.string().optional(),
+  mobileAssetId: z.string().optional(),
   imageAlt: z.string().optional(),
   primaryCtaLabel: z.string().optional(),
   primaryCtaUrl: z.string().optional(),
@@ -49,8 +51,8 @@ const updateHeroSlideSchema = z.object({
     ])
     .optional(),
 
-  startAt: z.string().optional(),
-  endAt: z.string().optional(),
+  startAt: z.string().nullable().optional(),
+  endAt: z.string().nullable().optional(),
 });
 
 type Context = {

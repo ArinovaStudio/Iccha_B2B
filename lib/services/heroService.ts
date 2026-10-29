@@ -48,6 +48,8 @@ function mapHeroSlide(slide: any): HeroSlide {
     desktopImage:
       slide.desktopAsset?.publicUrl ||
       slide.desktopImageUrl,
+    desktopAssetId: slide.desktopAssetId || undefined,
+    mobileAssetId: slide.mobileAssetId || undefined,
     mobileImage:
       slide.mobileAsset?.publicUrl ||
       slide.mobileImageUrl ||
@@ -233,8 +235,10 @@ export class HeroService {
         title: dto.title,
         description: dto.description,
         desktopImageUrl: dto.desktopImage,
+        ...(dto.desktopAssetId ? { desktopAsset: { connect: { id: dto.desktopAssetId } } } : {}),
         mobileImageUrl:
           dto.mobileImage || dto.desktopImage,
+        ...(dto.mobileAssetId ? { mobileAsset: { connect: { id: dto.mobileAssetId } } } : {}),
         imageAlt:
   dto.imageAlt ||
   dto.title.replace(/\n/g, " "),
@@ -349,8 +353,16 @@ export class HeroService {
     if (dto.desktopImage !== undefined) {
       data.desktopImageUrl = dto.desktopImage;
     }
+    if (dto.desktopAssetId !== undefined) {
+      const assetId = dto.desktopAssetId;
+      data.desktopAsset = assetId ? { connect: { id: assetId } } : { disconnect: true };
+    }
     if (dto.mobileImage !== undefined) {
       data.mobileImageUrl = dto.mobileImage;
+    }
+    if (dto.mobileAssetId !== undefined) {
+      const assetId = dto.mobileAssetId;
+      data.mobileAsset = assetId ? { connect: { id: assetId } } : { disconnect: true };
     }
     if (dto.imageAlt !== undefined) {
       data.imageAlt = dto.imageAlt;

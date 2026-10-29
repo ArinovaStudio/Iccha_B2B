@@ -16,6 +16,8 @@ const createHeroSlideSchema = z.object({
   desktopImage: z.string().url(),
 
   mobileImage: z.string().url().optional(),
+  desktopAssetId: z.string().optional(),
+  mobileAssetId: z.string().optional(),
 
   imageAlt: z.string().min(1),
 

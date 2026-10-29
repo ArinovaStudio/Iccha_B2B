@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { 
   Sparkles, 
   Plus, 
@@ -37,9 +36,12 @@ export default function AdminHeroManagementPage() {
   const [selectedSlide, setSelectedSlide] = useState<HeroSlide | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingSlide, setEditingSlide] = useState<Partial<CreateHeroSlideDTO> & { id?: string }>({});
+  const [editingSlide, setEditingSlide] = useState<Partial<CreateHeroSlideDTO> & { id?: string; desktopAssetId?: string; mobileAssetId?: string }>({});
   const [isUploading, setIsUploading] = useState(false);
+  const desktopFileInputRef = useRef<HTMLInputElement>(null);
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const showNotification = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -49,11 +51,15 @@ export default function AdminHeroManagementPage() {
   // Fetch Slides & Categories
   const fetchSlides = useCallback(async () => {
     try {
-      const [heroRes, cats] = await Promise.all([
-        fetch('/api/admin/hero').then((r) => r.json()),
+      const [heroResponse, cats] = await Promise.all([
+        fetch('/api/admin/hero', { cache: 'no-store' }),
         CategoryService.getCategories(),
       ]);
+      const heroRes = await heroResponse.json();
 
+      if (!heroResponse.ok || !heroRes.success) {
+        throw new Error(heroRes.error?.message || 'Failed to load slides');
+      }
       if (heroRes.success) {
         setSlides(heroRes.data);
         setSelectedSlide((prev) => {
@@ -68,7 +74,7 @@ export default function AdminHeroManagementPage() {
       setCategories(cats);
     } catch (err) {
       console.error('Error fetching admin hero slides:', err);
-      showNotification('Failed to load slides', 'error');
+      showNotification(err instanceof Error ? err.message : 'Failed to load slides', 'error');
     } finally {
       setLoading(false);
     }
@@ -80,7 +86,7 @@ export default function AdminHeroManagementPage() {
     const loadData = async () => {
       try {
         const [heroRes, cats] = await Promise.all([
-          fetch('/api/admin/hero').then((r) => r.json()),
+          fetch('/api/admin/hero', { cache: 'no-store' }).then((r) => r.json()),
           CategoryService.getCategories(),
         ]);
 
@@ -233,10 +239,13 @@ export default function AdminHeroManagementPage() {
       });
       const json = await res.json();
 
-      if (json.success) {
+      if (res.ok && json.success && json.data?.publicUrl && json.data?.id) {
         setEditingSlide((prev) => ({
           ...prev,
           [field]: json.data.publicUrl,
+          ...(field === 'desktopImage' && !prev.mobileImage ? { mobileImage: json.data.publicUrl } : {}),
+          ...(field === 'desktopImage' && json.data.id ? { desktopAssetId: json.data.id } : {}),
+          ...(field === 'mobileImage' && json.data.id ? { mobileAssetId: json.data.id } : {}),
         }));
         showNotification(`${field === 'desktopImage' ? 'Desktop' : 'Mobile'} image uploaded!`, 'success');
       } else {
@@ -246,13 +255,19 @@ export default function AdminHeroManagementPage() {
       showNotification('Network error during upload', 'error');
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
   // Save Modal
   const handleSaveSlide = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploading || isSaving) {
+      showNotification(isUploading ? 'Wait for the image upload to finish before saving.' : 'Campaign is already being saved.', 'error');
+      return;
+    }
     try {
+      setIsSaving(true);
       const isNew = !editingSlide.id;
       const url = isNew ? '/api/admin/hero' : `/api/admin/hero/${editingSlide.id}`;
       const method = isNew ? 'POST' : 'PATCH';
@@ -264,7 +279,9 @@ export default function AdminHeroManagementPage() {
         title: editingSlide.title || 'Everyday,\nMade Beautiful.',
         description: editingSlide.description || 'Contemporary ethnicwear.',
         desktopImage: editingSlide.desktopImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1920&auto=format&fit=crop&q=85',
+        desktopAssetId: editingSlide.desktopAssetId,
         mobileImage: editingSlide.mobileImage || editingSlide.desktopImage,
+        mobileAssetId: editingSlide.mobileAssetId,
         imageAlt: editingSlide.imageAlt || 'Kurta Collection',
         primaryCtaLabel: editingSlide.primaryCtaLabel || 'EXPLORE COLLECTION',
         primaryCtaUrl: editingSlide.primaryCtaUrl || '/collections',
@@ -285,37 +302,43 @@ export default function AdminHeroManagementPage() {
       const json = await res.json();
 
       if (json.success) {
+        const savedSlide = json.data as HeroSlide;
         setIsEditModalOpen(false);
         showNotification(isNew ? 'New hero slide created!' : 'Hero slide updated successfully!', 'success');
-        fetchSlides();
+        await fetchSlides();
+        setSelectedSlide(savedSlide);
       } else {
-        showNotification(json.error?.message || 'Failed to save slide', 'error');
+        const details = json.error?.details?.map((issue: { path?: (string | number)[]; message?: string }) => `${issue.path?.join('.') || 'form'}: ${issue.message}`).join(' · ');
+        showNotification([json.error?.message || 'Failed to save slide', details].filter(Boolean).join(' — '), 'error');
       }
     } catch {
       showNotification('Failed to submit slide form', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const openNewSlideModal = () => {
     setEditingSlide({
-      internalName: 'New Kurta Campaign',
-      eyebrow: 'NEW COLLECTION • VOL. 27',
-      title: 'Graceful Craft,\nPure Comfort.',
-      description: 'Stitched wholesale kurtis & 2-piece ensembles direct from Surat and Jaipur textile hubs.',
-      desktopImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1920&auto=format&fit=crop&q=85',
-      mobileImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1080&auto=format&fit=crop&q=85',
-      imageAlt: 'IcchaStore Premium Stitched Kurti Set',
-      primaryCtaLabel: 'EXPLORE COLLECTION',
-      primaryCtaUrl: '/collections',
-      secondaryCtaLabel: 'APPLY FOR ACCESS →',
-      secondaryCtaUrl: '/register',
+      internalName: '',
+      navLabel: '',
+      eyebrow: '',
+      title: '',
+      description: '',
+      desktopImage: '',
+      mobileImage: '',
+      imageAlt: '',
+      primaryCtaLabel: '',
+      primaryCtaUrl: '',
+      secondaryCtaLabel: '',
+      secondaryCtaUrl: '',
       contentPosition: 'left',
       textTheme: 'light',
       desktopImagePosition: 'center 25%',
       mobileImagePosition: '50% 20%',
-      status: 'PUBLISHED',
-      fabricTags: ['Pure Cotton', 'Mill Direct', 'Set Packing'],
-      editorialBadge: 'Direct Factory Archive',
+      status: 'DRAFT',
+      fabricTags: [],
+      editorialBadge: '',
     });
     setIsEditModalOpen(true);
   };
@@ -330,6 +353,8 @@ export default function AdminHeroManagementPage() {
       description: slide.description,
       desktopImage: slide.desktopImage,
       mobileImage: slide.mobileImage,
+      desktopAssetId: (slide as HeroSlide & { desktopAssetId?: string }).desktopAssetId,
+      mobileAssetId: (slide as HeroSlide & { mobileAssetId?: string }).mobileAssetId,
       imageAlt: slide.imageAlt,
       primaryCtaLabel: slide.primaryCTA.label,
       primaryCtaUrl: slide.primaryCTA.href,
@@ -807,7 +832,7 @@ export default function AdminHeroManagementPage() {
                     Status
                   </label>
                   <select
-                    value={editingSlide.status || 'PUBLISHED'}
+                    value={editingSlide.status || (editingSlide.id ? 'PUBLISHED' : 'DRAFT')}
                     onChange={(e) => setEditingSlide({ ...editingSlide, status: e.target.value as any })}
                     className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#831843] outline-none bg-white font-semibold"
                   >
@@ -853,26 +878,35 @@ export default function AdminHeroManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-stone-700">Desktop Campaign Image (16:9 / 1920px+)</label>
-                    <label className="text-[10px] text-[#831843] hover:underline cursor-pointer flex items-center gap-1">
+                    <label className="font-bold text-stone-700">Desktop Campaign Image (16:9 / 1920px+) *</label>
+                    <button type="button" onClick={() => desktopFileInputRef.current?.click()} disabled={isUploading} className="text-[10px] text-[#831843] hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50">
                       <Upload className="w-3 h-3" />
-                      <span>Upload File</span>
-                      <input
+                      <span>{isUploading ? 'Uploading…' : 'Choose image'}</span>
+                    </button>
+                    <input
+                        ref={desktopFileInputRef}
                         type="file"
                         accept="image/*"
-                        className="hidden"
+                        className="sr-only"
                         onChange={(e) => handleFileUpload(e, 'desktopImage')}
                       />
-                    </label>
                   </div>
                   <input
                     type="url"
                     required
+                    disabled={isUploading}
+                    onInvalid={(e) => (e.currentTarget as HTMLInputElement).setCustomValidity('Choose or enter a desktop campaign image URL.')}
+                    onInput={(e) => (e.currentTarget as HTMLInputElement).setCustomValidity('')}
                     value={editingSlide.desktopImage || ''}
                     onChange={(e) => setEditingSlide({ ...editingSlide, desktopImage: e.target.value })}
                     className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#831843] outline-none font-mono text-[11px]"
                     placeholder="https://images.unsplash.com/..."
                   />
+                  {editingSlide.desktopImage && (
+                    <div className="relative mt-2 h-28 overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+                      <img src={editingSlide.desktopImage} alt={editingSlide.imageAlt || 'Desktop campaign preview'} className="absolute inset-0 h-full w-full object-cover" />
+                    </div>
+                  )}
                   <div className="mt-2 flex items-center gap-2">
                     <span className="text-[10px] text-stone-500">Desktop Focal Point:</span>
                     <input
@@ -888,24 +922,31 @@ export default function AdminHeroManagementPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="font-bold text-stone-700">Mobile Image (Portrait / Optional)</label>
-                    <label className="text-[10px] text-[#831843] hover:underline cursor-pointer flex items-center gap-1">
+                    <button type="button" onClick={() => mobileFileInputRef.current?.click()} disabled={isUploading} className="text-[10px] text-[#831843] hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50">
                       <Upload className="w-3 h-3" />
-                      <span>Upload File</span>
-                      <input
+                      <span>{isUploading ? 'Uploading…' : 'Choose image'}</span>
+                    </button>
+                    <input
+                        ref={mobileFileInputRef}
                         type="file"
                         accept="image/*"
-                        className="hidden"
+                        className="sr-only"
                         onChange={(e) => handleFileUpload(e, 'mobileImage')}
                       />
-                    </label>
                   </div>
                   <input
                     type="url"
+                    disabled={isUploading}
                     value={editingSlide.mobileImage || ''}
                     onChange={(e) => setEditingSlide({ ...editingSlide, mobileImage: e.target.value })}
                     className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#831843] outline-none font-mono text-[11px]"
                     placeholder="https://images.unsplash.com/..."
                   />
+                  {(editingSlide.mobileImage || editingSlide.desktopImage) && (
+                    <div className="relative mt-2 h-28 overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+                      <img src={editingSlide.mobileImage || editingSlide.desktopImage || ''} alt={editingSlide.imageAlt || 'Mobile campaign preview'} className="absolute inset-0 h-full w-full object-cover" />
+                    </div>
+                  )}
                   <div className="mt-2 flex items-center gap-2">
                     <span className="text-[10px] text-stone-500">Mobile Focal Point:</span>
                     <input
@@ -987,11 +1028,11 @@ export default function AdminHeroManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isUploading}
+                  disabled={isUploading || isSaving}
                   className="px-6 py-2.5 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold shadow-md transition flex items-center gap-2"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>{editingSlide.id ? 'Save & Update Campaign' : 'Create Slide'}</span>
+                  <span>{isSaving ? 'Saving…' : editingSlide.id ? 'Save & Update Campaign' : 'Create Campaign'}</span>
                 </button>
               </div>
 

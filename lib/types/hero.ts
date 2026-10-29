@@ -17,6 +17,8 @@ export interface HeroSlide {
   description: string;
   desktopImage: string;
   mobileImage?: string;
+  desktopAssetId?: string;
+  mobileAssetId?: string;
   imageAlt: string;
   primaryCTA: HeroCTA;
   secondaryCTA?: HeroCTA;
