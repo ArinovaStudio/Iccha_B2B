@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Printer,
@@ -19,15 +20,24 @@ interface EstimateViewModalProps {
 }
 
 export default function EstimateViewModal({ estimate, onClose }: EstimateViewModalProps) {
-  if (!estimate) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!estimate || !mounted) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto">
+  const modalContent = (
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
+      style={{ zIndex: 999999 }} // Forced inline high z-index to bypass Tailwind compiler issues
+    >
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto relative">
 
         {/* Modal Action Bar (Hidden on print) */}
         <div className="no-print p-4 bg-stone-900 text-white rounded-t-3xl flex items-center justify-between border-b border-stone-800">
@@ -217,9 +227,11 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
                 </>
               )}
 
-              <div className="flex justify-between py-1 border-b border-stone-200 text-stone-700">
-                <span>Estimated Surface Shipping:</span>
-                <span className="font-mono">₹{estimate.shippingCharge.toLocaleString('en-IN')}</span>
+              <div className="flex justify-between items-center py-2 border-b border-stone-200 text-stone-600">
+                <span className="font-medium">Shipping:</span>
+                <span className="text-right text-[11px] font-semibold text-amber-700">
+                  Shipping charges will be applied separately
+                </span>
               </div>
 
               <div className="flex justify-between py-2 bg-stone-100 px-3 rounded-lg text-stone-950 font-bold text-sm">
@@ -256,4 +268,6 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

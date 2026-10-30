@@ -126,7 +126,7 @@ export async function POST(
             : subtotal > FREE_SHIPPING_THRESHOLD
               ? 0
               : billingEntityIds.size * FLAT_SHIPPING;
-        const masterTotal = roundMoney(subtotal + totalGst + shipping);
+        const masterTotal = roundMoney(subtotal + totalGst);
         const masterCancelled = activeSellerOrders.length === 0;
 
         await tx.orderEnquiry.update({

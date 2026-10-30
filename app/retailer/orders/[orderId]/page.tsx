@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ import RetailerHeader from "@/components/layout/RetailerHeader";
 import Footer from "@/components/layout/Footer";
 import EstimateViewModal from "@/components/order/EstimateViewModal";
 import { useApp } from "@/lib/context/AppContext";
+import { buildEstimateDocument } from "@/lib/estimate-mapper";
 
 type OrderDetail = {
   id: string;
@@ -442,24 +444,24 @@ export default function RetailerOrderDetailPage() {
                       {!["cancelled", "dispatched"].includes(
                         sellerOrder.status.toLowerCase()
                       ) && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              cancelSellerOrder(sellerOrder.id, sellerOrder.sellerName)
-                            }
-                            disabled={cancellingSellerOrderId === sellerOrder.id}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {cancellingSellerOrderId === sellerOrder.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <XCircle className="h-3.5 w-3.5" />
-                            )}
-                            {cancellingSellerOrderId === sellerOrder.id
-                              ? "Cancelling..."
-                              : "Cancel Vendor Order"}
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            cancelSellerOrder(sellerOrder.id, sellerOrder.sellerName)
+                          }
+                          disabled={cancellingSellerOrderId === sellerOrder.id}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {cancellingSellerOrderId === sellerOrder.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5" />
+                          )}
+                          {cancellingSellerOrderId === sellerOrder.id
+                            ? "Cancelling..."
+                            : "Cancel Vendor Order"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -485,10 +487,11 @@ export default function RetailerOrderDetailPage() {
                 return (
                   <div
                     key={step.title}
-                    className={`p-3.5 rounded-2xl border ${isPassed
+                    className={`p-3.5 rounded-2xl border ${
+                      isPassed
                         ? "bg-emerald-50 border-emerald-200 text-emerald-950"
                         : "bg-stone-50 border-stone-200 text-stone-400"
-                      }`}
+                    }`}
                   >
                     <div className="font-bold flex items-center gap-1.5">
                       {isPassed ? (
@@ -520,7 +523,8 @@ export default function RetailerOrderDetailPage() {
                 // Use the estimate's items first. If an older order has an inconsistent
                 // billingEntityId on an OrderItem, fall back to the vendors actually
                 // attached to this order so the retailer still sees the real vendor.
-                const vendorSource = estimateItems.length > 0 ? estimateItems : order.items;
+                const vendorSource =
+                  estimateItems.length > 0 ? estimateItems : order.items;
 
                 const vendors = Array.from(
                   new Map(
@@ -542,9 +546,7 @@ export default function RetailerOrderDetailPage() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="p-3 rounded-2xl text-white bg-[#831843]"
-                        >
+                        <div className="p-3 rounded-2xl text-white bg-[#831843]">
                           <Building2 className="w-5 h-5" />
                         </div>
 
@@ -564,15 +566,15 @@ export default function RetailerOrderDetailPage() {
                               <div className="mt-0.5 font-bold text-stone-900">
                                 {vendors.length > 0
                                   ? vendors.map((vendor) => (
-                                    <div key={vendor.id}>
-                                      {vendor.businessName}
-                                      {vendor.contactName ? (
-                                        <span className="ml-1 font-normal text-stone-500">
-                                          • {vendor.contactName}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  ))
+                                      <div key={vendor.id}>
+                                        {vendor.businessName}
+                                        {vendor.contactName ? (
+                                          <span className="ml-1 font-normal text-stone-500">
+                                            • {vendor.contactName}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    ))
                                   : "Vendor information unavailable"}
                               </div>
                             </div>
@@ -600,7 +602,9 @@ export default function RetailerOrderDetailPage() {
 
                       <button
                         type="button"
-                        onClick={() => setSelectedEstimate(estimate)}
+                        onClick={() =>
+                          setSelectedEstimate(buildEstimateDocument(order, estimate))
+                        }
                         className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs shadow flex items-center gap-1.5"
                       >
                         <Printer className="w-3.5 h-3.5 text-amber-400" />
@@ -666,18 +670,21 @@ export default function RetailerOrderDetailPage() {
                           ₹{number(estimate.taxableSubtotal)}
                         </span>
                       </div>
+
                       <div className="flex justify-between text-stone-600">
                         <span>GST:</span>
                         <span className="font-mono">
                           ₹{number(estimate.totalGst)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-stone-600">
-                        <span>Surface Freight:</span>
-                        <span className="font-mono">
-                          ₹{number(estimate.shippingCharge)}
+
+                      <div className="flex justify-between items-center text-stone-600">
+                        <span>Shipping:</span>
+                        <span className="text-right text-[11px] font-semibold text-amber-700">
+                          Shipping charges will be applied separately
                         </span>
                       </div>
+
                       <div className="flex justify-between items-baseline pt-2 border-t border-stone-200 font-bold text-stone-900">
                         <span>Division Proforma Total:</span>
                         <span className="font-mono text-base text-[#831843]">
@@ -700,8 +707,7 @@ export default function RetailerOrderDetailPage() {
                   <div className="flex justify-between">
                     <span>Total Garment Sets:</span>
                     <strong className="text-stone-900">
-                      {number(order.totalSets)} Sets ({number(order.totalPieces)}{" "}
-                      pcs)
+                      {number(order.totalSets)} Sets ({number(order.totalPieces)} pcs)
                     </strong>
                   </div>
 
@@ -719,10 +725,10 @@ export default function RetailerOrderDetailPage() {
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span>Total Freight:</span>
-                    <span className="font-mono">
-                      ₹{number(order.shipping)}
+                  <div className="flex justify-between items-center text-stone-600">
+                    <span>Shipping:</span>
+                    <span className="text-right text-[11px] font-semibold text-amber-700">
+                      Shipping charges will be applied separately
                     </span>
                   </div>
 

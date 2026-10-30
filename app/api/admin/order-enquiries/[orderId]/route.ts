@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireStaff, requireVendor } from "@/lib/auth/guard";
 
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 async function getAuth(request: NextRequest) {
   const staff = await requireStaff(request);
   if (!("error" in staff)) return { kind: "staff" as const, ...staff };
@@ -29,8 +33,6 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const requestedVendorId = searchParams.get("vendorId");
 
-    // Staff may inspect one selected vendor's portion of a master order.
-    // Vendors can NEVER override their own vendor scope.
     const vendorId =
       auth.kind === "vendor"
         ? auth.vendorProfile.id
@@ -174,7 +176,9 @@ export async function GET(
         subtotal: isScoped ? subtotal : Number(order.subtotal),
         totalGst: isScoped ? gst : Number(order.totalGst),
         shipping: isScoped ? 0 : Number(order.shipping),
-        masterTotal: isScoped ? total : Number(order.masterTotal),
+        masterTotal: isScoped
+  ? roundMoney(total)
+  : roundMoney(subtotal + gst),
         createdAt: order.createdAt.toISOString(),
         updatedAt: order.updatedAt.toISOString(),
         items,

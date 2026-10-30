@@ -689,16 +689,14 @@ export const OrderService = {
     const subtotal = orderItems.reduce((acc, i) => acc + i.lineSubtotal, 0);
     const totalGst = orderItems.reduce((acc, i) => acc + i.gstAmount, 0);
     const shipping = cartItems.length > 0 ? (subtotal > 20000 ? 0 : 350 * entityIds.length) : 0;
-    const masterTotal = subtotal + totalGst + shipping;
-
-    // Generate separate proforma estimates per Billing Entity
+    const masterTotal = subtotal + totalGst;
     const estimates: EstimateDocument[] = entityIds.map(entityId => {
       const entity = entities.find(e => e.id === entityId) || entities[0];
       const entityItems = orderItems.filter(i => i.billingEntityId === entityId);
       const entityTaxable = entityItems.reduce((acc, i) => acc + i.lineSubtotal, 0);
       const entityGst = entityItems.reduce((acc, i) => acc + i.gstAmount, 0);
       const entityShipping = subtotal > 20000 ? 0 : 350;
-      const entityGrandTotal = entityTaxable + entityGst + entityShipping;
+      const entityGrandTotal = entityTaxable + entityGst;
 
       const isInterState = entity.stateCode !== retailer.address.stateCode;
       const cgstAmount = isInterState ? 0 : Math.round(entityGst / 2);

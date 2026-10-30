@@ -146,7 +146,9 @@ export async function GET(request: NextRequest) {
       subtotal: Number(order.subtotal),
       totalGst: Number(order.totalGst),
       shipping: Number(order.shipping),
-      masterTotal: Number(order.masterTotal),
+      masterTotal: roundMoney(
+        Number(order.subtotal) + Number(order.totalGst)
+      ),
       billingAddress: order.billingAddressJson ? JSON.parse(order.billingAddressJson) : null,
       shippingAddress: order.shippingAddressJson ? JSON.parse(order.shippingAddressJson) : null,
       status: order.status.toLowerCase(),
@@ -173,7 +175,9 @@ export async function GET(request: NextRequest) {
         igstAmount: Number(estimate.igstAmount),
         totalGst: Number(estimate.totalGst),
         shippingCharge: Number(estimate.shippingCharge),
-        grandTotal: Number(estimate.grandTotal),
+        grandTotal: roundMoney(
+          Number(estimate.taxableSubtotal) + Number(estimate.totalGst)
+        ),
         paymentTerms: [],
       })),
     }));
@@ -414,7 +418,7 @@ export async function POST(request: NextRequest) {
         const shippingPerEntity = subtotal > FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
         const totalGst = Array.from(entityGroups.values()).reduce((sum, group) => sum + group.gst, 0);
         const shipping = Array.from(entityGroups.values()).length * shippingPerEntity;
-        const masterTotal = roundMoney(subtotal + totalGst + shipping);
+        const masterTotal = roundMoney(subtotal + totalGst);
         const orderNumber = makeOrderNumber();
         const order = await tx.orderEnquiry.create({
           data: {
@@ -570,7 +574,7 @@ export async function POST(request: NextRequest) {
           const sgstAmount = isInterState ? 0 : roundMoney(group.gst / 2);
           const igstAmount = isInterState ? group.gst : 0;
           const entityShipping = shippingPerEntity;
-          const grandTotal = roundMoney(group.subtotal + group.gst + entityShipping);
+          const grandTotal = roundMoney(group.subtotal + group.gst);
           const suffix = String.fromCharCode(65 + index);
           await tx.estimate.create({
             data: {
@@ -640,7 +644,9 @@ export async function POST(request: NextRequest) {
           sellerOrders: result!.sellerOrders,
           estimates: result!.estimates.map((estimate) => ({
             ...estimate,
-            grandTotal: Number(estimate.grandTotal),
+            grandTotal: roundMoney(
+              Number(estimate.taxableSubtotal) + Number(estimate.totalGst)
+            ),
           })),
         },
       },

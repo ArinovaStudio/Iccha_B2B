@@ -8,6 +8,7 @@ function toNumber(value: unknown): number {
 
 function parseJson(value: string | null | undefined) {
   if (!value) return null;
+
   try {
     return JSON.parse(value);
   } catch {
@@ -196,10 +197,14 @@ export async function GET(
       );
     }
 
-    const productIds = Array.from(new Set(order.items.map((item) => item.productId)));
+    const productIds = Array.from(
+      new Set(order.items.map((item) => item.productId))
+    );
 
     const vendorProducts = await prisma.product.findMany({
-      where: { id: { in: productIds } },
+      where: {
+        id: { in: productIds },
+      },
       select: {
         id: true,
         vendor: {
@@ -222,11 +227,11 @@ export async function GET(
         .map((sellerOrder) => sellerOrder.id)
     );
 
-    // Only active seller-order items contribute to the visible commercial
-    // breakdown and master totals. This also repairs older orders whose stored
-    // master totals were not recalculated when a seller order was cancelled.
+    // Exclude items belonging to cancelled seller orders.
     const activeItems = order.items.filter(
-      (item) => !item.sellerOrderId || !cancelledSellerOrderIds.has(item.sellerOrderId)
+      (item) =>
+        !item.sellerOrderId ||
+        !cancelledSellerOrderIds.has(item.sellerOrderId)
     );
 
     const activeBillingEntityIds = new Set(
@@ -237,6 +242,7 @@ export async function GET(
     let activeGst = 0;
     let activeSets = 0;
     let activePieces = 0;
+
     const activeProductIds = new Set<string>();
 
     for (const item of activeItems) {
@@ -250,6 +256,7 @@ export async function GET(
     activeSubtotal = roundMoney(activeSubtotal);
     activeGst = roundMoney(activeGst);
 
+    // Shipping is calculated separately and is not included in masterTotal.
     const activeShipping =
       activeItems.length === 0
         ? 0
@@ -257,8 +264,9 @@ export async function GET(
           ? 0
           : activeBillingEntityIds.size * FLAT_SHIPPING;
 
+    // Master total includes only subtotal and GST.
     const activeMasterTotal = roundMoney(
-      activeSubtotal + activeGst + activeShipping
+      activeSubtotal + activeGst
     );
 
     const visibleEstimates = order.estimates.filter((estimate) =>
@@ -277,14 +285,17 @@ export async function GET(
       billingAddress: parseJson(order.billingAddressJson),
       shippingAddress: parseJson(order.shippingAddressJson),
 
-      // Return recalculated active-order totals rather than stale values from
-      // before a seller-specific cancellation.
       totalDesigns: activeProductIds.size,
       totalSets: activeSets,
       totalPieces: activePieces,
+
       subtotal: activeSubtotal,
       totalGst: activeGst,
+
+      // Separate shipping amount.
       shipping: activeShipping,
+
+      // Shipping is excluded from this amount.
       masterTotal: activeMasterTotal,
 
       status: normalizeStatus(order.status),
@@ -308,28 +319,38 @@ export async function GET(
           null,
       })),
 
-      estimates: visibleEstimates.map((estimate) => ({
-        id: estimate.id,
-        estimateNumber: estimate.estimateNumber,
-        orderId: estimate.orderEnquiryId,
-        orderNumber: order.orderNumber,
-        date: estimate.date.toISOString(),
-        validUntil: estimate.validUntil.toISOString(),
-        totalSets: estimate.totalSets,
-        totalPieces: estimate.totalPieces,
-        taxableSubtotal: toNumber(estimate.taxableSubtotal),
-        isInterState: estimate.isInterState,
-        cgstAmount: toNumber(estimate.cgstAmount),
-        sgstAmount: toNumber(estimate.sgstAmount),
-        igstAmount: toNumber(estimate.igstAmount),
-        totalGst: toNumber(estimate.totalGst),
-        shippingCharge: toNumber(estimate.shippingCharge),
-        grandTotal: toNumber(estimate.grandTotal),
-        pdfMediaAssetId: estimate.pdfMediaAssetId,
-        billingEntity: estimate.billingEntity,
-        paymentTerms: [],
-        items: [],
-      })),
+      estimates: visibleEstimates.map((estimate) => {
+        const taxableSubtotal = toNumber(estimate.taxableSubtotal);
+        const totalGst = toNumber(estimate.totalGst);
+
+        return {
+          id: estimate.id,
+          estimateNumber: estimate.estimateNumber,
+          orderId: estimate.orderEnquiryId,
+          orderNumber: order.orderNumber,
+          date: estimate.date.toISOString(),
+          validUntil: estimate.validUntil.toISOString(),
+          totalSets: estimate.totalSets,
+          totalPieces: estimate.totalPieces,
+          taxableSubtotal,
+          isInterState: estimate.isInterState,
+          cgstAmount: toNumber(estimate.cgstAmount),
+          sgstAmount: toNumber(estimate.sgstAmount),
+          igstAmount: toNumber(estimate.igstAmount),
+          totalGst,
+
+          // Shipping remains separate.
+          shippingCharge: toNumber(estimate.shippingCharge),
+
+          // Estimate grand total excludes shipping.
+          grandTotal: roundMoney(taxableSubtotal + totalGst),
+
+          pdfMediaAssetId: estimate.pdfMediaAssetId,
+          billingEntity: estimate.billingEntity,
+          paymentTerms: [],
+          items: [],
+        };
+      }),
 
       timeline: order.history.map((entry) => ({
         id: entry.id,

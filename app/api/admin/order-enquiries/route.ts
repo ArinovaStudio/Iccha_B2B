@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireStaff, requireVendor } from "@/lib/auth/guard";
 
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 async function getAuth(request: NextRequest) {
   const staff = await requireStaff(request);
   if (!("error" in staff)) return { kind: "staff" as const, ...staff };
@@ -84,7 +88,9 @@ function serializeOrder(order: any, items: any[], scoped: boolean) {
     subtotal: scoped ? subtotal : Number(order.subtotal),
     totalGst: scoped ? gst : Number(order.totalGst),
     shipping: scoped ? 0 : Number(order.shipping),
-    masterTotal: scoped ? total : Number(order.masterTotal),
+    masterTotal: scoped
+  ? roundMoney(total)
+  : roundMoney(subtotal + gst),
     items: visibleItems,
   };
 }
