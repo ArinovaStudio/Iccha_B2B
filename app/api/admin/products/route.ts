@@ -999,32 +999,53 @@ export async function GET(request: NextRequest) {
                 ? auth.vendorProfile.id
                 : searchParams.get("vendorId");
 
+        // Match every search term against product content. Requiring each term
+        // to match somewhere makes searches like "2 pic set" work across the
+        // numeric piecesPerSet field and product text fields.
+        const searchTerms = search
+            ? Array.from(new Set(search.split(/\s+/).filter(Boolean)))
+            : [];
+
         const products = await prisma.product.findMany({
             where: {
                 vendorId: vendorId ?? null,
 
-                ...(search
+                ...(searchTerms.length
                     ? {
-                        OR: [
-                            {
-                                name: {
-                                    contains: search,
-                                    mode: "insensitive",
-                                },
-                            },
-                            {
-                                sku: {
-                                    contains: search,
-                                    mode: "insensitive",
-                                },
-                            },
-                            {
-                                designNumber: {
-                                    contains: search,
-                                    mode: "insensitive",
-                                },
-                            },
-                        ],
+                        AND: searchTerms.map((term) => {
+                            const normalizedTerm = term.replace(/[^\p{L}\p{N}]/gu, "");
+                            const numericPieces = /^\d+$/.test(normalizedTerm)
+                                ? Number(normalizedTerm)
+                                : null;
+
+                            return {
+                                OR: [
+                                    ...[
+                                        "name",
+                                        "sku",
+                                        "designNumber",
+                                        "description",
+                                        "color",
+                                        "fabric",
+                                        "workType",
+                                        "style",
+                                        "clothingType",
+                                        "sizeCombination",
+                                        "lining",
+                                        "margin",
+                                        "hsnCode",
+                                    ].map((field) => ({
+                                        [field]: {
+                                            contains: term,
+                                            mode: "insensitive" as const,
+                                        },
+                                    })),
+                                    ...(numericPieces !== null
+                                        ? [{ piecesPerSet: numericPieces }]
+                                        : []),
+                                ],
+                            };
+                        }),
                     }
                     : {}),
             },

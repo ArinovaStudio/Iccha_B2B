@@ -130,6 +130,7 @@ function getSellerStatusClass(status: string) {
     case "cancelled":
       return "bg-red-50 text-red-700 border-red-200";
     case "processing":
+    case "order_accepted":
     case "ready_for_dispatch":
     case "dispatched":
       return "bg-blue-50 text-blue-700 border-blue-200";

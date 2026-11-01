@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth/guard";
 const statusSchema = z.object({
   status: z.enum([
     "ENQUIRY_RECEIVED",
+    "ORDER_ACCEPTED",
     "PROCESSING",
     "READY_FOR_DISPATCH",
     "DISPATCHED",

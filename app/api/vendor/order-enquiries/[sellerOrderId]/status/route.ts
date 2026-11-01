@@ -6,10 +6,7 @@ import { requireVendor } from "@/lib/auth/guard";
 const statusSchema = z.object({
   status: z.enum([
     "ENQUIRY_RECEIVED",
-    "PROCESSING",
-    "READY_FOR_DISPATCH",
-    "DISPATCHED",
-    "CANCELLED",
+    "ORDER_ACCEPTED",
   ]),
   notes: z.string().trim().max(1000).optional(),
 });
@@ -87,6 +84,16 @@ export async function PATCH(
         },
         { status: 409 }
       );
+    }
+
+    if (sellerOrder.status === parsed.data.status) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          id: sellerOrder.id,
+          status: sellerOrder.status.toLowerCase(),
+        },
+      });
     }
 
     const updated = await prisma.$transaction(async tx => {

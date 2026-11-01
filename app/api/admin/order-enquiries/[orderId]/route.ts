@@ -107,6 +107,7 @@ export async function GET(
                     id: true,
                     businessName: true,
                     contactName: true,
+                    mobile: true,
                   },
                 },
                 warehouse: {

@@ -31,6 +31,7 @@ type Item = {
       id: string;
       businessName: string;
       contactName?: string | null;
+      mobile?: string | null;
     } | null;
     warehouse?: {
       id: string;
@@ -609,27 +610,14 @@ export default function AdminOrderDetailPage({
               Order Details
             </p>
 
-            <p className="text-xs text-stone-600 mt-2">
-              Status:{" "}
-              <strong className="text-stone-900">
-                {label(order.status)}
-              </strong>
-            </p>
-
-            <p className="text-xs text-stone-600 mt-1">
-              Placed:{" "}
-              <strong className="text-stone-900">
-                {new Date(order.createdAt).toLocaleString("en-IN")}
-              </strong>
-            </p>
-
-            <p className="text-xs text-stone-600 mt-3">
-              Retailer remarks / transport
-            </p>
-
-            <p className="text-xs text-stone-900 mt-1 whitespace-pre-line">
-              {order.customerRemarks || "None"}
-            </p>
+            <div className="mt-3 space-y-2 text-xs text-stone-600">
+              <p>Shipping charges will be calculated after the final confirmation.</p>
+              <p>
+                Please message or call the seller after making the estimate: {vendors.length > 0
+                  ? vendors.map((vendor) => `${vendor.businessName} — ${vendor.mobile || "Number unavailable"}`).join(", ")
+                  : "Seller number unavailable"}
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-3xl border border-stone-200 p-5">

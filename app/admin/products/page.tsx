@@ -28,7 +28,7 @@ const SIZE_CHART_OPTIONS = [
   'M to 5XL',
   'L to 3XL',
   'L to 6XL',
-  '3XL to 4XL',
+  '3XL to 6XL',
   '4XL to 6XL',
 ];
 
@@ -1042,7 +1042,7 @@ export default function AdminProductsPage() {
                 type="text"
                 value={productSearch}
                 onChange={e => setProductSearch(e.target.value)}
-                placeholder={`Search within ${selectedVendor ? selectedVendor.businessName : 'these'} products only...`}
+                placeholder={`Search ${selectedVendor ? selectedVendor.businessName + "'s" : "these"} products by fabric, details, or piece count...`}
                 className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-rose-900"
               />
             </div>

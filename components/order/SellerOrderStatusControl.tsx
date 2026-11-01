@@ -6,10 +6,7 @@ import { useApp } from "@/lib/context/AppContext";
 
 export const SELLER_ORDER_STATUSES = [
   "ENQUIRY_RECEIVED",
-  "PROCESSING",
-  "READY_FOR_DISPATCH",
-  "DISPATCHED",
-  "CANCELLED",
+  "ORDER_ACCEPTED",
 ] as const;
 
 type Props = {
@@ -110,13 +107,6 @@ export default function SellerOrderStatusControl({
     }
   }
 
-  // IMPORTANT:
-  // Use savedStatus, not the dropdown's draft status.
-  // Otherwise selecting DISPATCHED immediately hides the button.
-  const isFinalStatus =
-    savedStatus === "DISPATCHED" ||
-    savedStatus === "CANCELLED";
-
   return (
     <div className="bg-white rounded-3xl border border-stone-200 p-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -143,7 +133,7 @@ export default function SellerOrderStatusControl({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          {readOnly || isFinalStatus ? (
+          {readOnly ? (
             <span className="px-3 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-xs font-bold text-stone-700">
               {label(savedStatus)}
             </span>
@@ -155,6 +145,9 @@ export default function SellerOrderStatusControl({
                 disabled={saving}
                 className="min-w-[210px] px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-stone-800 outline-none focus:border-[#831843]"
               >
+                {!SELLER_ORDER_STATUSES.includes(status as typeof SELLER_ORDER_STATUSES[number]) && (
+                  <option value={status}>{label(status)}</option>
+                )}
                 {SELLER_ORDER_STATUSES.map(value => (
                   <option key={value} value={value}>
                     {label(value)}
