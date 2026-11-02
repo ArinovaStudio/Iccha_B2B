@@ -86,6 +86,13 @@ export default function RetailerOrdersPage() {
           </span>
         );
 
+      case "order_accepted":
+        return (
+          <span className="bg-blue-100 text-blue-900 px-2.5 py-1 rounded-full text-[10px] font-bold">
+            Order Accepted
+          </span>
+        );
+
       case "under_review":
         return (
           <span className="bg-blue-100 text-blue-900 px-2.5 py-1 rounded-full text-[10px] font-bold">
@@ -192,17 +199,15 @@ export default function RetailerOrdersPage() {
             {[
               { id: "all", label: "All Enquiries" },
               { id: "enquiry_received", label: "Enquiry Received" },
-              { id: "proforma_generated", label: "Proforma Ready" },
-              { id: "dispatched", label: "Dispatched" },
+              { id: "order_accepted", label: "Order Accepted" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-xl font-semibold transition ${
-                  statusFilter === tab.id
+                className={`px-3 py-1.5 rounded-xl font-semibold transition ${statusFilter === tab.id
                     ? "bg-[#831843] text-white shadow"
                     : "text-stone-600 hover:bg-stone-100"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -300,8 +305,8 @@ export default function RetailerOrdersPage() {
                                 {isPlatform
                                   ? "IcchaStore"
                                   : est.billingEntity?.tradeName ||
-                                    est.billingEntity?.legalName ||
-                                    "Vendor"}
+                                  est.billingEntity?.legalName ||
+                                  "Vendor"}
                               </strong>
 
                               <span className="text-[10px] text-stone-600 font-mono block">
@@ -327,7 +332,7 @@ export default function RetailerOrdersPage() {
                             className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 rounded-lg font-bold text-[11px] border border-stone-200 shadow-sm transition flex items-center gap-1 shrink-0"
                           >
                             <Printer className="w-3 h-3 text-stone-600" />
-                            <span>View / Print</span>
+                            <span>Print</span>
                           </button>
                         </div>
                       );
@@ -336,13 +341,14 @@ export default function RetailerOrdersPage() {
 
                   {/* Action Link to Full Timeline */}
                   <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="text-stone-500">
+                    {/* <div className="text-stone-500">
                       Transport:{" "}
                       <strong>
                         {order.customerRemarks?.slice(0, 50) ||
                           "Standard Road Express"}
                       </strong>
-                    </div>
+                    </div> */}
+                    <div />
 
                     <Link
                       href={`/retailer/orders/${order.id}`}

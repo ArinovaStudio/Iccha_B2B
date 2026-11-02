@@ -60,6 +60,7 @@ type OrderDetail = {
       id: string;
       businessName: string;
       contactName: string;
+      mobile?: string | null;
     } | null;
   }[];
   estimates: any[];
@@ -83,39 +84,14 @@ type OrderDetail = {
 
 const ROADMAP = [
   {
-    title: "1. Enquiry Logged",
+    title: "ENQUIRY_RECEIVED",
     statuses: ["enquiry_received"],
-    desc: "Requirements recorded",
+    desc: "Requirements received",
   },
   {
-    title: "2. Under Review",
-    statuses: ["under_review", "seller_contacted", "estimate_generated"],
-    desc: "Order is being processed",
-  },
-  {
-    title: "3. Confirmed / Payment",
-    statuses: ["confirmed", "awaiting_payment"],
-    desc: "Commercial confirmation",
-  },
-  {
-    title: "4. Processing",
-    statuses: ["processing"],
-    desc: "Quality & packing",
-  },
-  {
-    title: "5. Ready for Dispatch",
-    statuses: ["ready_for_dispatch"],
-    desc: "Dispatch preparation",
-  },
-  {
-    title: "6. Dispatched",
-    statuses: ["dispatched"],
-    desc: "LR / Bilty tracking",
-  },
-  {
-    title: "7. Completed",
-    statuses: ["completed"],
-    desc: "Order completed",
+    title: "ORDER_ACCEPTED",
+    statuses: ["order_accepted"],
+    desc: "Order accepted",
   },
 ];
 
@@ -217,9 +193,14 @@ export default function RetailerOrderDetailPage() {
     };
   }, [orderId]);
 
-  const currentStatusIndex = order
-    ? ROADMAP.findIndex((step) => step.statuses.includes(order.status))
-    : -1;
+  const roadmapStatus = order?.status === "cancelled"
+    ? "cancelled"
+    : order?.sellerOrders.some((sellerOrder) => sellerOrder.status === "order_accepted")
+      ? "order_accepted"
+      : "enquiry_received";
+  const currentStatusIndex = ROADMAP.findIndex((step) =>
+    step.statuses.includes(roadmapStatus)
+  );
 
   async function cancelSellerOrder(sellerOrderId: string, sellerName: string) {
     if (!window.confirm(`Cancel the order for ${sellerName}? This will not cancel the other vendors in this order.`)) {
@@ -358,7 +339,7 @@ export default function RetailerOrderDetailPage() {
               </div>
 
               <span className="px-3 py-1.5 rounded-full bg-rose-50 text-[#831843] border border-rose-200 text-[10px] font-bold uppercase">
-                {formatStatus(order.status)}
+                {formatStatus(roadmapStatus)}
               </span>
             </div>
 
@@ -445,24 +426,24 @@ export default function RetailerOrderDetailPage() {
                       {!["cancelled", "dispatched"].includes(
                         sellerOrder.status.toLowerCase()
                       ) && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            cancelSellerOrder(sellerOrder.id, sellerOrder.sellerName)
-                          }
-                          disabled={cancellingSellerOrderId === sellerOrder.id}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {cancellingSellerOrderId === sellerOrder.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <XCircle className="h-3.5 w-3.5" />
-                          )}
-                          {cancellingSellerOrderId === sellerOrder.id
-                            ? "Cancelling..."
-                            : "Cancel Vendor Order"}
-                        </button>
-                      )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              cancelSellerOrder(sellerOrder.id, sellerOrder.sellerName)
+                            }
+                            disabled={cancellingSellerOrderId === sellerOrder.id}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {cancellingSellerOrderId === sellerOrder.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <XCircle className="h-3.5 w-3.5" />
+                            )}
+                            {cancellingSellerOrderId === sellerOrder.id
+                              ? "Cancelling..."
+                              : "Cancel Vendor Order"}
+                          </button>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -480,7 +461,7 @@ export default function RetailerOrderDetailPage() {
               Wholesale Dispatch Roadmap
             </h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {ROADMAP.map((step, index) => {
                 const isPassed =
                   currentStatusIndex >= 0 && currentStatusIndex >= index;
@@ -488,11 +469,10 @@ export default function RetailerOrderDetailPage() {
                 return (
                   <div
                     key={step.title}
-                    className={`p-3.5 rounded-2xl border ${
-                      isPassed
+                    className={`p-3.5 rounded-2xl border ${isPassed
                         ? "bg-emerald-50 border-emerald-200 text-emerald-950"
                         : "bg-stone-50 border-stone-200 text-stone-400"
-                    }`}
+                      }`}
                   >
                     <div className="font-bold flex items-center gap-1.5">
                       {isPassed ? (
@@ -516,9 +496,11 @@ export default function RetailerOrderDetailPage() {
               {(order.estimates || []).map((estimate) => {
                 const isPlatform = estimate.billingEntity?.code === "platform";
 
-                const estimateItems = order.items.filter(
-                  (item) => item.billingEntityId === estimate.billingEntityId
-                );
+                const estimateItems = estimate.items?.length
+                  ? estimate.items
+                  : order.items.filter(
+                      (item) => item.billingEntityId === estimate.billingEntityId
+                    );
 
                 // Vendor ownership comes from the ordered Product, not the billing entity.
                 // Use the estimate's items first. If an older order has an inconsistent
@@ -567,15 +549,15 @@ export default function RetailerOrderDetailPage() {
                               <div className="mt-0.5 font-bold text-stone-900">
                                 {vendors.length > 0
                                   ? vendors.map((vendor) => (
-                                      <div key={vendor.id}>
-                                        {vendor.businessName}
-                                        {vendor.contactName ? (
-                                          <span className="ml-1 font-normal text-stone-500">
-                                            • {vendor.contactName}
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                    ))
+                                    <div key={vendor.id}>
+                                      {vendor.businessName}
+                                      {vendor.contactName ? (
+                                        <span className="ml-1 font-normal text-stone-500">
+                                          • {vendor.contactName}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  ))
                                   : "Vendor information unavailable"}
                               </div>
                             </div>
@@ -609,7 +591,7 @@ export default function RetailerOrderDetailPage() {
                         className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs shadow flex items-center gap-1.5"
                       >
                         <Printer className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Print Proforma #{estimate.estimateNumber}</span>
+                        <span>Print</span>
                       </button>
                     </div>
 
@@ -662,6 +644,11 @@ export default function RetailerOrderDetailPage() {
                           </div>
                         </div>
                       ))}
+                      {estimateItems.length === 0 && (
+                        <p className="text-xs text-stone-500">
+                          Product details are unavailable for this wholesale lot.
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1.5 text-xs">
@@ -767,9 +754,18 @@ export default function RetailerOrderDetailPage() {
                   <Truck className="w-4 h-4 text-[#831843]" />
                   Logistics & Transport Instructions
                 </h4>
-                <p className="text-stone-600">
-                  {order.customerRemarks || "Direct road express transport"}
-                </p>
+                <div className="text-stone-600 space-y-2">
+                  <p>Shipping charges will be calculated after the final confirmation.</p>
+                  <p>
+                    Please message or call the seller after making the estimate: {Array.from(
+                      new Map(
+                        order.items
+                          .filter((item) => item.vendor)
+                          .map((item) => [item.vendor!.id, item.vendor!])
+                      ).values()
+                    ).map((vendor) => `${vendor.businessName} — ${vendor.mobile || "Number unavailable"}`).join(", ") || "Seller number unavailable"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

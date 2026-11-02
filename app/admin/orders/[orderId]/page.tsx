@@ -613,7 +613,8 @@ export default function AdminOrderDetailPage({
             <div className="mt-3 space-y-2 text-xs text-stone-600">
               <p>Shipping charges will be calculated after the final confirmation.</p>
               <p>
-                Please message or call the seller after making the estimate: {vendors.length > 0
+                Please message or call the seller after making the estimate: <br />
+                {vendors.length > 0
                   ? vendors.map((vendor) => `${vendor.businessName} — ${vendor.mobile || "Number unavailable"}`).join(", ")
                   : "Seller number unavailable"}
               </p>

@@ -46,6 +46,16 @@ export default function RetailerCartPage() {
       return;
     }
 
+    const vendorIds = new Set(cart.items.map((item) => item.product.vendorName));
+    if (vendorIds.size > 1) {
+      addToast({
+        type: "warning",
+        title: "One seller at a time",
+        message: "Please place an order from one vendor at a time.",
+      });
+      return;
+    }
+
     if (!moqEvaluation?.isMet) {
       addToast({
         type: 'warning',

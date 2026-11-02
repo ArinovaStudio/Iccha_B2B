@@ -48,11 +48,22 @@ export function buildEstimateDocument(order: any, estimate: any): EstimateDocume
   // only the nested billingEntity object, so fall back to its id.
   const estimateEntityId = estimate?.billingEntityId || rawBilling.id;
 
-  const items: OrderItem[] = (order?.items || [])
-    .filter((item: any) => item.billingEntityId === estimateEntityId)
+  const estimateOrderItems = (order?.items || []).filter(
+    (item: any) => item.billingEntityId === estimateEntityId
+  );
+  const items: OrderItem[] = (estimateOrderItems.length > 0
+    ? estimateOrderItems
+    : (order?.items || []).length === 1
+      ? order.items
+      : [])
     .map((item: any) => ({
       ...item,
       productId: item.productId || item.id,
+      productName: item.productName || item.name || "Product",
+      sku: item.sku || "—",
+      sets: Number(item.sets || 0),
+      piecesPerSet: Number(item.piecesPerSet || 0),
+      totalPieces: Number(item.totalPieces || 0),
       designNumber: item.designNumber || '',
       hsn: item.hsn || '',
       imageUrl: item.imageUrl || '',

@@ -110,6 +110,7 @@ export async function GET(
                     id: true,
                     businessName: true,
                     contactName: true,
+                    mobile: true,
                   },
                 },
               },
@@ -212,6 +213,7 @@ export async function GET(
             id: true,
             businessName: true,
             contactName: true,
+            mobile: true,
           },
         },
       },
@@ -320,6 +322,9 @@ export async function GET(
       })),
 
       estimates: visibleEstimates.map((estimate) => {
+        const estimateItems = order.items.filter((item) =>
+          item.billingEntityId === estimate.billingEntityId
+        );
         const taxableSubtotal = toNumber(estimate.taxableSubtotal);
         const totalGst = toNumber(estimate.totalGst);
 
@@ -348,7 +353,19 @@ export async function GET(
           pdfMediaAssetId: estimate.pdfMediaAssetId,
           billingEntity: estimate.billingEntity,
           paymentTerms: [],
-          items: [],
+          items: estimateItems.map((item) => ({
+            ...item,
+            pieceRate: toNumber(item.pieceRate),
+            setRate: toNumber(item.setRate),
+            lineSubtotal: toNumber(item.lineSubtotal),
+            gstRate: toNumber(item.gstRate),
+            gstAmount: toNumber(item.gstAmount),
+            totalWithGst: toNumber(item.totalWithGst),
+            vendor:
+              vendorByProductId.get(item.productId) ??
+              item.product?.vendor ??
+              null,
+          })),
         };
       }),
 

@@ -68,6 +68,11 @@ export async function GET(request: NextRequest) {
         customerRemarks: true,
         createdAt: true,
         updatedAt: true,
+        sellerOrders: {
+          select: {
+            status: true,
+          },
+        },
         items: {
           orderBy: { id: "asc" },
           select: {
@@ -151,7 +156,11 @@ export async function GET(request: NextRequest) {
       ),
       billingAddress: order.billingAddressJson ? JSON.parse(order.billingAddressJson) : null,
       shippingAddress: order.shippingAddressJson ? JSON.parse(order.shippingAddressJson) : null,
-      status: order.status.toLowerCase(),
+      status: order.status.toLowerCase() === "cancelled"
+        ? "cancelled"
+        : order.sellerOrders.some((sellerOrder) => sellerOrder.status.toLowerCase() === "order_accepted")
+          ? "order_accepted"
+          : "enquiry_received",
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
       items: order.items.map((item) => ({

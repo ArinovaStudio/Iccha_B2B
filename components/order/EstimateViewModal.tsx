@@ -10,7 +10,8 @@ import {
   Receipt,
   ShieldCheck,
   CheckCircle,
-  FileText
+  FileText,
+  Package
 } from 'lucide-react';
 import { EstimateDocument } from '@/lib/types';
 
@@ -21,6 +22,7 @@ interface EstimateViewModalProps {
 
 export default function EstimateViewModal({ estimate, onClose }: EstimateViewModalProps) {
   const [mounted, setMounted] = useState(false);
+console.log(estimate);
 
   useEffect(() => {
     setMounted(true);
@@ -96,16 +98,26 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
                 COMMERCIAL PROFORMA ESTIMATE
               </span>
               <div className="font-mono text-base font-bold text-stone-900 mt-0.5">
-                {estimate.estimateNumber}
+                {estimate.estimateNumber.slice(0, 12)}
               </div>
               <div className="text-[11px] text-stone-600 mt-1">
-                Date: <strong>{estimate.date}</strong>
+                Date: <strong>
+                  {new Date(estimate.date).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </strong>
               </div>
               <div className="text-[11px] text-stone-600">
                 Order Ref: <strong className="font-mono">{estimate.orderNumber}</strong>
               </div>
               <div className="text-[10px] text-emerald-700 font-semibold mt-1">
-                Valid Until: {estimate.validUntil}
+                Valid Until: {new Date(estimate.validUntil).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </div>
             </div>
           </div>
@@ -147,6 +159,37 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
           </div>
 
           {/* Items Table */}
+          <section className="space-y-3">
+            <h3 className="font-serif text-sm font-bold text-stone-900 flex items-center gap-2">
+              <Package className="w-4 h-4 text-[#831843]" />
+              Allocated Wholesale Lots
+            </h3>
+            <div className="space-y-2">
+              {estimate.items.map((item) => (
+                <div key={item.productId} className="flex items-center justify-between gap-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+                  <div>
+                    <div className="font-semibold text-stone-900">{item.productName}</div>
+                    <div className="text-[10px] text-stone-500 font-mono">
+                      SKU: {item.sku} · Design: {item.designNumber} · Size: {item.sizeCombination}
+                    </div>
+                    <div className="text-[10px] text-stone-600 mt-1">
+                      {item.sets} sets · {item.totalPieces} pieces
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right font-mono font-bold text-stone-900">
+                    ₹{item.lineSubtotal.toLocaleString('en-IN')}
+                  </div>
+                </div>
+              ))}
+              {estimate.items.length === 0 && (
+                <p className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-[11px] text-stone-500">
+                  Product details are unavailable for this estimate.
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* Items Table */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left border border-stone-300">
               <thead>
@@ -163,7 +206,7 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
               </thead>
               <tbody className="divide-y divide-stone-200">
                 {estimate.items.map((item, idx) => (
-                  <tr key={item.productId} className="text-xs">
+                  <tr key={`${item.productId}-${idx}`} className="text-xs">
                     <td className="p-2.5 border-r border-stone-200 text-center text-stone-500">{idx + 1}</td>
                     <td className="p-2.5 border-r border-stone-200 font-medium">
                       <div className="font-semibold text-stone-900">{item.productName}</div>
@@ -187,7 +230,7 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-2">
 
             {/* Bank Details */}
-            <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-1.5 flex-1 max-w-sm">
+            {/* <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-1.5 flex-1 max-w-sm">
               <span className="text-[10px] uppercase font-bold text-stone-500 block">
                 Direct Bank Transfer (RTGS / NEFT / IMPS):
               </span>
@@ -196,7 +239,8 @@ export default function EstimateViewModal({ estimate, onClose }: EstimateViewMod
               <div>A/C Number: <strong className="font-mono text-stone-950">{estimate.billingEntity.bankDetails.accountNumber}</strong></div>
               <div>IFSC Code: <strong className="font-mono text-stone-950">{estimate.billingEntity.bankDetails.ifsc}</strong></div>
               <div>Branch: {estimate.billingEntity.bankDetails.branch}</div>
-            </div>
+            </div> */}
+            <div/>
 
             {/* Calculations Table */}
             <div className="w-full sm:w-72 space-y-2 text-xs">
