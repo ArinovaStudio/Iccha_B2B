@@ -284,17 +284,16 @@ export default function AdminOrderDetailPage({
 
         const response = isVendorUser
           ? await fetch(
-              `/api/vendor/order-enquiries?orderId=${encodeURIComponent(order!.id)}`,
-              { cache: "no-store" }
-            )
+            `/api/vendor/order-enquiries?orderId=${encodeURIComponent(order!.id)}`,
+            { cache: "no-store" }
+          )
           : await fetch(
-              `/api/admin/order-enquiries/${encodeURIComponent(order!.id)}/seller-orders${
-                vendorId
-                  ? `?vendorId=${encodeURIComponent(vendorId)}`
-                  : ""
-              }`,
-              { cache: "no-store" }
-            );
+            `/api/admin/order-enquiries/${encodeURIComponent(order!.id)}/seller-orders${vendorId
+              ? `?vendorId=${encodeURIComponent(vendorId)}`
+              : ""
+            }`,
+            { cache: "no-store" }
+          );
 
         const json = await response.json();
 
@@ -493,10 +492,10 @@ export default function AdminOrderDetailPage({
                   current.map((item) =>
                     item.id === sellerOrder.id
                       ? {
-                          ...item,
-                          status: normalizedStatus,
-                          updatedAt: new Date().toISOString(),
-                        }
+                        ...item,
+                        status: normalizedStatus,
+                        updatedAt: new Date().toISOString(),
+                      }
                       : item
                   )
                 );
@@ -601,9 +600,8 @@ export default function AdminOrderDetailPage({
 
         {/* Order Details and Addresses */}
         <section
-          className={`grid grid-cols-1 gap-4 ${
-            isStaffView ? "md:grid-cols-3" : "md:grid-cols-2"
-          }`}
+          className={`grid grid-cols-1 gap-4 ${isStaffView ? "md:grid-cols-3" : "md:grid-cols-2"
+            }`}
         >
           <div className="bg-white rounded-3xl border border-stone-200 p-5">
             <p className="text-[10px] uppercase tracking-widest text-stone-400">
@@ -611,13 +609,6 @@ export default function AdminOrderDetailPage({
             </p>
 
             <div className="mt-3 space-y-2 text-xs text-stone-600">
-              <p>Shipping charges will be calculated after the final confirmation.</p>
-              <p>
-                Please message or call the seller after making the estimate: <br />
-                {vendors.length > 0
-                  ? vendors.map((vendor) => `${vendor.businessName} — ${vendor.mobile || "Number unavailable"}`).join(", ")
-                  : "Seller number unavailable"}
-              </p>
             </div>
           </div>
 
@@ -830,11 +821,10 @@ export default function AdminOrderDetailPage({
               <div key={h.id} className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-3 h-3 rounded-full ${
-                      i === order.history.length - 1
+                    className={`w-3 h-3 rounded-full ${i === order.history.length - 1
                         ? "bg-[#831843]"
                         : "bg-stone-300"
-                    }`}
+                      }`}
                   />
 
                   {i < order.history.length - 1 && (
@@ -852,14 +842,25 @@ export default function AdminOrderDetailPage({
                     {h.actorName}
                   </p>
 
-                  {h.notes && (
+                  {/* {h.notes && (
                     <p className="text-xs text-stone-500 mt-2">
                       {h.notes}
                     </p>
-                  )}
+                  )} */}
+                  <div className="space-y-2 text-xs text-stone-600">
+                    <p>Shipping charges will be calculated after the final confirmation.</p>
+                    <p>
+                      Please message or call the seller after making the estimate: <br />
+                      {vendors.length > 0
+                        ? vendors.map((vendor) => `${vendor.businessName} — ${vendor.mobile || "Number unavailable"}`).join(", ")
+                        : "Seller number unavailable"}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
+
+
           </div>
         </section>
       </main>
