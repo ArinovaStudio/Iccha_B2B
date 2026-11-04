@@ -2,17 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  X,
-  Printer,
-  Download,
-  Building2,
-  Receipt,
-  ShieldCheck,
-  CheckCircle,
-  FileText,
-  Package
-} from 'lucide-react';
+import { X, Printer, Receipt, Package } from 'lucide-react';
 import { EstimateDocument } from '@/lib/types';
 
 interface EstimateViewModalProps {
@@ -22,7 +12,6 @@ interface EstimateViewModalProps {
 
 export default function EstimateViewModal({ estimate, onClose }: EstimateViewModalProps) {
   const [mounted, setMounted] = useState(false);
-console.log(estimate);
 
   useEffect(() => {
     setMounted(true);
@@ -30,9 +19,53 @@ console.log(estimate);
 
   if (!estimate || !mounted) return null;
 
-  const handlePrint = () => {
-    window.print();
-  };
+const handlePrint = () => {
+  const el = document.getElementById('printable-estimate');
+  if (!el) return;
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  if (!doc || !win) return;
+
+  // Reuse the app's real CSS (Tailwind included)
+  const styles = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"], style')
+  ).map((n) => n.outerHTML).join('');
+
+  doc.open();
+  doc.write(`<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>Estimate ${estimate.estimateNumber}</title>
+        ${styles}
+        <style>
+          @page { size: A4 portrait; margin: 12mm; }
+          html, body { margin: 0; background: #fff; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          tr { break-inside: avoid; }
+          thead { display: table-header-group; }
+        </style>
+      </head>
+      <body>${el.outerHTML}</body>
+    </html>`);
+  doc.close();
+
+  setTimeout(() => {
+    win.focus();
+    win.print();
+    setTimeout(() => iframe.remove(), 1500);
+  }, 500);
+};
+
+  const formatAmount = (amount: number) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatDate = (date: string) => new Date(date).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
 
   const modalContent = (
     <div
@@ -122,7 +155,7 @@ console.log(estimate);
             </div>
           </div>
 
-          {/* Billed To / Whole Seller Info */}
+          {/* Billed To / Consignee */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-200">
             <div>
               <span className="text-[10px] uppercase font-bold text-stone-400 block mb-1">
@@ -158,40 +191,14 @@ console.log(estimate);
             </div>
           </div>
 
-          {/* Items Table */}
+          {/* Itemized estimate table */}
           <section className="space-y-3">
             <h3 className="font-serif text-sm font-bold text-stone-900 flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#831843]" />
-              Allocated Wholesale Lots
+              <Package className="w-4 h-4 text-[#831843] print-hide-icon" />
+              Estimate Details
             </h3>
-            <div className="space-y-2">
-              {estimate.items.map((item) => (
-                <div key={item.productId} className="flex items-center justify-between gap-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                  <div>
-                    <div className="font-semibold text-stone-900">{item.productName}</div>
-                    <div className="text-[10px] text-stone-500 font-mono">
-                      SKU: {item.sku} · Design: {item.designNumber} · Size: {item.sizeCombination}
-                    </div>
-                    <div className="text-[10px] text-stone-600 mt-1">
-                      {item.sets} sets · {item.totalPieces} pieces
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right font-mono font-bold text-stone-900">
-                    ₹{item.lineSubtotal.toLocaleString('en-IN')}
-                  </div>
-                </div>
-              ))}
-              {estimate.items.length === 0 && (
-                <p className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-[11px] text-stone-500">
-                  Product details are unavailable for this estimate.
-                </p>
-              )}
-            </div>
-          </section>
-
-          {/* Items Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left border border-stone-300">
+            <div className="overflow-x-auto">
+            <table className="estimate-items-table w-full border-collapse text-left border border-stone-300">
               <thead>
                 <tr className="bg-stone-100 text-stone-800 border-b border-stone-300 text-[11px]">
                   <th className="p-2.5 font-bold border-r border-stone-300 text-center">#</th>
@@ -218,13 +225,17 @@ console.log(estimate);
                     <td className="p-2.5 border-r border-stone-200 text-center font-bold">{item.sets}</td>
                     <td className="p-2.5 border-r border-stone-200 text-center">{item.piecesPerSet}</td>
                     <td className="p-2.5 border-r border-stone-200 text-center font-semibold">{item.totalPieces}</td>
-                    <td className="p-2.5 border-r border-stone-200 text-right font-mono">₹{item.pieceRate}</td>
-                    <td className="p-2.5 text-right font-bold font-mono">₹{item.lineSubtotal.toLocaleString('en-IN')}</td>
+                    <td className="p-2.5 border-r border-stone-200 text-right font-mono">{formatAmount(item.pieceRate)}</td>
+                    <td className="p-2.5 text-right font-bold font-mono">{formatAmount(item.lineSubtotal)}</td>
                   </tr>
                 ))}
+                {estimate.items.length === 0 && (
+                  <tr><td colSpan={8} className="p-4 text-center text-stone-500">Product details are unavailable for this estimate.</td></tr>
+                )}
               </tbody>
             </table>
-          </div>
+            </div>
+          </section>
 
           {/* Tax & Grand Total Computation */}
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-2">
@@ -250,23 +261,23 @@ console.log(estimate);
               </div>
               <div className="flex justify-between py-1 border-b border-stone-200">
                 <span className="text-stone-600">Taxable Value:</span>
-                <span className="font-mono font-bold">₹{estimate.taxableSubtotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono font-bold">{formatAmount(estimate.taxableSubtotal)}</span>
               </div>
 
               {estimate.isInterState ? (
                 <div className="flex justify-between py-1 border-b border-stone-200 text-stone-700">
                   <span>Integrated GST (IGST 5.0%):</span>
-                  <span className="font-mono">₹{estimate.igstAmount.toLocaleString('en-IN')}</span>
+                  <span className="font-mono">{formatAmount(estimate.igstAmount)}</span>
                 </div>
               ) : (
                 <>
                   <div className="flex justify-between py-1 border-b border-stone-200 text-stone-700">
                     <span>Central GST (CGST 2.5%):</span>
-                    <span className="font-mono">₹{estimate.cgstAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-mono">{formatAmount(estimate.cgstAmount)}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-stone-200 text-stone-700">
                     <span>State GST (SGST 2.5%):</span>
-                    <span className="font-mono">₹{estimate.sgstAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-mono">{formatAmount(estimate.sgstAmount)}</span>
                   </div>
                 </>
               )}
@@ -280,7 +291,7 @@ console.log(estimate);
 
               <div className="flex justify-between py-2 bg-stone-100 px-3 rounded-lg text-stone-950 font-bold text-sm">
                 <span>Grand Estimate Total:</span>
-                <span className="font-mono text-rose-900">₹{estimate.grandTotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono text-rose-900">{formatAmount(estimate.grandTotal)}</span>
               </div>
             </div>
           </div>

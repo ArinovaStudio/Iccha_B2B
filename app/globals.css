@@ -175,25 +175,39 @@ button:focus-visible,
 
 /* Print utilities for GST Estimates / Proforma Invoices */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  #printable-estimate, #printable-estimate * {
-    visibility: visible;
-  }
+  @page { size: A4; margin: 12mm; }
+
+  html, body { width: 100%; height: auto; background: #fff !important; }
+  body * { visibility: hidden !important; }
+  #printable-estimate, #printable-estimate * { visibility: visible !important; }
   #printable-estimate {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: #ffffff !important;
-    color: #000000 !important;
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 9pt !important;
+    line-height: 1.35 !important;
   }
-  .no-print {
-    display: none !important;
-  }
+  .no-print, .print-hide-icon { display: none !important; }
+  #printable-estimate .estimate-items-table { width: 100% !important; table-layout: fixed; font-size: 8pt !important; }
+  #printable-estimate .estimate-items-table th,
+  #printable-estimate .estimate-items-table td { padding: 5px 4px !important; color: #111 !important; border-color: #b8b8b8 !important; overflow-wrap: anywhere; }
+  #printable-estimate .estimate-items-table thead { display: table-header-group; }
+  #printable-estimate .estimate-items-table tr { break-inside: avoid; page-break-inside: avoid; }
+  #printable-estimate section, #printable-estimate table,
+  #printable-estimate .border-t { break-inside: auto; }
+  #printable-estimate .bg-stone-50,
+  #printable-estimate .bg-stone-100,
+  #printable-estimate .bg-stone-900,
+  #printable-estimate .bg-white { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 @keyframes ig-float {
   0%, 100% { transform: translateY(0) rotate(8deg); }
