@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import sendEmail from "@/lib/sendEmail"; // adjust this import to wherever sendEmail actually lives in your project
 import { prisma } from "@/lib/db";
-import { defaultContact } from "@/lib/site-content";
+
 
 /* =========================================================================
    POST /api/contact
@@ -69,10 +69,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const configured = await prisma.$queryRaw<Array<{ content: unknown }>>`SELECT "content" FROM "SiteContent" WHERE "key" = 'contact' LIMIT 1`.catch(() => []);
-  const contactContent = configured[0]?.content && typeof configured[0].content === "object" ? configured[0].content as Record<string, unknown> : defaultContact;
+  const configured = await prisma.contactBranch.findFirst({ where: { isActive: true, whatsapp: { not: null } }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
   const requestedNumber = typeof body.whatsappNumber === "string" ? body.whatsappNumber : "";
-  const whatsappNumber = requestedNumber.replace(/\D/g, "") || String(contactContent.whatsapp || defaultContact.whatsapp).replace(/\D/g, "");
+  const whatsappNumber = requestedNumber.replace(/\D/g, "") || (configured?.whatsapp ?? "").replace(/\D/g, "");
+  if (!whatsappNumber) return NextResponse.json({ error: "Contact WhatsApp number is not configured." }, { status: 503 });
 
   const whatsappMessage = `
 New Iccha Store Enquiry
@@ -96,3 +96,8 @@ ${message}
     whatsappUrl,
   });
 }
+
+
+
+
+

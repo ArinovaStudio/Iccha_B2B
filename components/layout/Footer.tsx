@@ -10,7 +10,6 @@ import {
   MapPin,
   ArrowUpRight,
 } from 'lucide-react';
-import { defaultContact } from '@/lib/site-content';
 
 type ContactBranch = {
   id: string;
@@ -32,18 +31,6 @@ type ContactBranch = {
 
 const phoneDigits = (value: string) => value.replace(/[^+\d]/g, '');
 
-const fallbackContactBranch: ContactBranch = {
-  id: 'fallback',
-  name: defaultContact.showroomTitle,
-  phone: defaultContact.phone,
-  whatsapp: defaultContact.whatsapp,
-  addressLine: defaultContact.address,
-  city: '',
-  mapUrl: defaultContact.directionsUrl,
-  hours: defaultContact.hours,
-  closedDays: defaultContact.closed,
-};
-
 export default function Footer() {
   const [contacts, setContacts] = useState<ContactBranch[] | null>(null);
 
@@ -57,9 +44,9 @@ export default function Footer() {
         }
 
         // Match /contact's configured fallback when no branch records exist.
-        setContacts([fallbackContactBranch]);
+        setContacts([]);
       })
-      .catch(() => setContacts([fallbackContactBranch]));
+      .catch(() => setContacts([]));
   }, []);
 
   const quickLinks = [
@@ -359,3 +346,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+

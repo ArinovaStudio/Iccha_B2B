@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { Building2, Lock, Scissors } from 'lucide-react';
-import { defaultHomeFeatures, HomeFeaturesContent } from '@/lib/site-content';
+import { HomeFeaturesContent } from '@/lib/site-content';
 
 const icons = { Scissors, Building2, Lock };
 const tiers = ['border-t-black', 'border-t-neutral-500', 'border-t-neutral-300'];
 
 export default function HomeFeaturesGrid() {
-  const [content, setContent] = useState<HomeFeaturesContent>(defaultHomeFeatures);
+  const [content, setContent] = useState<HomeFeaturesContent | null>(null);
   useEffect(() => {
     fetch('/api/public/site-content', { cache: 'no-store' }).then((response) => response.json()).then((json) => {
-      if (json.success && json.data?.homeFeatures) setContent({ ...defaultHomeFeatures, ...json.data.homeFeatures });
+      if (json.success && json.data?.homeFeatures) setContent(json.data.homeFeatures);
     }).catch(() => undefined);
   }, []);
+
+  if (!content) return null;
 
   return <section className="py-24 sm:py-32 bg-white border-t border-neutral-200">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,3 +32,6 @@ export default function HomeFeaturesGrid() {
     </div>
   </section>;
 }
+
+
+

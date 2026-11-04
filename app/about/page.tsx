@@ -3,7 +3,7 @@
 import Footer from "@/components/layout/Footer";
 import PublicHeader from "@/components/layout/PublicHeader";
 import { useEffect, useRef, useState } from "react";
-import { AboutContent, defaultAbout } from "@/lib/site-content";
+import { AboutContent } from "@/lib/site-content";
 
 
 function useReducedMotion() {
@@ -236,12 +236,12 @@ const navLinks = [
 /* ------------------------------ page ----------------------------------- */
 
 export default function IcchaStoreAbout() {
-  const [content, setContent] = useState<AboutContent>(defaultAbout);
+  const [content, setContent] = useState<AboutContent | null>(null);
   const reduced = useReducedMotion();
 
   useEffect(() => {
     fetch("/api/public/site-content", { cache: "no-store" }).then((r) => r.json()).then((json) => {
-      if (json.success && json.data?.about) setContent({ ...defaultAbout, ...json.data.about });
+      if (json.success && json.data?.about) setContent(json.data.about);
     }).catch(() => undefined);
   }, []);
 
@@ -249,6 +249,8 @@ export default function IcchaStoreAbout() {
   const numbers = useInView<HTMLDivElement>(0.4);
   const work = useInView<HTMLDivElement>(0.2);
   const why = useInView<HTMLDivElement>(0.2);
+
+  if (!content) return <><PublicHeader /><main className="min-h-[40vh] px-6 py-20 text-center">About content is not available.</main><Footer /></>;
 
   return (
     <main
@@ -581,3 +583,6 @@ function Stat({
     </div>
   );
 }
+
+
+

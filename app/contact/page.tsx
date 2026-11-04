@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Footer from "@/components/layout/Footer";
 import PublicHeader from "@/components/layout/PublicHeader";
-import { ContactContent, defaultContact } from "@/lib/site-content";
+
 
 type Branch = {
   id: string;
@@ -62,20 +62,6 @@ function Icon({ name, className = "h-[18px] w-[18px]" }: { name: keyof typeof IC
 const digits = (s: string) => s.replace(/[^+\d]/g, "");
 
 // Used only if the database has no contacts yet.
-function fallbackBranch(c: ContactContent): Branch {
-  return {
-    id: "fallback",
-    name: c.showroomTitle,
-    phone: c.phone,
-    whatsapp: c.whatsapp,
-    addressLine: c.address,
-    city: "",
-    mapUrl: c.directionsUrl,
-    hours: c.hours,
-    closedDays: c.closed,
-  };
-}
-
 /* ---------------------------- small pieces ------------------------------ */
 
 function Row({ icon, children }: { icon: keyof typeof ICONS; children: React.ReactNode }) {
@@ -173,46 +159,12 @@ function BranchCard({ b }: { b: Branch }) {
   );
 }
 
-function FaqItem({ q, a, open, onToggle,}: {
-  q: string;
-  a: string;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="border-t border-[var(--line)] py-4 first:border-t-0 first:pt-0">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 text-left text-[15px] text-[var(--ink)]"
-        aria-expanded={open}
-      >
-        <span>{q}</span>
-        <Icon
-          name="chevron"
-          className={`h-4 w-4 flex-none transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      <div
-        className={`grid transition-all duration-300 ease-in-out ${
-          open ? "mt-2 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <p className="text-sm leading-relaxed text-[var(--charcoal)]/65">{a}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* -------------------------------- page ----------------------------------- */
 
 export default function ContactSection() {
-  const [content, setContent] = useState<ContactContent>(defaultContact);
+
   const [branches, setBranches] = useState<Branch[] | null>(null); // null = loading
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
 
   // The contact cards, stored in the database
   useEffect(() => {
@@ -222,7 +174,7 @@ export default function ContactSection() {
       .catch(() => setBranches([]));
   }, []);
 
-  const list = branches && branches.length ? branches : branches ? [fallbackBranch(content)] : null;
+  const list = branches;
 
   return (
     <section
@@ -250,11 +202,11 @@ export default function ContactSection() {
 
       <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
         <div className="max-w-xl">
-          <p className="text-sm text-[var(--gold)]">{content.eyebrow}</p>
+          <p className="text-sm text-[var(--gold)]">Get in touch</p>
           <h2 className="mt-2 [font-family:var(--font-display)] text-3xl leading-tight text-[var(--ink)] sm:text-4xl">
-            {content.title}
+            Questions before you order? Start here.
           </h2>
-          <p className="mt-4 leading-relaxed text-[var(--charcoal)]/70">{content.intro}</p>
+          <p className="mt-4 leading-relaxed text-[var(--charcoal)]/70">Reach us directly using the contact details below.</p>
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -268,23 +220,13 @@ export default function ContactSection() {
               ))}
         </div>
 
-        <div className="mt-20">
-          <h3 className="text-lg text-[var(--ink)]">{content.faqTitle}</h3>
-          <div className="mt-3">
-            {content.faqs.map((f, i) => (
-              <FaqItem
-                key={f.question}
-                q={f.question}
-                a={f.answer}
-                open={openFaq === i}
-                onToggle={() => setOpenFaq(openFaq === i ? null : i)}
-              />
-            ))}
-          </div>
-        </div>
       </div>
 
       <Footer />
     </section>
   );
 }
+
+
+
+

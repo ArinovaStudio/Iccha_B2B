@@ -5,15 +5,11 @@ import { useParams } from "next/navigation";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
   AboutContent,
-  ContactContent,
-  defaultAbout,
-  defaultContact,
-  defaultHomeFeatures,
   HomeFeaturesContent,
 } from "@/lib/site-content";
 
 type PageKey = "about" | "homeFeatures";
-type Content = AboutContent | ContactContent | HomeFeaturesContent;
+type Content = AboutContent | HomeFeaturesContent;
 const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
 const sectionClass =
@@ -23,25 +19,28 @@ export default function SiteContentEditor() {
   const params = useParams<{ key: string }>();
   const key = params.key as PageKey;
   const validKey = key === "about" || key === "homeFeatures";
-  const [content, setContent] = useState<Content>(
-    key === "homeFeatures" ? defaultHomeFeatures : defaultAbout,
-  );
+  const emptyContent: Content = key === "homeFeatures"
+    ? { title: "", cards: [] }
+    : { heroBadge: "", heroTitle: "", heroBody: "", heroImage: "", heroImageAlt: "", heroPrimaryLabel: "", heroPrimaryUrl: "", whatsappLabel: "", whatsappUrl: "", dispatchValue: "", dispatchLabel: "", storyTitle: "", storyBody: "", storyImage: "", storyImageAlt: "", categoriesTitle: "", categories: [], stats: [], stepsTitle: "", steps: [], reasonsTitle: "", reasons: [], ctaTitle: "", ctaBody: "", ctaImage: "", ctaImageAlt: "", catalogEmail: "" };
+  const [content, setContent] = useState<Content>({} as Content);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/public/site-content", {
-      cache: "no-store",
-    });
-    const json = await response.json();
-    if (json.success && validKey)
-      setContent({
-        ...(key === "about" ? defaultAbout : defaultHomeFeatures),
-        ...json.data[key],
-      } as Content);
-    setLoading(false);
-  }, [key, validKey]);
+    setLoading(true);
+    try {
+      const response = await fetch(key === "about" ? "/api/admin/about-content" : "/api/admin/home-features", { cache: "no-store" });
+      const json = await response.json();
+      if (!response.ok || !json.success) throw new Error(json.error || "Could not load content");
+      setContent((json.data ?? emptyContent) as Content);
+      setNotice(json.data ? "" : "No saved content yet. Save this page to publish it.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not load content");
+    } finally {
+      setLoading(false);
+    }
+  }, [key]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -52,7 +51,7 @@ export default function SiteContentEditor() {
     setSaving(true);
     setNotice("");
     try {
-      const response = await fetch(`/api/admin/site-content/${key}`, {
+      const response = await fetch(key === "about" ? "/api/admin/about-content" : "/api/admin/home-features", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(content),
@@ -87,7 +86,7 @@ export default function SiteContentEditor() {
   if (!validKey) return <div className="p-8">Unknown page.</div>;
   const isAbout = key === "about";
   const isHomeFeatures = key === "homeFeatures";
-  const c = content as AboutContent & ContactContent & HomeFeaturesContent;
+  const c = content as AboutContent & HomeFeaturesContent;
   const text = (
     label: string,
     field: string,
@@ -592,63 +591,7 @@ export default function SiteContentEditor() {
                 {text("Catalog email", "catalogEmail", false, "email")}
               </section>
             </>
-          ) : (
-            <>
-              <section className={sectionClass}>
-                <h2 className="font-semibold text-stone-900">
-                  Contact introduction
-                </h2>
-                {text("Eyebrow", "eyebrow")}
-                {text("Heading", "title")}
-                {text("Description", "intro", true)}
-              </section>
-              <section className={sectionClass}>
-                <h2 className="font-semibold text-stone-900">
-                  Showroom details
-                </h2>
-                {text("Block title", "showroomTitle")}
-                {text("Address", "address", true)}
-                {text("Directions link label", "directionsLabel")}
-                {text("Directions URL", "directionsUrl")}
-              </section>
-              <section className={sectionClass}>
-                <h2 className="font-semibold text-stone-900">
-                  Phone and WhatsApp
-                </h2>
-                {text("Block title", "phoneTitle")}
-                {text("Display phone", "phone")}
-                {text("WhatsApp number, country code included", "whatsapp")}
-                {text("WhatsApp link label", "whatsappLabel")}
-              </section>
-              <section className={sectionClass}>
-                <h2 className="font-semibold text-stone-900">Opening hours</h2>
-                {text("Block title", "hoursTitle")}
-                {text("Hours", "hours")}
-                {text("Closed note", "closed")}
-              </section>
-              <section className={sectionClass}>
-                <h2 className="font-semibold text-stone-900">
-                  Frequently asked questions
-                </h2>
-                {text("Section heading", "faqTitle")}
-                {list(
-                  "faqs",
-                  c.faqs as unknown as Record<string, string | number>[],
-                  ["question", "answer"],
-                  ["Question", "Answer"],
-                )}
-              </section>
-              <section className={sectionClass}>
-                <h2 className="font-semibold text-stone-900">
-                  Enquiry form panel
-                </h2>
-                {text("Heading", "formTitle")}
-                {text("Description", "formIntro", true)}
-                {text("Submit button label", "submitLabel")}
-                {text("Note under form", "formNote", true)}
-              </section>
-            </>
-          )}
+          ) : null}
           <div className="flex justify-end pb-10">
             <button
               disabled={saving}
