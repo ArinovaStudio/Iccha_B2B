@@ -85,6 +85,7 @@ interface Product {
     city: string | null;
     state: string | null;
     isActive: boolean;
+    isDisabled: boolean;
   } | null;
   gstConfig?: {
     id: string;
@@ -1485,7 +1486,7 @@ export default function AdminProductsPage() {
                     </option>
 
                     {warehouses
-                      .filter(warehouse => warehouse.isActive)
+                      .filter(warehouse => warehouse.isActive && !warehouse.isDisabled)
                       .map(warehouse => (
                         <option key={warehouse.id} value={warehouse.id}>
                           {warehouse.name}
@@ -1495,7 +1496,7 @@ export default function AdminProductsPage() {
                   </select>
 
                   {!warehousesLoading &&
-                    warehouses.filter(warehouse => warehouse.isActive).length === 0 && (
+                    warehouses.filter(warehouse => warehouse.isActive && !warehouse.isDisabled).length === 0 && (
                       <p className="text-[10px] text-amber-700 mt-1">
                         {currentUserRole === 'VENDOR'
                           ? 'You have not added a warehouse yet. Please add a warehouse before creating a product.'

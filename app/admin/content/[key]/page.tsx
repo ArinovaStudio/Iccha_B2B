@@ -545,7 +545,7 @@ export default function SiteContentEditor() {
               </section>
               <section className={sectionClass}>
                 <h2 className="font-semibold text-stone-900">
-                  Whole Seller statistics
+                  Wholesaler statistics
                 </h2>
                 {list(
                   "stats",
@@ -592,7 +592,7 @@ export default function SiteContentEditor() {
               </section>
             </>
           ) : null}
-          <div className="flex justify-end pb-10">
+          {/* <div className="flex justify-end pb-10">
             <button
               disabled={saving}
               onClick={() => void save()}
@@ -600,7 +600,7 @@ export default function SiteContentEditor() {
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
-          </div>
+          </div> */}
         </div>
       </main>
     </div>

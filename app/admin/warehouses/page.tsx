@@ -20,6 +20,7 @@ interface Warehouse {
   state: string | null;
   pincode: string | null;
   isActive: boolean;
+  isDisabled: boolean;
   createdAt: string;
   vendorId: string | null;
   vendorName: string | null;
@@ -44,6 +45,7 @@ export default function WarehousesPage() {
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [deletingWarehouse, setDeletingWarehouse] = useState<Warehouse | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [togglingWarehouseId, setTogglingWarehouseId] = useState<string | null>(null);
 
   const [error, setError] = useState('');
   const [deleteError, setDeleteError] = useState('');
@@ -85,6 +87,42 @@ export default function WarehousesPage() {
     setScopeReady(true);
   }, []);
   const portalLabel = isStaff ? 'Admin Console' : 'Vendor Portal';
+  const ownWarehouses = isStaff ? warehouses.filter((warehouse) => warehouse.isMine) : warehouses;
+  const vendorWarehouses = isStaff ? warehouses.filter((warehouse) => !warehouse.isMine) : [];
+  const renderWarehouseCard = (warehouse: Warehouse) => (
+    <div key={warehouse.id} className="bg-white rounded-3xl border border-stone-200 shadow-sm p-5 hover:border-rose-900/40 transition">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center shrink-0"><WarehouseIcon className="w-5 h-5 text-stone-600" /></div>
+          <div>
+            <h3 className="font-serif font-bold text-stone-900 text-sm">{warehouse.name}</h3>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${warehouse.isDisabled ? 'bg-red-100 text-red-700' : warehouse.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>{warehouse.isDisabled ? 'Disabled by admin' : warehouse.isActive ? 'Active' : 'Inactive'}</span>
+              {isStaff && <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${warehouse.isMine ? 'bg-rose-100 text-rose-900' : 'bg-purple-100 text-purple-800'}`}>{warehouse.isMine ? 'IcchaStore' : warehouse.vendorName || 'Vendor'}</span>}
+            </div>
+          </div>
+        </div>
+        {(warehouse.isMine || isStaff) && <div className="flex items-center gap-1 shrink-0">
+          {isStaff && <button
+            type="button"
+            role="switch"
+            aria-checked={!warehouse.isDisabled}
+            aria-label={`${warehouse.isDisabled ? 'Enable' : 'Disable'} ${warehouse.name}`}
+            title={warehouse.isDisabled ? 'Enable warehouse' : 'Disable warehouse'}
+            disabled={togglingWarehouseId === warehouse.id}
+            onClick={() => handleToggleDisabled(warehouse)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 ${warehouse.isDisabled ? 'bg-stone-300' : 'bg-emerald-600'}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${warehouse.isDisabled ? 'translate-x-0.5' : 'translate-x-[22px]'}`} />
+            <span className="sr-only">{warehouse.isDisabled ? 'Disabled' : 'Enabled'}</span>
+          </button>}
+          <button type="button" onClick={() => openEditModal(warehouse)} title="Edit warehouse" className="text-stone-400 hover:text-rose-900 transition p-1"><Pencil className="w-4 h-4" /></button>
+          <button type="button" onClick={() => { setDeleteError(''); setDeletingWarehouse(warehouse); }} title="Delete warehouse" className="text-stone-400 hover:text-red-600 transition p-1"><Trash2 className="w-4 h-4" /></button>
+        </div>}
+      </div>
+      {(warehouse.address || warehouse.city || warehouse.state || warehouse.pincode) && <div className="mt-5 pt-4 border-t border-stone-100"><div className="flex items-start gap-2"><MapPin className="w-3.5 h-3.5 text-stone-400 mt-0.5 shrink-0" /><div className="text-xs text-stone-500 leading-5">{warehouse.address && <div>{warehouse.address}</div>}<div>{[warehouse.city, warehouse.state, warehouse.pincode].filter(Boolean).join(', ')}</div></div></div></div>}
+    </div>
+  );
 
   // ============================================================
   // LOAD VENDOR WAREHOUSES
@@ -112,6 +150,28 @@ export default function WarehousesPage() {
       setError('Could not load warehouses. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleDisabled = async (warehouse: Warehouse) => {
+    setError('');
+    setTogglingWarehouseId(warehouse.id);
+    try {
+      const res = await fetch(`/api/admin/warehouses/${warehouse.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDisabled: !warehouse.isDisabled }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setError(`Could not ${warehouse.isDisabled ? 'enable' : 'disable'} “${warehouse.name}”: ${json.error || 'The server rejected the change. Please refresh and try again.'}`);
+        return;
+      }
+      setWarehouses(prev => prev.map(item => item.id === warehouse.id ? { ...item, ...json.data } : item));
+    } catch {
+      setError(`Could not ${warehouse.isDisabled ? 'enable' : 'disable'} “${warehouse.name}” because the server could not be reached. Check your connection and try again.`);
+    } finally {
+      setTogglingWarehouseId(null);
     }
   };
 
@@ -165,7 +225,7 @@ export default function WarehousesPage() {
     try {
       const res = await fetch(
         editingWarehouse
-          ? `/api/vendor/warehouses/${editingWarehouse.id}`
+          ? `/api/${isStaff && editingWarehouse.vendorId ? 'admin' : 'vendor'}/warehouses/${editingWarehouse.id}`
           : '/api/vendor/warehouses',
         {
           method: editingWarehouse ? 'PATCH' : 'POST',
@@ -272,7 +332,7 @@ export default function WarehousesPage() {
               {isStaff && scopeVendorId
                 ? `Showing and creating warehouses for ${scopeVendorName || 'the selected vendor'} only.`
                 : isStaff
-                  ? 'Manage platform warehouses and view every vendor\u2019s dispatch centers.'
+                  ? 'View platform-owned and vendor-owned dispatch centers.'
                   : 'Manage the warehouses where your products are stored.'}
             </p>
           </div>
@@ -283,7 +343,7 @@ export default function WarehousesPage() {
             className="px-4 py-2.5 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold text-xs shadow transition flex items-center gap-2 self-start sm:self-center"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Warehouse</span>
+            <span>Add Owned Warehouse</span>
           </button>
 
         </div>
@@ -338,107 +398,34 @@ export default function WarehousesPage() {
 
         ) : (
 
+          <>
+          {isStaff && !scopeVendorId && (
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              <span className="rounded-full bg-rose-100 px-3 py-1 font-bold text-rose-900">IcchaStore owned · {ownWarehouses.length}</span>
+              <span className="rounded-full bg-purple-100 px-3 py-1 font-bold text-purple-800">Vendor owned · {vendorWarehouses.length}</span>
+            </div>
+          )}
+
+          {isStaff && !scopeVendorId && ownWarehouses.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="font-serif text-lg font-bold text-stone-900">IcchaStore owned</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {ownWarehouses.map(renderWarehouseCard)}
+              </div>
+            </section>
+          )}
+
+          <section className="space-y-3">
+            {isStaff && !scopeVendorId && <h2 className="font-serif text-lg font-bold text-stone-900">{vendorWarehouses.length ? 'Vendor warehouses' : 'Warehouses'}</h2>}
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
-            {warehouses.map((warehouse) => (
-
-              <div
-                key={warehouse.id}
-                className="bg-white rounded-3xl border border-stone-200 shadow-sm p-5 hover:border-rose-900/40 transition"
-              >
-
-                {/* Warehouse Header */}
-
-                <div className="flex items-start justify-between gap-3">
-
-                  <div className="flex items-center gap-3">
-
-                    <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center shrink-0">
-                      <WarehouseIcon className="w-5 h-5 text-stone-600" />
-                    </div>
-
-                    <div>
-                      <h3 className="font-serif font-bold text-stone-900 text-sm">
-                        {warehouse.name}
-                      </h3>
-
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span
-                          className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            warehouse.isActive
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-stone-100 text-stone-500'
-                          }`}
-                        >
-                          {warehouse.isActive ? 'Active' : 'Inactive'}
-                        </span>
-
-                        {isStaff && warehouse.vendorName && (
-                          <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                            {warehouse.vendorName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {warehouse.isMine && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button type="button" onClick={() => openEditModal(warehouse)} title="Edit warehouse" className="text-stone-400 hover:text-rose-900 transition p-1">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-
-                      <button type="button" onClick={() => { setDeleteError(''); setDeletingWarehouse(warehouse); }}
-                        title="Delete warehouse" className="text-stone-400 hover:text-red-600 transition p-1">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Address */}
-
-                {(warehouse.address ||
-                  warehouse.city ||
-                  warehouse.state ||
-                  warehouse.pincode) && (
-
-                  <div className="mt-5 pt-4 border-t border-stone-100">
-
-                    <div className="flex items-start gap-2">
-
-                      <MapPin className="w-3.5 h-3.5 text-stone-400 mt-0.5 shrink-0" />
-
-                      <div className="text-xs text-stone-500 leading-5">
-
-                        {warehouse.address && (
-                          <div>{warehouse.address}</div>
-                        )}
-
-                        <div>
-                          {[
-                            warehouse.city,
-                            warehouse.state,
-                            warehouse.pincode,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-                )}
-
-              </div>
-
-            ))}
+            {(isStaff && !scopeVendorId ? vendorWarehouses : warehouses).map(renderWarehouseCard)}
 
           </div>
+
+          </section>
+          </>
 
         )}
 

@@ -268,7 +268,7 @@ export default function SampleCallRequestsPage() {
                     </div>
 
                     <div>
-                      <SectionTitle icon={User} color="text-amber-700">Whole Seller</SectionTitle>
+                      <SectionTitle icon={User} color="text-amber-700">wholesaler</SectionTitle>
                       <div className="space-y-1">
                         <p className="text-sm font-bold text-stone-900">{retailer.businessName}</p>
                         <Line label="Contact" value={retailer.applicantName} />
@@ -291,7 +291,7 @@ export default function SampleCallRequestsPage() {
 
                   {item.remarks && (
                     <div className="mx-5 mb-5 p-4 rounded-xl bg-stone-50 border border-stone-200">
-                      <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400 mb-1">Whole Seller Remarks</p>
+                      <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400 mb-1">Wholesaler Remarks</p>
                       <p className="text-xs text-stone-700 leading-relaxed">{item.remarks}</p>
                     </div>
                   )}

@@ -1,42 +1,55 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAdminRole } from './AdminRoleContext';
 import {
   LayoutDashboard,
-  Sparkles,
-  Users,
-  FileCheck,
-  ClipboardCheck,
   Package,
-  FolderTree,
-  Boxes,
-  Sliders,
-  ShoppingBag,
   Store,
-  ReceiptText,
+  Users,
+  FileText,
+  ShoppingBag,
   ExternalLink,
   LogOut,
   UserCog,
   UserCircle,
   Menu,
   X,
-  PhoneCall,
-  FileText,
-  Layers,
+  ChevronDown,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
   activeTab?: string;
 }
 
-interface NavLink {
+type IconType = React.ComponentType<{ className?: string }>;
+
+interface SubLink {
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  staffOnly?: boolean;
 }
+
+interface SingleItem {
+  type: 'link';
+  label: string;
+  href: string;
+  icon: IconType;
+  staffOnly?: boolean;
+}
+
+interface GroupItem {
+  type: 'group';
+  key: string;
+  label: string;
+  icon: IconType;
+  staffOnly?: boolean;
+  children: SubLink[];
+}
+
+type NavEntry = SingleItem | GroupItem;
 
 interface SidebarCounts {
   pendingKyc: number;
@@ -47,44 +60,60 @@ interface SidebarCounts {
 const EMPTY_COUNTS: SidebarCounts = { pendingKyc: 0, newOrders: 0, pendingSampleCalls: 0 };
 const COUNTS_REFRESH_MS = 30000;
 
-const STAFF_ONLY_LINKS: NavLink[] = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  // { label: 'Hero Banners', href: '/admin/hero', icon: Sparkles },
-  // { label: 'About Page', href: '/admin/content/about', icon: FileText },
-  // { label: 'Contact Page', href: '/admin/content/contact', icon: PhoneCall },
-  // { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
-  { label: 'Whole sellers', href: '/admin/retailers', icon: Users },
-  { label: 'Whole seller Reactivations', href: '/admin/retailer-reactivation-requests', icon: ClipboardCheck, },
-  { label: 'Vendors', href: '/admin/vendors', icon: Store },
-  { label: 'KYC Applications', href: '/admin/kyc', icon: FileCheck },
-  { label: 'User', href: '/admin/roles', icon: UserCog },
+/**
+ * Single source of truth for the menu.
+ * - `staffOnly` on a group hides the whole group from vendors.
+ * - `staffOnly` on a child hides only that child from vendors.
+ */
+const NAV: NavEntry[] = [
+  { type: 'link', label: 'Dashboard', href: '/admin', icon: LayoutDashboard, staffOnly: true },
+  { type: 'link', label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
+  {
+    type: 'group',
+    key: 'products',
+    label: 'Product Management',
+    icon: Package,
+    children: [
+      { label: 'Products', href: '/admin/products' },
+      { label: 'Collections', href: '/admin/collections' },
+      { label: 'Categories', href: '/admin/categories' },
+      { label: 'Warehouses', href: '/admin/warehouses' },
+      { label: 'MOQ Rules', href: '/admin/moq-rules', staffOnly: true },
+      { label: 'Sample Call Requests', href: '/admin/sample-call-requests' },
+    ],
+  },
+  {
+    type: 'group',
+    key: 'partners',
+    label: 'Partner Management',
+    icon: Users,
+    staffOnly: true,
+    children: [
+      { label: 'Vendors', href: '/admin/vendors' },
+      { label: 'Wholesalers', href: '/admin/retailers' },
+      { label: 'Wholesaler Reactivations', href: '/admin/retailer-reactivation-requests' },
+      { label: 'KYC Applications', href: '/admin/kyc' },
+    ],
+  },
+  {
+    type: 'group',
+    key: 'cms',
+    label: 'CMS Management',
+    icon: FileText,
+    staffOnly: true,
+    children: [
+      { label: 'Hero Banners', href: '/admin/hero' },
+      { label: 'About Page', href: '/admin/content/about' },
+      { label: 'Contact Page', href: '/admin/contact' },
+      { label: 'Home Features', href: '/admin/content/homeFeatures' },
+    ],
+  },
+  { type: 'link', label: 'User', href: '/admin/roles', icon: UserCog, staffOnly: true },
+  { type: 'link', label: 'My Profile', href: '/admin/profile', icon: UserCircle },
 ];
 
-const STAFF_ONLY_HOME_CHANGES: NavLink[] = [
-  { label: 'Hero Banners', href: '/admin/hero', icon: Sparkles },
-  { label: 'About Page', href: '/admin/content/about', icon: FileText },
-  { label: 'Contact Page', href: '/admin/contact', icon: PhoneCall },
-  { label: 'Home Features', href: '/admin/content/homeFeatures', icon: FileText },
-];
-
-const SHARED_LINKS: NavLink[] = [
-  { label: 'Products', href: '/admin/products', icon: Package },
-  { label: 'Collections', href: '/admin/collections', icon: Layers },
-  { label: 'Warehouses', href: '/admin/warehouses', icon: Boxes },
-  { label: 'Order Enquiries', href: '/admin/orders', icon: ShoppingBag },
-  { label: 'Sample Call Requests', href: '/admin/sample-call-requests', icon: PhoneCall },
-  { label: 'My Profile', href: '/admin/profile', icon: UserCircle },
-];
-
-const STAFF_ONLY_TRAILING_LINKS: NavLink[] = [
-  { label: 'MOQ Rules', href: '/admin/moq-rules', icon: Sliders },
-];
-
-const CATEGORY_LINK: NavLink = {
-  label: 'Categories',
-  href: '/admin/categories',
-  icon: FolderTree,
-};
+const matchesPath = (pathname: string, href: string) =>
+  href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`);
 
 export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
   const pathname = usePathname();
@@ -96,6 +125,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
   const role = contextRole ?? fetchedRole;
   const [counts, setCounts] = useState<SidebarCounts>(EMPTY_COUNTS);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (contextRole) return;
@@ -117,8 +147,7 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
     };
   }, [contextRole]);
 
-  // Live pill counts. Refreshes on mount, on every navigation (so approving a KYC
-  // application or opening an order updates the pill right away), every 30s while the
+  // Live pill counts. Refreshes on mount, on every navigation, every 30s while the
   // tab is visible, and when the tab regains focus.
   useEffect(() => {
     if (!role) return;
@@ -178,34 +207,166 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
 
   const isVendor = role === 'VENDOR';
 
-  // Unknown role -> show no links (never default to the full staff menu).
-  const navLinks: NavLink[] = !role
-    ? []
-    : isVendor
-      ? [...SHARED_LINKS, CATEGORY_LINK]
-      : [
-        ...STAFF_ONLY_LINKS,
-        ...SHARED_LINKS,
-        CATEGORY_LINK,
-        ...STAFF_ONLY_TRAILING_LINKS,
-        ...STAFF_ONLY_HOME_CHANGES
-      ];
+  // Unknown role -> show nothing (never default to the full staff menu).
+  const entries: NavEntry[] = useMemo(() => {
+    if (!role) return [];
+    const allowed = (staffOnly?: boolean) => !(isVendor && staffOnly);
+
+    return NAV.filter((e) => allowed(e.staffOnly)).map((e) =>
+      e.type === 'group'
+        ? { ...e, children: e.children.filter((c) => allowed(c.staffOnly)) }
+        : e
+    );
+  }, [role, isVendor]);
+
+  // Auto-open the group that contains the current page (without closing others).
+  useEffect(() => {
+    const active = entries.find(
+      (e) => e.type === 'group' && e.children.some((c) => matchesPath(pathname, c.href))
+    );
+    if (active && active.type === 'group') {
+      setOpenGroups((prev) => (prev[active.key] ? prev : { ...prev, [active.key]: true }));
+    }
+  }, [pathname, entries]);
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+
   const formatCount = (n: number) => (n > 99 ? '99+' : String(n));
 
-  // Pills only appear when there is something to act on.
-  const getBadge = (item: NavLink) => {
-    switch (item.href) {
+  // Numeric badge value for a link. Pills only appear when there is something to act on.
+  const getCount = (href: string): number => {
+    switch (href) {
       case '/admin/kyc':
-        return counts.pendingKyc > 0 ? `${formatCount(counts.pendingKyc)} Pending` : null;
+        return counts.pendingKyc;
       case '/admin/orders':
-        return counts.newOrders > 0 ? `${formatCount(counts.newOrders)} New` : null;
+        return counts.newOrders;
       case '/admin/sample-call-requests':
-        return counts.pendingSampleCalls > 0
-          ? `${formatCount(counts.pendingSampleCalls)} Pending`
-          : null;
+        return counts.pendingSampleCalls;
       default:
-        return null;
+        return 0;
     }
+  };
+
+  const getBadgeLabel = (href: string) => {
+    const n = getCount(href);
+    if (n <= 0) return null;
+    if (href === '/admin/orders') return `${formatCount(n)} New`;
+    return `${formatCount(n)} Pending`;
+  };
+
+  const pillClass =
+    'bg-amber-500/20 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0 whitespace-nowrap';
+
+  const renderSingle = (item: SingleItem) => {
+    const isActive = matchesPath(pathname, item.href);
+    const Icon = item.icon;
+    const badge = getBadgeLabel(item.href);
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={`
+          flex items-center justify-between gap-3
+          px-3 py-2.5 rounded-lg text-xs font-medium transition
+          ${
+            isActive
+              ? 'bg-rose-950/80 text-rose-300 font-semibold border border-rose-800/60 shadow-sm'
+              : 'text-stone-300 hover:bg-stone-900 hover:text-white'
+          }
+        `}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-rose-400' : 'text-stone-400'}`} />
+          <span className="truncate">{item.label}</span>
+        </div>
+        {badge && <span className={pillClass}>{badge}</span>}
+      </Link>
+    );
+  };
+
+  const renderGroup = (group: GroupItem) => {
+    if (group.children.length === 0) return null;
+
+    const isOpen = !!openGroups[group.key];
+    const hasActiveChild = group.children.some((c) => matchesPath(pathname, c.href));
+    const Icon = group.icon;
+
+    // When collapsed, roll child counts up into one dot-pill so nothing is hidden.
+    const total = group.children.reduce((sum, c) => sum + getCount(c.href), 0);
+
+    return (
+      <div key={group.key}>
+        <button
+          type="button"
+          onClick={() => toggleGroup(group.key)}
+          aria-expanded={isOpen}
+          aria-controls={`nav-group-${group.key}`}
+          className={`
+            w-full flex items-center justify-between gap-3
+            px-3 py-2.5 rounded-lg text-xs font-medium transition
+            ${
+              hasActiveChild && !isOpen
+                ? 'bg-rose-950/50 text-rose-300 border border-rose-800/40'
+                : 'text-stone-300 hover:bg-stone-900 hover:text-white border border-transparent'
+            }
+          `}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Icon
+              className={`w-4 h-4 shrink-0 ${hasActiveChild ? 'text-rose-400' : 'text-stone-400'}`}
+            />
+            <span className="truncate">{group.label}</span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {!isOpen && total > 0 && <span className={pillClass}>{formatCount(total)}</span>}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-stone-500 transition-transform duration-200 ${
+                isOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
+        </button>
+
+        <div
+          id={`nav-group-${group.key}`}
+          className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+            isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="ml-5 mt-1 mb-1 pl-3 border-l border-stone-800 space-y-0.5">
+              {group.children.map((child) => {
+                const isActive = matchesPath(pathname, child.href);
+                const badge = getBadgeLabel(child.href);
+
+                return (
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    tabIndex={isOpen ? 0 : -1}
+                    className={`
+                      flex items-center justify-between gap-2
+                      px-3 py-2 rounded-md text-xs transition
+                      ${
+                        isActive
+                          ? 'bg-rose-950/80 text-rose-300 font-semibold'
+                          : 'text-stone-400 hover:bg-stone-900 hover:text-white font-medium'
+                      }
+                    `}
+                  >
+                    <span className="truncate">{child.label}</span>
+                    {badge && <span className={pillClass}>{badge}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -273,47 +434,9 @@ export default function AdminSidebar({ activeTab }: AdminSidebarProps = {}) {
         </div>
 
         <nav className="flex-1 min-h-0 py-4 px-3 space-y-1 overflow-y-auto">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-stone-400 px-3 mb-2">
-            {isVendor ? 'My Catalogue' : 'Management & Verification'}
-          </div>
-
-          {navLinks.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== '/admin' && pathname.startsWith(item.href));
-
-            const Icon = item.icon;
-            const badge = getBadge(item);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`
-                  flex items-center justify-between gap-3
-                  px-3 py-2.5 rounded-lg text-xs font-medium transition
-                  ${isActive
-                    ? 'bg-rose-950/80 text-rose-300 font-semibold border border-rose-800/60 shadow-sm'
-                    : 'text-stone-300 hover:bg-stone-900 hover:text-white'
-                  }
-                `}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Icon
-                    className={`w-4 h-4 shrink-0 ${isActive ? 'text-rose-400' : 'text-stone-400'
-                      }`}
-                  />
-                  <span className="truncate">{item.label}</span>
-                </div>
-
-                {badge && (
-                  <span className="bg-amber-500/20 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0 whitespace-nowrap">
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {entries.map((entry) =>
+            entry.type === 'group' ? renderGroup(entry) : renderSingle(entry)
+          )}
         </nav>
 
         <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-stone-800 bg-stone-900/60 space-y-2 shrink-0">

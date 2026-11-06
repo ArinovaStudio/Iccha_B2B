@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
 }
 
 /*
- * Whole Seller can see their own requests.
+ * Wholesaler can see their own requests.
  *
  * This is what lets the retailer see:
  *

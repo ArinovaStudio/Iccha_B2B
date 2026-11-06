@@ -62,7 +62,7 @@ export async function requireRetailer(request: NextRequest) {
     return { error: "Account not found or inactive", status: 401 as const };
   }
   if (user.role !== "RETAILER" || !user.retailerProfile) {
-    return { error: "Whole Seller access required", status: 403 as const };
+    return { error: "Wholesaler access required", status: 403 as const };
   }
   if (user.retailerProfile.status !== "APPROVED") {
     return { error: "Your retailer account is not yet approved", status: 403 as const };

@@ -260,7 +260,7 @@ export default function AdminRolesPage() {
         return;
       }
 
-      addToast({ type: 'success', title: 'Demoted to Whole Seller', message: result.message || `${demoting.businessName} is now a retailer account.` });
+      addToast({ type: 'success', title: 'Demoted to wholesaler', message: result.message || `${demoting.businessName} is now a retailer account.` });
       setDemoting(null);
       await fetchUsers();
     } catch (err) {
@@ -350,7 +350,7 @@ export default function AdminRolesPage() {
                           className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg font-bold text-[11px] shadow-sm transition inline-flex items-center gap-1.5"
                         >
                           <ArrowDownCircle className="w-3.5 h-3.5" />
-                          <span>Demote to Whole Seller</span>
+                          <span>Demote to Wholesaler</span>
                         </button>
                       )}
                     </td>
@@ -448,7 +448,7 @@ export default function AdminRolesPage() {
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="font-serif text-lg font-bold text-stone-900 flex items-center gap-2">
                 <UserCog className="w-5 h-5 text-[#831843]" />
-                Demote {demoting.businessName} to Whole Seller
+                Demote {demoting.businessName} to Wholesaler
               </h3>
               <button type="button" onClick={() => setDemoting(null)} className="text-stone-400 font-bold text-sm">
                 &times;

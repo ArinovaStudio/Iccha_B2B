@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
+  AlertCircle,
   Search,
   Sliders,
   Trash2,
@@ -36,6 +37,7 @@ export default function AdminRetailersPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creatingRetailer, setCreatingRetailer] = useState(false);
+  const [applicantNameError, setApplicantNameError] = useState("");
 
   const fetchRetailers = async (cursor?: string | null, query = search) => {
     if (cursor) setLoadingMore(true);
@@ -189,6 +191,14 @@ export default function AdminRetailersPage() {
       addToast({ type: "error", title: "Bank details incomplete", message: "Enter both the bank account number and IFSC code, or leave both blank." });
       return;
     }
+    const applicantName = createForm.applicantName.trim();
+
+    if (!applicantName) {
+      setApplicantNameError("Applicant name is required.");
+      return;
+    }
+
+    setApplicantNameError("");
 
     const selectedDocuments = Object.entries(createDocuments).filter(
       ([, file]) => file !== null
@@ -220,14 +230,14 @@ export default function AdminRetailersPage() {
       if (!response.ok || !result.success) {
         addToast({
           type: "error",
-          title: "Whole Seller creation failed",
+          title: "Wholesaler creation failed",
           message: result.error || "Please check the details and try again.",
         });
         return;
       }
       addToast({
         type: "success",
-        title: "Whole Seller created",
+        title: "Wholesaler created",
         message: "The account is approved and ready for login.",
       });
       setCreateForm({
@@ -259,7 +269,7 @@ export default function AdminRetailersPage() {
       console.error("Create retailer error:", error);
       addToast({
         type: "error",
-        title: "Whole Seller creation failed",
+        title: "Wholesaler creation failed",
         message: "Something went wrong. Please try again.",
       });
     } finally {
@@ -277,10 +287,10 @@ export default function AdminRetailersPage() {
               B2B Accounts & Wholesalers
             </span>
             <h1 className="font-serif text-3xl font-bold text-stone-900 mt-1">
-              Registered Whole sellers Directory
+              Registered Wholesalers Directory
             </h1>
             <p className="text-xs text-stone-500 mt-0.5">
-              Manage whole seller account statuses, verified GSTIN records, and configure tailored MOQ policies.
+              Manage Wholesaler account statuses, verified GSTIN records, and configure tailored MOQ policies.
             </p>
           </div>
         </div>
@@ -289,7 +299,7 @@ export default function AdminRetailersPage() {
           onClick={() => setShowCreateForm(true)}
           className="shrink-0 px-4 py-2.5 bg-[#831843] hover:bg-rose-900 text-white rounded-xl font-bold text-xs shadow transition"
         >
-          + Create Whole seller
+          + Create Wholesaler
         </button>
         <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex items-center justify-between gap-3 text-xs">
           <div className="relative flex-1">
@@ -305,7 +315,7 @@ export default function AdminRetailersPage() {
         </div>
         {loading ? (
           <div className="p-16 bg-white rounded-3xl border border-stone-200 text-center text-xs text-stone-500">
-            Loading whole seller accounts...
+            Loading Wholesaler accounts...
           </div>
         ) : retailers.length > 0 ? (
           <>
@@ -397,12 +407,12 @@ export default function AdminRetailersPage() {
               </div>
             </div>
             <div ref={loadMoreRef} className="h-8 flex items-center justify-center text-[10px] text-stone-400">
-              {loadingMore ? 'Loading more whole sellers...' : ''}
+              {loadingMore ? 'Loading more Wholesalers...' : ''}
             </div>
           </>
         ) : (
           <div className="p-16 bg-white rounded-3xl border border-stone-200 text-center text-xs text-stone-500">
-            No whole seller accounts found.
+            No Wholesaler accounts found.
           </div>
         )}
       </main>
@@ -474,7 +484,7 @@ export default function AdminRetailersPage() {
               <div className="flex items-start justify-between border-b border-stone-100 pb-4">
                 <div>
                   <h2 className="font-serif text-2xl font-bold text-stone-900">
-                    Create Whole seller Account
+                    Create Wholesaler Account
                   </h2>
                   <p className="text-xs text-stone-500 mt-1">
                     The account will be approved immediately after successful creation.
@@ -506,23 +516,52 @@ export default function AdminRetailersPage() {
                     <label key={key} className="block space-y-1">
                       <span className="text-xs font-semibold text-stone-600">
                         {label}
+                        {key === "applicantName" && (
+                          <span className="text-red-600 ml-1">*</span>
+                        )}
                       </span>
+
                       <input
                         type={key === "email" ? "email" : "text"}
                         maxLength={key === "gstin" ? 15 : key === "pan" ? 10 : undefined}
-                        pattern={key === "gstin" ? "[A-Za-z0-9]{15}" : key === "pan" ? "[A-Za-z]{5}[0-9]{4}[A-Za-z]" : undefined}
-                        autoCapitalize={key === "gstin" || key === "pan" ? "characters" : undefined}
+                        pattern={
+                          key === "gstin"
+                            ? "[A-Za-z0-9]{15}"
+                            : key === "pan"
+                              ? "[A-Za-z]{5}[0-9]{4}[A-Za-z]"
+                              : undefined
+                        }
+                        autoCapitalize={
+                          key === "gstin" || key === "pan" ? "characters" : undefined
+                        }
                         value={createForm[key]}
-                        onChange={(event) =>
+                        aria-required={key === "applicantName"}
+                        aria-invalid={key === "applicantName" && !!applicantNameError}
+                        onChange={(event) => {
                           setCreateForm((previous) => ({
                             ...previous,
-                            [key]: key === "gstin" || key === "pan"
-                              ? event.target.value.toUpperCase()
-                              : event.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm outline-none focus:border-rose-900"
+                            [key]:
+                              key === "gstin" || key === "pan"
+                                ? event.target.value.toUpperCase()
+                                : event.target.value,
+                          }));
+
+                          if (key === "applicantName" && event.target.value.trim()) {
+                            setApplicantNameError("");
+                          }
+                        }}
+                        className={`w-full rounded-xl border bg-stone-50 px-3 py-2.5 text-sm outline-none transition ${key === "applicantName" && applicantNameError
+                            ? "border-red-500 focus:border-red-600"
+                            : "border-stone-200 focus:border-rose-900"
+                          }`}
                       />
+
+                      {key === "applicantName" && applicantNameError && (
+                        <span className="flex items-center gap-1 text-[11px] text-red-600">
+                          <AlertCircle className="h-3 w-3 shrink-0" />
+                          {applicantNameError}
+                        </span>
+                      )}
                     </label>
                   ))}
                   <label className="block space-y-1 sm:col-span-2">
@@ -665,7 +704,7 @@ export default function AdminRetailersPage() {
                   disabled={creatingRetailer}
                   className="px-5 py-3 rounded-xl bg-[#831843] hover:bg-rose-900 text-white font-bold text-sm disabled:opacity-50"
                 >
-                  {creatingRetailer ? "Creating account..." : "Create & Approve Whole Seller"}
+                  {creatingRetailer ? "Creating account..." : "Create & Approve Wholesaler"}
                 </button>
               </div>
             </form>

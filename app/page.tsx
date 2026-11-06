@@ -137,7 +137,7 @@ export default async function HomePage() {
                 href="/register"
                 className={`${btnFill} w-full sm:w-auto`}
               >
-                Apply as a whole seller
+                Apply as a wholesaler
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
 
@@ -145,7 +145,7 @@ export default async function HomePage() {
                 href="/login"
                 className={`${btnOutline} w-full sm:w-auto`}
               >
-                Whole Seller login
+                wholesaler login
               </Link>
             </div>
 

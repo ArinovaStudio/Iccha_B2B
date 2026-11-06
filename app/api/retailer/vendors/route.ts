@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Only vendors who currently have at least one active, listed product —
-    // an empty vendor filter option would be a dead end for the whole seller.
+    // an empty vendor filter option would be a dead end for the Wholesaler.
     const [vendors, storeProducts, storeProductCount] = await Promise.all([
       prisma.vendorProfile.findMany({
         where: { isActive: true, products: { some: { isActive: true } } },
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Whole Seller vendors list error:", error);
+    console.error("Wholesaler vendors list error:", error);
     return NextResponse.json(
       { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }

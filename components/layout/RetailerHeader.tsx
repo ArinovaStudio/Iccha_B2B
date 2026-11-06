@@ -83,7 +83,7 @@ export default function RetailerHeader() {
   const visibleAccountLinks: NavItem[] = canOrder
     ? accountLinks
     : [{ label: panelLabel, href: '/admin', icon: LayoutDashboard }];
-  const roleBadge = canOrder ? 'Approved Whole seller' : viewerRole === 'VENDOR' ? 'Vendor' : 'Admin';
+  const roleBadge = canOrder ? 'Approved Wholesaler' : viewerRole === 'VENDOR' ? 'Vendor' : 'Admin';
 
   // Real logged-in retailer, from the session (not the demo/mock context)
   const [account, setAccount] = useState<Account | null>(null);
@@ -107,7 +107,7 @@ export default function RetailerHeader() {
         });
       })
       .catch(() => {
-        // Header falls back to generic "Whole Seller Account" text.
+        // Header falls back to generic "Wholesaler Account" text.
       });
     return () => {
       cancelled = true;
@@ -159,7 +159,7 @@ export default function RetailerHeader() {
     };
   }, [mobileNavOpen]);
 
-  const displayName = account?.businessName || account?.name || (canOrder ? 'Whole Seller Account' : 'Account');
+  const displayName = account?.businessName || account?.name || (canOrder ? 'Wholesaler Account' : 'Account');
   const initial = (account?.businessName || account?.name || 'R').charAt(0).toUpperCase();
   const cartCount = cart?.items?.length || 0;
   const cartActive = pathname.startsWith('/retailer/cart');

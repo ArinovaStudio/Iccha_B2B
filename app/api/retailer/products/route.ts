@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: shaped, nextCursor });
   } catch (error) {
-    console.error("Whole Seller products list error:", error);
+    console.error("Wholesaler products list error:", error);
     return NextResponse.json(
       { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }

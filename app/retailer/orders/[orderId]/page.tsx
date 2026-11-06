@@ -296,7 +296,7 @@ export default function RetailerOrderDetailPage() {
             <div>
               <nav className="text-xs text-stone-500 mb-1 flex items-center gap-2">
                 <Link href="/retailer" className="hover:text-stone-900">
-                  Whole Seller Portal
+                  Wholesaler Portal
                 </Link>
                 <span>/</span>
                 <Link href="/retailer/orders" className="hover:text-stone-900">

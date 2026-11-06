@@ -346,7 +346,7 @@ function RetailerCatalogueContent() {
             <div>
               <nav className="text-[11px] sm:text-xs text-stone-500 mb-0.5 sm:mb-1 flex items-center gap-1.5">
                 <Link href={canOrder ? '/retailer' : '/admin'} className="hover:text-stone-900">
-                  {canOrder ? 'Whole Seller Portal' : viewerRole === 'VENDOR' ? 'Vendor Panel' : 'Admin Panel'}
+                  {canOrder ? 'Wholesaler Portal' : viewerRole === 'VENDOR' ? 'Vendor Panel' : 'Admin Panel'}
                 </Link>
                 <span>/</span>
                 <span className="text-stone-900 font-semibold">Wholesale Catalogue</span>

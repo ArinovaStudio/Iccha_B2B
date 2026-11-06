@@ -48,7 +48,7 @@ export interface KYCApplication {
   businessName: string;
   applicantName: string;
   businessType:
-  | 'Wholesale Whole Seller'
+  | 'Wholesale Wholesaler'
   | 'Boutique Owner'
   | 'Chain Store'
   | 'Reseller / Distributor'

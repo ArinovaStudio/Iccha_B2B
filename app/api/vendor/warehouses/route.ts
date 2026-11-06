@@ -43,18 +43,20 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Each side only sees warehouses they own: vendors always see their own.
-        // Staff see the platform-owned pool (vendorId = null) by default, or a
-        // specific vendor's warehouses when ?vendorId=<id> is passed (used when
-        // an admin creates/edits a product on behalf of that vendor).
+        // Vendors see their own warehouses. Staff see the full catalogue by
+        // default, or a specific owner when vendorId is supplied by a product form.
         const requestedVendorId =
             request.nextUrl.searchParams.get("vendorId")?.trim() || null;
 
         const warehouses = await prisma.warehouse.findMany({
-            where:
-                auth.kind === "vendor"
-                    ? { vendorId: auth.vendorProfile.id }
-                    : { vendorId: requestedVendorId },
+            where: auth.kind === "vendor"
+                ? { vendorId: auth.vendorProfile.id }
+                : requestedVendorId
+                    ? { vendorId: requestedVendorId }
+                    : undefined,
+            include: {
+                vendor: { select: { businessName: true } },
+            },
             orderBy: { createdAt: "desc" },
         });
 
@@ -66,12 +68,14 @@ export async function GET(request: NextRequest) {
             state: w.state,
             pincode: w.pincode,
             isActive: w.isActive,
+            isDisabled: w.isDisabled,
             createdAt: w.createdAt,
             vendorId: w.vendorId,
-            vendorName: null as string | null,
-            // A caller may only delete/manage warehouses they themselves own:
-            // their own vendor profile, or (for staff) the platform pool.
-            isMine: true,
+            vendorName: w.vendor?.businessName ?? null,
+            // On the staff directory, only the platform pool is managed here.
+            isMine: auth.kind === "vendor"
+                ? w.vendorId === auth.vendorProfile.id
+                : w.vendorId === null,
         }));
 
         return NextResponse.json({ success: true, data });

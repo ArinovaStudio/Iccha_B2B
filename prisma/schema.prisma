@@ -84,6 +84,7 @@ model Warehouse {
   state     String?
   pincode   String?
   isActive  Boolean  @default(true)
+  isDisabled Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

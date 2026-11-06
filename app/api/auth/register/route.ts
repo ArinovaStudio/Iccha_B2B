@@ -41,7 +41,7 @@ const registerSchema = z.object({
   if (data.accountType === "retailer" && !data.gstin) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "GSTIN is required for a Whole Seller account",
+      message: "GSTIN is required for a Wholesaler account",
       path: ["gstin"],
     });
   }

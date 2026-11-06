@@ -129,7 +129,7 @@ export default function LoginPage() {
               className="h-40 w-auto mx-auto"
             />
             <h1 className="font-serif text-2xl font-bold text-stone-900">
-              Whole Seller Secure Login
+              Wholesaler Secure Login
             </h1>
             <p className="text-xs text-stone-500">
               Sign in with your registered email to access wholesale pricing.
@@ -253,7 +253,7 @@ export default function LoginPage() {
               <div>
                 Not a registered retailer yet?{' '}
                 <Link href="/register" className="font-bold text-[#831843] hover:underline">
-                  Apply for Whole Seller Access
+                  Apply for Wholesaler Access
                 </Link>
               </div>
               <div>

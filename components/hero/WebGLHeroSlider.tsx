@@ -812,7 +812,7 @@ export default function WebGLHeroSlider({
       </div>
 
       {/* Pause/Play status indicator for accessibility */}
-      <button
+      {/* <button
         type="button"
         onClick={() => setIsPaused(!isPaused)}
         className="absolute top-24 left-6 sm:left-12 z-20 text-[10px] uppercase font-bold tracking-wider text-white/50 hover:text-white flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-sm border border-white/10 transition"
@@ -820,7 +820,7 @@ export default function WebGLHeroSlider({
       >
         {isPaused ? <Play className="w-3 h-3 text-amber-400" /> : <Pause className="w-3 h-3 text-white/70" />}
         <span className="hidden sm:inline">{isPaused ? 'Paused' : 'Auto'}</span>
-      </button>
+      </button> */}
 
     </div>
   );

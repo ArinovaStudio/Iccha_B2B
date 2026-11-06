@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: rows.map(toListItem) });
     }
 
-    /* ---- Public list (Whole Seller / Website Lookbooks) ---- */
+    /* ---- Public list (Wholesaler / Website Lookbooks) ---- */
     const tag = req.nextUrl.searchParams.get("tag")?.trim();
     const vendorId = req.nextUrl.searchParams.get("vendorId")?.trim();
 

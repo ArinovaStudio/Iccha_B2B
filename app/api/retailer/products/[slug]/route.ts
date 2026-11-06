@@ -195,7 +195,7 @@ export async function GET(
       data: shaped,
     });
   } catch (error) {
-    console.error("Whole Seller product detail error:", error);
+    console.error("Wholesaler product detail error:", error);
 
     return NextResponse.json(
       {

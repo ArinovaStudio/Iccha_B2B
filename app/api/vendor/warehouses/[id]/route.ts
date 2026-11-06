@@ -55,12 +55,10 @@ export async function PATCH(
             );
         }
 
-        // Same ownership rule as DELETE: vendors edit only their own
-        // warehouses, staff only the platform pool (vendorId = null).
-        const owns =
-            auth.kind === "vendor"
-                ? warehouse.vendorId === auth.vendorProfile.id
-                : true; // staff can manage platform and vendor warehouses
+        // Vendors edit only their own warehouses; staff manage the platform pool.
+        const owns = auth.kind === "vendor"
+            ? warehouse.vendorId === auth.vendorProfile.id
+            : warehouse.vendorId === null;
 
         if (!owns) {
             return NextResponse.json(
@@ -136,10 +134,9 @@ export async function DELETE(
         // Vendors can only remove their own warehouses. Staff can only
         // remove platform-owned warehouses (vendorId = null) — a vendor's
         // warehouse stays under that vendor's own control.
-        const owns =
-            auth.kind === "vendor"
-                ? warehouse.vendorId === auth.vendorProfile.id
-                : true; // staff can manage platform and vendor warehouses
+        const owns = auth.kind === "vendor"
+            ? warehouse.vendorId === auth.vendorProfile.id
+            : warehouse.vendorId === null;
 
         if (!owns) {
             return NextResponse.json(

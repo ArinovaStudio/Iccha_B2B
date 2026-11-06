@@ -159,7 +159,7 @@ const handlePrint = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-200">
             <div>
               <span className="text-[10px] uppercase font-bold text-stone-400 block mb-1">
-                Whole Seller (Billed To):
+                Wholesaler (Billed To):
               </span>
               <div className="font-bold text-sm text-stone-950">
                 {estimate.retailer.businessName}

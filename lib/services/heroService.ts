@@ -260,12 +260,9 @@ export class HeroService {
         mobileImagePosition:
           dto.mobileImagePosition ||
           "60% 20%",
-        linkedProductId:
-          dto.productId || null,
-        linkedCategoryId:
-          dto.categoryId || null,
-        linkedCollectionId:
-          dto.collectionId || null,
+        ...(dto.productId ? { linkedProduct: { connect: { id: dto.productId } } } : {}),
+        ...(dto.categoryId ? { linkedCategory: { connect: { id: dto.categoryId } } } : {}),
+        ...(dto.collectionId ? { linkedCollection: { connect: { id: dto.collectionId } } } : {}),
         fabricTagsJson: JSON.stringify(
           dto.fabricTags || []
         ),
@@ -281,10 +278,8 @@ export class HeroService {
           status === HeroSlideStatus.PUBLISHED
             ? new Date()
             : null,
-        createdById:
-          actor.id || null,
-        updatedById:
-          actor.id || null,
+        ...(actor.id ? { createdBy: { connect: { id: actor.id } } } : {}),
+        ...(actor.id ? { updatedBy: { connect: { id: actor.id } } } : {}),
       },
       include: heroInclude,
     });

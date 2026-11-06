@@ -183,11 +183,11 @@ export default function CollectionsPage() {
             </span>
 
             <h2 className="font-serif text-2xl font-bold text-stone-900 mb-2">
-              Whole Seller Login Required
+              Wholesaler Login Required
             </h2>
 
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-6">
-              Our curated seasonal lookbooks and wholesale pricing are reserved exclusively for registered whole sellers. Please log in to view this collection.
+              Our curated seasonal lookbooks and wholesale pricing are reserved exclusively for registered Wholesalers. Please log in to view this collection.
             </p>
 
             <div className="flex flex-col gap-2.5">

@@ -69,7 +69,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Whole Seller not found.",
+          error: "Wholesaler not found.",
         },
         { status: 404 }
       );

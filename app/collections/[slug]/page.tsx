@@ -76,9 +76,9 @@ export default function CollectionDetailPage() {
               <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-[#831843]">
                 <Lock className="w-6 h-6" />
               </div>
-              <h2 className="font-serif text-xl font-bold text-stone-900">Whole Seller Login Required</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">Wholesaler Login Required</h2>
               <p className="text-xs text-stone-600">
-                This collection is exclusive to registered whole sellers. Redirecting to login...
+                This collection is exclusive to registered Wholesalers. Redirecting to login...
               </p>
               <Link
                 href={`/login?next=${encodeURIComponent(`/collections/${slug}`)}`}

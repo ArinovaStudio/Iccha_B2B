@@ -26,12 +26,17 @@ import {
 } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { HeroSlide, CreateHeroSlideDTO } from '@/lib/types/hero';
-import { CategoryService } from '@/lib/services';
-import { Category } from '@/lib/types';
+
+interface HeroCategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+}
 
 export default function AdminHeroManagementPage() {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<HeroCategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSlide, setSelectedSlide] = useState<HeroSlide | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -43,6 +48,15 @@ export default function AdminHeroManagementPage() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const fetchHeroCategories = useCallback(async (): Promise<HeroCategoryOption[]> => {
+    const response = await fetch('/api/admin/categories', { cache: 'no-store' });
+    const json = await response.json();
+    if (!response.ok || !json.success) {
+      throw new Error(json.error || 'Could not load categories from the database.');
+    }
+    return json.data as HeroCategoryOption[];
+  }, []);
+
   const showNotification = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
@@ -53,7 +67,7 @@ export default function AdminHeroManagementPage() {
     try {
       const [heroResponse, cats] = await Promise.all([
         fetch('/api/admin/hero', { cache: 'no-store' }),
-        CategoryService.getCategories(),
+        fetchHeroCategories(),
       ]);
       const heroRes = await heroResponse.json();
 
@@ -78,7 +92,7 @@ export default function AdminHeroManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, [fetchHeroCategories, showNotification]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -87,7 +101,7 @@ export default function AdminHeroManagementPage() {
       try {
         const [heroRes, cats] = await Promise.all([
           fetch('/api/admin/hero', { cache: 'no-store' }).then((r) => r.json()),
-          CategoryService.getCategories(),
+          fetchHeroCategories(),
         ]);
 
         if (isCancelled) return;
@@ -121,7 +135,7 @@ export default function AdminHeroManagementPage() {
     return () => {
       isCancelled = true;
     };
-  }, [showNotification]);
+  }, [fetchHeroCategories, showNotification]);
 
   // Actions
   const handlePublish = async (id: string) => {

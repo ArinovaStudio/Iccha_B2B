@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
           },
         });
         if (!retailer) {
-          throw new Error("Whole Seller profile not found");
+          throw new Error("Wholesaler profile not found");
         }
         const cart = await tx.cart.findUnique({
           where: { retailerProfileId },
@@ -464,7 +464,7 @@ export async function POST(request: NextRequest) {
             status: "ENQUIRY_RECEIVED",
             actorUserId: guard.retailerProfile.userId,
             actorName: retailer.applicantName,
-            notes: "Whole Seller submitted master order enquiry with Cash on Delivery payment method.",
+            notes: "Wholesaler submitted master order enquiry with Cash on Delivery payment method.",
           },
         });
         // Placing an order counts as meaningful activity — reset the inactivity clock.

@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
                         actorUserId: guard.user.id,
                         actorName: guard.user.name,
                         action: "ADMIN_CREATED",
-                        notes: "Whole Seller account created by an authorized staff member.",
+                        notes: "Wholesaler account created by an authorized staff member.",
                       },
                       {
                         actorUserId: guard.user.id,
@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
       const application = profile?.kycApplications[0];
 
       if (!profile || !application) {
-        throw new Error("Whole Seller profile or KYC application was not created.");
+        throw new Error("Wholesaler profile or KYC application was not created.");
       }
 
       for (const document of uploadedDocuments) {
@@ -393,7 +393,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Whole Seller account created and approved successfully.",
+        message: "Wholesaler account created and approved successfully.",
         data: created,
       },
       { status: 201 }

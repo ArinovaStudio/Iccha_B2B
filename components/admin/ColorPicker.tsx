@@ -17,6 +17,8 @@ interface MultiColorInputProps {
   required?: boolean;
 }
 
+const norm = (s?: string) => (s || '').trim().toLowerCase();
+
 export default function MultiColorInput({ value, onChange, required }: MultiColorInputProps) {
   const colors = parseColors(value);
   const [hex, setHex] = useState('#800000');
@@ -27,18 +29,25 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
 
   const commit = (next: ProductColor[]) => onChange(serializeColors(next));
 
-  const pushColor = (entry: ProductColor) => {
-    const exists = colors.some(
-      c => c.name.toLowerCase() === entry.name.toLowerCase() && (c.hex || '') === (entry.hex || '')
-    );
-    if (!exists) commit([...colors, entry]);
+  // A colour is a duplicate if EITHER its name OR its hex is already added.
+  const findDuplicate = (entryName: string, entryHex?: string): 'name' | 'hex' | null => {
+    if (colors.some(c => norm(c.name) === norm(entryName))) return 'name';
+    if (entryHex && colors.some(c => c.hex && norm(c.hex) === norm(entryHex))) return 'hex';
+    return null;
   };
 
-  const addColor = () => {
-    const finalName = name.trim() || nearestColorName(hex);
-    pushColor({ name: finalName, hex });
+  const pushColor = (entry: ProductColor): boolean => {
+    if (findDuplicate(entry.name, entry.hex)) return false;
+    commit([...colors, entry]);
+    return true;
+  };
+
+  const addColor = (hexOverride?: string) => {
+    const useHex = hexOverride ?? hex;
+    const finalName = name.trim() || nearestColorName(useHex);
+    if (!pushColor({ name: finalName, hex: useHex })) return;
     setNameEdited(false);
-    setName(nearestColorName(hex));
+    setName(nearestColorName(useHex));
   };
 
   const handlePick = (value: string) => {
@@ -73,6 +82,16 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
   };
 
   const validColorCode = normalizeColorCode(colorCode);
+
+  // Live duplicate check for what is currently typed / picked.
+  const currentName = name.trim() || (validColorCode ? nearestColorName(validColorCode) : '');
+  const duplicate = validColorCode ? findDuplicate(currentName, validColorCode) : null;
+  const duplicateMessage =
+    duplicate === 'name'
+      ? `The colour name "${currentName}" is already added.`
+      : duplicate === 'hex'
+        ? 'This colour code is already added.'
+        : null;
 
   const removeColor = (index: number) => commit(colors.filter((_, i) => i !== index));
 
@@ -119,14 +138,22 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
           type="text"
           value={name}
           onChange={e => { setName(e.target.value); setNameEdited(true); }}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (validColorCode && !duplicate) addColor(validColorCode);
+            }
+          }}
           placeholder="Name this colour (auto-filled, type your own to change)"
-          className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
+          aria-invalid={duplicate === 'name'}
+          className={`w-full px-3 py-2 bg-stone-50 border rounded-xl focus:outline-none focus:border-rose-900 ${
+            duplicate === 'name' ? 'border-rose-500' : 'border-stone-300'
+          }`}
         />
         <button
           type="button"
-          onClick={addColor}
-          disabled={!validColorCode}
+          onClick={() => addColor(validColorCode ?? undefined)}
+          disabled={!validColorCode || !!duplicate}
           className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-rose-900 px-3 py-2 text-xs font-bold text-white hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" /> Add
@@ -141,30 +168,47 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
             value={colorCode}
             onChange={(e) => handleCodeChange(e.target.value)}
             onBlur={() => { if (validColorCode) handlePick(validColorCode); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (validColorCode) { handlePick(validColorCode); addColor(); } } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validColorCode && !duplicate) {
+                  handlePick(validColorCode);
+                  addColor(validColorCode);
+                }
+              }
+            }}
             placeholder="#800000 or rgb(128, 0, 0)"
-            aria-invalid={!validColorCode}
-            className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:border-rose-900 focus:outline-none"
+            aria-invalid={!validColorCode || duplicate === 'hex'}
+            className={`w-full rounded-xl border bg-stone-50 px-3 py-2 text-sm text-stone-800 focus:border-rose-900 focus:outline-none ${
+              duplicate === 'hex' ? 'border-rose-500' : 'border-stone-300'
+            }`}
           />
           <span className="h-8 w-8 shrink-0 rounded-lg border border-stone-300" style={{ backgroundColor: validColorCode ?? 'transparent' }} aria-label="Colour preview" />
         </span>
-        {colorCode.trim() && !validColorCode && <span className="text-rose-700">Enter a valid hex code or RGB value (each channel 0–255).</span>}
+        {colorCode.trim() && !validColorCode && <span className="block text-rose-700">Enter a valid hex code or RGB value (each channel 0–255).</span>}
+        {duplicateMessage && <span className="block text-rose-700">{duplicateMessage}</span>}
       </label>
 
       <div>
         <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">Or tap a common colour</p>
         <div className="flex flex-wrap gap-1.5">
-          {NAMED_COLORS.map(c => (
-            <button
-              key={c.name}
-              type="button"
-              title={c.name}
-              onClick={() => pushColor({ name: c.name, hex: c.hex })}
-              className="h-6 w-6 rounded-full border border-stone-300 transition hover:scale-110"
-              style={{ backgroundColor: c.hex }}
-              aria-label={`Add ${c.name}`}
-            />
-          ))}
+          {NAMED_COLORS.map(c => {
+            const taken = !!findDuplicate(c.name, c.hex);
+            return (
+              <button
+                key={c.name}
+                type="button"
+                title={taken ? `${c.name} (already added)` : c.name}
+                disabled={taken}
+                onClick={() => pushColor({ name: c.name, hex: c.hex })}
+                className={`h-6 w-6 rounded-full border border-stone-300 transition ${
+                  taken ? 'cursor-not-allowed opacity-30' : 'hover:scale-110'
+                }`}
+                style={{ backgroundColor: c.hex }}
+                aria-label={taken ? `${c.name} already added` : `Add ${c.name}`}
+              />
+            );
+          })}
         </div>
       </div>
 

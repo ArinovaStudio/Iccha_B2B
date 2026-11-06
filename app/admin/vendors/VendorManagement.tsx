@@ -530,7 +530,7 @@ export default function VendorManagement() {
                 className="flex-1 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold shadow flex items-center justify-center gap-1.5 disabled:opacity-60"
               >
                 <ArrowDownCircle className="w-4 h-4" />
-                <span>Demote to Whole Seller</span>
+                <span>Demote to Wholesaler</span>
               </button>
               <button
                 type="button"

@@ -213,6 +213,7 @@ async function validateVendorAndWarehouse(
                 id: warehouseId,
                 vendorId: auth.vendorProfile.id,
                 isActive: true,
+                isDisabled: false,
             },
             select: { id: true },
         });
@@ -229,6 +230,7 @@ async function validateVendorAndWarehouse(
                 id: warehouseId,
                 vendorId,
                 isActive: true,
+                isDisabled: false,
             },
             select: { id: true },
         });

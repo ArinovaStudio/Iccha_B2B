@@ -699,7 +699,7 @@ export default function AdminCollectionsPage() {
 
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Dark & Light Mode Variant Toggle */}
-              <button
+              {/* <button
                 type="button"
                 onClick={toggleTheme}
                 title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
@@ -720,7 +720,7 @@ export default function AdminCollectionsPage() {
                     <span>Dark Mode</span>
                   </>
                 )}
-              </button>
+              </button> */}
 
               <Link
                 href="/collections"

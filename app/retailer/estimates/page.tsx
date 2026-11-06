@@ -100,7 +100,7 @@ export default function RetailerEstimatesPage() {
                   href="/retailer"
                   className="hover:text-stone-900"
                 >
-                  Whole Seller Portal
+                  Wholesaler Portal
                 </Link>
 
                 <span>/</span>

@@ -411,7 +411,7 @@ export default function RetailerProductDetailPage() {
 
             >
 
-              Whole seller Portal
+              Wholesaler Portal
 
             </Link>
 
