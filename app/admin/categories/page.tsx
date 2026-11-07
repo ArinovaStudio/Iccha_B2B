@@ -402,7 +402,7 @@ export default function AdminCategoriesPage() {
             <span>Create New Category</span>
           </button>
         </div>
-
+{/* 
         <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm text-xs space-y-2">
           <label className="block font-bold text-stone-800">Categories Title</label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -436,7 +436,7 @@ export default function AdminCategoriesPage() {
               Clear
             </button>
           </div>
-        </div>
+        </div> */}
         {isStaff && (
           <div className="mt-8 space-y-5">
             <div>

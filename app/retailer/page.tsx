@@ -246,26 +246,14 @@ export default function RetailerDashboardPage() {
                 {loading ? 'Loading categories...' : 'No categories available yet.'}
               </p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
                 {categories.map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/catalogue?category=${cat.id}`}
-                    className="p-2.5 rounded-xl bg-stone-50 hover:bg-rose-50 border border-stone-200/80 hover:border-rose-300 text-center transition group"
+                    className="p-2 rounded-xl bg-stone-50 hover:bg-rose-50 border border-stone-200/80 hover:border-rose-300 text-center transition group"
                   >
-                    <div className="relative aspect-square w-full rounded-lg overflow-hidden mb-1.5 bg-stone-200">
-                      {cat.imageUrl && (
-                        <Image
-                          src={cat.imageUrl}
-                          alt={cat.name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, 12vw"
-                          className="object-cover group-hover:scale-105 transition"
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
-                    </div>
-                    <span className="text-[11px] font-semibold text-stone-800 group-hover:text-rose-900 line-clamp-1">
+                    <span className="text-sm font-semibold text-stone-800 group-hover:text-rose-900">
                       {cat.name}
                     </span>
                   </Link>

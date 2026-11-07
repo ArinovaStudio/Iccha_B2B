@@ -13,18 +13,15 @@ const [categories, setCategories] = useState<any[]>([]);
 const [categoriesTitle, setCategoriesTitle] = useState<string>('');
 
 const getData = async () => {
-  const [categoriesRes, categoriesTitleRes] = await Promise.all([
+  const [categoriesRes] = await Promise.all([
     axios.get("/api/categories"),
-    axios.get("/api/categoriesTitle"),
   ]);
 
   if (categoriesRes.status === 200) {
+    console.log(categoriesRes.data.categories);
     setCategories(categoriesRes.data.categories);
   }
 
-  if (categoriesTitleRes.status === 200) {
-    setCategoriesTitle(categoriesTitleRes.data[0].title);
-  }
 };
 
 
