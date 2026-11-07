@@ -139,6 +139,9 @@ export default function WebGLHeroSlider({
   const touchStartXRef = useRef<number>(0);
   const touchEndXRef = useRef<number>(0);
 
+  console.log();
+  
+
   const currentSlide = slides[currentIndex] || slides[0] || null;
   if (!currentSlide) {
   return (
@@ -630,9 +633,9 @@ export default function WebGLHeroSlider({
 
       {/* 3. Top Subtle Editorial Archive Watermark */}
       <div className="absolute top-24 right-6 sm:right-12 z-20 hidden lg:flex items-center gap-3 pointer-events-none">
-        <span className="text-[10px] uppercase font-bold tracking-[0.35em] text-white/50 bg-black/30 backdrop-blur-md px-3 py-1.5 border border-white/10 rounded-sm">
+        {/* <span className="text-[10px] uppercase font-bold tracking-[0.35em] text-white/50 bg-black/30 backdrop-blur-md px-3 py-1.5 border border-white/10 rounded-sm">
           {currentSlide.editorialBadge || 'Contemporary Ethnicwear Archive'}
-        </span>
+        </span> */}
         <div className="h-4 w-[1px] bg-white/20" />
         <span className="text-[11px] font-mono tracking-widest text-amber-300 font-bold">
           {currentSlide.slideNumber} / {String(slides.length).padStart(2, '0')}

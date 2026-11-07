@@ -15,13 +15,21 @@ export default function HomeFeaturesGrid() {
     }).catch(() => undefined);
   }, []);
 
-  if (!content) return null;
+  const cards = Array.isArray(content?.cards) ? content.cards : [];
+  const hasTitle = Boolean(content?.title?.trim());
+  const visibleCards = cards.filter((card) =>
+    Boolean(card?.title?.trim() || card?.body?.trim())
+  );
+
+  // No heading or feature text means there is nothing to show, so avoid
+  // rendering the padded section entirely.
+  if (!content || (!hasTitle && visibleCards.length === 0)) return null;
 
   return <section className="py-24 sm:py-32 bg-white border-t border-neutral-200">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 className="reveal font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-black tracking-tight leading-[1.05] max-w-3xl mb-16">{content.title}</h2>
+      {hasTitle && <h2 className="reveal font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-black tracking-tight leading-[1.05] max-w-3xl mb-16">{content.title}</h2>}
       <div className="grid grid-cols-1 md:grid-cols-3 border-t border-l border-neutral-200">
-        {content.cards.map((item, idx) => {
+        {visibleCards.map((item, idx) => {
           const Icon = icons[item.icon as keyof typeof icons] ?? Scissors;
           return <div key={`${item.title}-${idx}`} className={`reveal group border-r border-b border-neutral-200 border-t-2 ${tiers[idx % tiers.length]} p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-50`} style={{ '--reveal-delay': `${idx * 100}ms` } as React.CSSProperties}>
             <div className="flex items-center gap-3 mb-6"><Icon className="w-5 h-5 text-black" strokeWidth={1.75}/><h3 className="font-serif text-xl font-medium text-black">{item.title}</h3></div>

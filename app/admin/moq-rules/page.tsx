@@ -187,13 +187,13 @@ export default function AdminMOQRulesPage() {
   const defaultSets = policy?.minSets ?? minSets;
 
   return (
-    <div className="flex min-h-screen bg-[#faf8f5]">
+    <div className="flex h-screen overflow-hidden bg-[#faf8f5]">
       <AdminSidebar activeTab="moq" />
 
-      <main className="flex-1 p-6 lg:p-10 space-y-8 overflow-y-auto">
+      <main className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto p-6 lg:overflow-hidden lg:p-10">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-6">
+        <div className="flex shrink-0 flex-col justify-between gap-4 border-b border-stone-200 pb-6 sm:flex-row sm:items-center">
           <div>
             <span className="text-xs uppercase font-bold tracking-widest text-[#831843]">
               Commercial Order Rules
@@ -207,10 +207,10 @@ export default function AdminMOQRulesPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 items-start gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-12 lg:grid-rows-1 lg:items-stretch">
 
           {/* Left: Global Policy Form */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6 text-xs">
+          <div className="space-y-6 rounded-3xl border border-stone-200 bg-white p-6 text-xs shadow-sm sm:p-8 lg:col-span-7 lg:min-h-0 lg:overflow-y-auto">
             <div className="border-b border-stone-100 pb-3">
               <h2 className="font-serif text-lg font-bold text-stone-900">
                 1. System-Wide Default MOQ Rules
@@ -314,8 +314,8 @@ export default function AdminMOQRulesPage() {
           </div>
 
           {/* Right: Retailer Specific Overrides Matrix */}
-          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-4 text-xs">
-            <div className="border-b border-stone-100 pb-3">
+          <div className="flex flex-col rounded-3xl border border-stone-200 bg-white p-6 text-xs shadow-sm sm:p-8 lg:col-span-5 lg:min-h-0">
+            <div className="shrink-0 border-b border-stone-100 pb-3">
               <h2 className="font-serif text-lg font-bold text-stone-900">
                 2. Wholesaler Custom Overrides
               </h2>
@@ -324,7 +324,7 @@ export default function AdminMOQRulesPage() {
               </p>
             </div>
 
-            <div className="relative">
+            <div className="relative mt-4 shrink-0">
               <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
               <input
                 type="text"
@@ -335,7 +335,7 @@ export default function AdminMOQRulesPage() {
               />
             </div>
 
-            <div className="space-y-3">
+            <div className="mt-4 max-h-[60vh] min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 lg:max-h-none">
               {retailersLoading ? (
                 <p className="text-stone-500 py-6 text-center">Loading retailers...</p>
               ) : retailers.length === 0 ? (

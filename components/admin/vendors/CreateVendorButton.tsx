@@ -212,172 +212,180 @@ export default function CreateVendorButton({ onCreated }: CreateVendorButtonProp
         Create Vendor
       </button>
       {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-6"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeModal();
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-vendor-title"
-            className="my-4 w-full max-w-4xl rounded-2xl bg-white shadow-xl"
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6"
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget) closeModal();
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-vendor-title"
+      className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+    >
+      {/* Header: fixed, no sticky needed */}
+      <div className="flex shrink-0 items-center justify-between border-b bg-white px-5 py-4 sm:px-7">
+        <div>
+          <h2
+            id="create-vendor-title"
+            className="text-xl font-semibold text-gray-900"
           >
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl border-b bg-white px-5 py-4 sm:px-7">
-              <div>
-                <h2
-                  id="create-vendor-title"
-                  className="text-xl font-semibold text-gray-900"
-                >
-                  Create Vendor Account
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Create an active vendor account directly.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={isSubmitting}
-                aria-label="Close dialog"
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-7 px-5 py-6 sm:px-7">
-                {error && (
-                  <div
-                    role="alert"
-                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                  >
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div
-                    role="status"
-                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
-                  >
-                    <p>{success}</p>
-                    <p className="mt-1">
-                      The account is active. You can close this form
-                      or create another vendor.
-                    </p>
-                  </div>
-                )}
-                <section>
-                  <h3 className="mb-4 text-base font-semibold text-gray-900">
-                    Account Details
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {renderField("name", "Account Holder Name", {
-                      autoComplete: "name",
-                    })}
-                    {renderField("email", "Email Address", {
-                      type: "email",
-                      autoComplete: "email",
-                    })}
-                    {renderField("password", "Password", {
-                      type: "password",
-                      autoComplete: "new-password",
-                      placeholder: "At least 8 characters",
-                    })}
-                    {renderField("mobile", "Mobile Number", {
-                      type: "tel",
-                      autoComplete: "tel",
-                      placeholder: "Enter mobile number",
-                    })}
-                  </div>
-                </section>
-                <section>
-                  <h3 className="mb-4 text-base font-semibold text-gray-900">
-                    Business and Tax Details
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      {renderField("businessName", "Business Name")}
-                    </div>
-                    {renderField("gstin", "GSTIN", {
-                      maxLength: 15,
-                      placeholder: "15 characters",
-                    })}
-                    {renderField("pan", "PAN", {
-                      maxLength: 10,
-                      placeholder: "ABCDE1234F",
-                    })}
-                  </div>
-                </section>
-                <section>
-                  <h3 className="mb-4 text-base font-semibold text-gray-900">
-                    Business Address
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      {renderField("address", "Full Address")}
-                    </div>
-                    {renderField("city", "City")}
-                    {renderField("state", "State")}
-                    {renderField("stateCode", "State Code")}
-                  </div>
-                </section>
-                <section>
-                  <div className="mb-4">
-                    <h3 className="text-base font-semibold text-gray-900">
-                      Bank Details
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      All bank details are optional.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {renderField("bankName", "Bank Name", {
-                      required: false,
-                    })}
-                    {renderField("accountHolder", "Bank Account Holder", {
-                      required: false,
-                    })}
-                    {renderField("accountNumber", "Account Number", {
-                      required: false,
-                    })}
-                    {renderField("ifsc", "IFSC Code", {
-                      required: false,
-                    })}
-                    {renderField("branch", "Bank Branch", {
-                      required: false,
-                    })}
-                    {renderField("upiId", "UPI ID", {
-                      required: false,
-                    })}
-                  </div>
-                </section>
-              </div>
-              <div className="flex flex-col-reverse gap-3 rounded-b-2xl border-t bg-gray-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={isSubmitting}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Close
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting && (
-                    <Loader2 size={17} className="animate-spin" />
-                  )}
-                  {isSubmitting ? "Creating..." : "Create Vendor"}
-                </button>
-              </div>
-            </form>
-          </div>
+            Create Vendor Account
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Create an active vendor account directly.
+          </p>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={closeModal}
+          disabled={isSubmitting}
+          aria-label="Close dialog"
+          className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Form wraps scroll area + footer so submit still works */}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        {/* Only this part scrolls */}
+        <div className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {error}
+            </div>
+          )}
+          {success && (
+            <div
+              role="status"
+              className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+            >
+              <p>{success}</p>
+              <p className="mt-1">
+                The account is active. You can close this form or create
+                another vendor.
+              </p>
+            </div>
+          )}
+
+          <section>
+            <h3 className="mb-4 text-base font-semibold text-gray-900">
+              Account Details
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {renderField("name", "Account Holder Name", {
+                autoComplete: "name",
+              })}
+              {renderField("email", "Email Address", {
+                type: "email",
+                autoComplete: "email",
+              })}
+              {renderField("password", "Password", {
+                type: "password",
+                autoComplete: "new-password",
+                placeholder: "At least 8 characters",
+              })}
+              {renderField("mobile", "Mobile Number", {
+                type: "tel",
+                autoComplete: "tel",
+                placeholder: "Enter mobile number",
+              })}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="mb-4 text-base font-semibold text-gray-900">
+              Business and Tax Details
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                {renderField("businessName", "Business Name")}
+              </div>
+              {renderField("gstin", "GSTIN", {
+                maxLength: 15,
+                placeholder: "15 characters",
+              })}
+              {renderField("pan", "PAN", {
+                maxLength: 10,
+                placeholder: "ABCDE1234F",
+              })}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="mb-4 text-base font-semibold text-gray-900">
+              Business Address
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                {renderField("address", "Full Address")}
+              </div>
+              {renderField("city", "City")}
+              {renderField("state", "State")}
+              {renderField("stateCode", "State Code")}
+            </div>
+          </section>
+
+          <section>
+            <div className="mb-4">
+              <h3 className="text-base font-semibold text-gray-900">
+                Bank Details
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                All bank details are optional.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {renderField("bankName", "Bank Name", {
+                required: false,
+              })}
+              {renderField("accountHolder", "Bank Account Holder", {
+                required: false,
+              })}
+              {renderField("accountNumber", "Account Number", {
+                required: false,
+              })}
+              {renderField("ifsc", "IFSC Code", {
+                required: false,
+              })}
+              {renderField("branch", "Bank Branch", {
+                required: false,
+              })}
+              {renderField("upiId", "UPI ID", {
+                required: false,
+              })}
+            </div>
+          </section>
+        </div>
+
+        {/* Footer: fixed */}
+        <div className="flex shrink-0 flex-col-reverse gap-3 border-t bg-gray-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
+          <button
+            type="button"
+            onClick={closeModal}
+            disabled={isSubmitting}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Close
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting && <Loader2 size={17} className="animate-spin" />}
+            {isSubmitting ? "Creating..." : "Create Vendor"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </>
   );
 }

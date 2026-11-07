@@ -852,7 +852,7 @@ export default function AdminHeroManagementPage() {
                   >
                     <option value="PUBLISHED">PUBLISHED (Live on Homepage)</option>
                     <option value="DRAFT">DRAFT (Admin Only)</option>
-                    <option value="SCHEDULED">SCHEDULED (Date Controlled)</option>
+                    {/* <option value="SCHEDULED">SCHEDULED (Date Controlled)</option> */}
                     <option value="ARCHIVED">ARCHIVED</option>
                   </select>
                 </div>
@@ -889,7 +889,8 @@ export default function AdminHeroManagementPage() {
               </div>
 
               {/* Row 5: Desktop & Mobile Media Images */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
+              {/* grid grid-cols-1 sm:grid-cols-2 gap-4 */}
+              <div className=" p-4 bg-stone-50 rounded-2xl border border-stone-200">
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="font-bold text-stone-700">Desktop Campaign Image (16:9 / 1920px+) *</label>
@@ -921,7 +922,7 @@ export default function AdminHeroManagementPage() {
                       <img src={editingSlide.desktopImage} alt={editingSlide.imageAlt || 'Desktop campaign preview'} className="absolute inset-0 h-full w-full object-cover" />
                     </div>
                   )}
-                  <div className="mt-2 flex items-center gap-2">
+                  {/* <div className="mt-2 flex items-center gap-2">
                     <span className="text-[10px] text-stone-500">Desktop Focal Point:</span>
                     <input
                       type="text"
@@ -930,10 +931,10 @@ export default function AdminHeroManagementPage() {
                       className="px-2 py-1 border border-stone-300 rounded text-[11px] font-mono w-32"
                       placeholder="center 25%"
                     />
-                  </div>
+                  </div> */}
                 </div>
 
-                <div>
+                {/* <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="font-bold text-stone-700">Mobile Image (Portrait / Optional)</label>
                     <button type="button" onClick={() => mobileFileInputRef.current?.click()} disabled={isUploading} className="text-[10px] text-[#831843] hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50">
@@ -971,7 +972,7 @@ export default function AdminHeroManagementPage() {
                       placeholder="60% 20%"
                     />
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Row 6: CTAs & Relational Category Linking */}
