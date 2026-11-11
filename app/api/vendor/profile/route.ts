@@ -20,6 +20,7 @@ const updateProfileSchema = z.object({
     branch: z.string().trim().optional().or(z.literal("")),
     upiId: z.string().trim().optional().or(z.literal("")),
     description: z.string().trim().max(2000).optional().or(z.literal("")),
+    hsnCode: z.string().trim().regex(/^\d{4,8}$/, "HSN code must be 4 to 8 digits").optional().or(z.literal("")),
 
     // Instagram profile URL
     instagramUrl: z
@@ -70,7 +71,8 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        return NextResponse.json({ success: true, data: profile });
+        const user = await prisma.user.findUnique({ where: { id: auth.vendorProfile.userId }, select: { hsnCode: true } });
+        return NextResponse.json({ success: true, data: { ...profile, hsnCode: user?.hsnCode ?? null } });
     } catch (error) {
         console.error("Fetch vendor profile error:", error);
 
@@ -126,6 +128,11 @@ export async function PATCH(request: NextRequest) {
                     description: data.description?.trim() || null,
                     instagramUrl: data.instagramUrl?.trim() || null,
                 },
+            });
+
+            await tx.user.update({
+                where: { id: updatedVendor.userId },
+                data: { hsnCode: data.hsnCode || null },
             });
 
             const user = await tx.user.findUnique({

@@ -6,8 +6,8 @@ export interface CartItemProductSummary {
   name: string;
   slug: string;
   sku: string;
-  designNumber: string;
-  fabric: string;
+  designNumber: string | null;
+  fabric: string | null;
   sizeCombination: string;
   requiresSize: boolean;
   sizeStocks: { size: string; availableSets: number }[];

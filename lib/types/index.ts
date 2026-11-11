@@ -153,19 +153,19 @@ export interface Product {
   name: string;
   slug: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   categoryId: string;
   categoryName: string;
   subcategory: string;
   description: string;
   socialLink?: string | null;
-  fabric: string;
-  workType: string; // e.g., 'Hand Embroidery', 'Zari Foil Print', 'Mirror Work', 'Digital Print'
+  fabric: string | null;
+  workType: string | null; // e.g., 'Hand Embroidery', 'Zari Foil Print', 'Mirror Work', 'Digital Print'
   lining?: string | null; // e.g., 'Premium Crepe Attached'
   margin?: string | null; // e.g., '2-inch Boutique Alteration Margin'
-  style: string; // e.g., 'Straight Cut', 'Anarkali Set', 'A-Line Kurti Pant', 'Alia Cut', 'Nayra Cut'
+  style: string | null; // e.g., 'Straight Cut', 'Anarkali Set', 'A-Line Kurti Pant', 'Alia Cut', 'Nayra Cut'
   size?: string[]; // e.g. ['M to 2XL', 'L to 3XL']
-  clothingType: '2_piece' | '3_piece' | 'kurti_only';
+  clothingType: '2_piece' | '3_piece' | 'kurti_only' | 'co_ord_set' | 'chudidar_set' | null;
   piecesPerSet: number; // e.g., 4 or 5 or 6 (e.g., M, L, XL, XXL, 3XL)
   wholesalePricePerPiece: number;
   wholesalePricePerSet: number;
@@ -319,7 +319,7 @@ export interface OrderItem {
   productId: string;
   productName: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   categoryName: string;
   billingEntityId: string;
   sets: number;
@@ -421,7 +421,7 @@ export interface SellerContactRequest {
     items: {
       name: string;
       sku: string;
-      designNumber: string;
+      designNumber: string | null;
       sets: number;
       pieces: number;
       rate: number;

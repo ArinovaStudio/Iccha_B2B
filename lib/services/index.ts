@@ -76,7 +76,7 @@ export const ProductService = {
       filtered = filtered.filter(p => p.billingEntityId === params.billingEntityId);
     }
     if (params?.fabric && params.fabric !== 'all') {
-      filtered = filtered.filter(p => p.fabric.toLowerCase().includes(params.fabric!.toLowerCase()));
+      filtered = filtered.filter(p => (p.fabric ?? '').toLowerCase().includes(params.fabric!.toLowerCase()));
     }
     if (params?.search && params.search.trim()) {
       const q = params.search.toLowerCase().trim();
@@ -84,7 +84,7 @@ export const ProductService = {
         p =>
           p.name.toLowerCase().includes(q) ||
           p.sku.toLowerCase().includes(q) ||
-          p.designNumber.toLowerCase().includes(q) ||
+          (p.designNumber ?? '').toLowerCase().includes(q) ||
           p.categoryName.toLowerCase().includes(q) ||
           p.collectionName.toLowerCase().includes(q)
       );

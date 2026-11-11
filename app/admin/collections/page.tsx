@@ -143,7 +143,7 @@ export default function AdminCollectionsPage() {
     {
       id: string;
       name: string;
-      designNumber: string;
+      designNumber: string | null;
       sku?: string;
       pricePerSet: number;
       piecesPerSet: number;

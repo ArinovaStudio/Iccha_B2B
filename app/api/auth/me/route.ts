@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
       email: user.email,
       name: user.name,
       role: user.role,
+      hsnCode: user.hsnCode,
       retailerStatus: user.retailerProfile?.status,
       vendorBusinessName: user.vendorProfile?.businessName,
       retailerBusinessName: user.retailerProfile?.businessName,

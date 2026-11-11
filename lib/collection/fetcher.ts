@@ -33,7 +33,7 @@ export type CollectionListItem = {
   firstProduct?: {
     id: string;
     name: string;
-    designNumber: string;
+    designNumber: string | null;
     image: string | null;
   } | null;
 };
@@ -43,7 +43,7 @@ export type CollectionProductItem = {
   slug: string;
   name: string;
   sku?: string;
-  designNumber: string;
+  designNumber: string | null;
   image: string | null;
   pricePerSet: number;
   piecesPerSet: number;
@@ -74,7 +74,7 @@ export type AvailableProduct = {
   id: string;
   name: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   wholesalePricePerSet: number;
   piecesPerSet: number;
   availableSets: number;

@@ -10,7 +10,7 @@ type Item = {
   productId?: string | null;
   productName: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   categoryName: string;
   sets: number;
   totalPieces: number;
@@ -154,7 +154,7 @@ function groupItems(items: Item[]) {
   >();
 
   for (const it of items) {
-    const key = `${it.productId ?? it.designNumber}|${it.sizeCombination ?? ""}`;
+    const key = `${it.productId ?? it.designNumber ?? it.id}|${it.sizeCombination ?? ""}`;
     const g = map.get(key) ?? {
       key,
       first: it,
@@ -670,7 +670,7 @@ export default function AdminOrderDetailPage({
                         </h3>
 
                         <p className="text-xs text-stone-500 mt-1">
-                          SKU {item.sku} · Design {item.designNumber}
+                          SKU {item.sku}{item.designNumber ? ` · Design ${item.designNumber}` : ''}
                         </p>
 
                         <p className="text-xs text-stone-500 mt-1">

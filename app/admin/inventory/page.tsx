@@ -64,7 +64,7 @@ export default function AdminInventoryPage() {
       return (
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
-        p.designNumber.toLowerCase().includes(q)
+        (p.designNumber ?? '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -214,7 +214,7 @@ export default function AdminInventoryPage() {
 
                         <td className="p-4">
                           <span className="font-mono font-bold text-stone-900">{p.sku}</span>
-                          <span className="text-[10px] text-stone-400 block">#{p.designNumber}</span>
+                          {p.designNumber && <span className="text-[10px] text-stone-400 block">#{p.designNumber}</span>}
                         </td>
 
                         <td className="p-4">

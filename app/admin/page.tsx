@@ -52,7 +52,7 @@ type RecentOrder = {
 type LowStockProduct = {
   id: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   name: string;
   availableSets: number;
   totalAvailablePieces: number;
@@ -296,33 +296,37 @@ export default function AdminDashboardPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Pending KYC */}
+              <Link href="/admin/kyc"
+                className="block bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1 hover:border-amber-400 hover:shadow-md transition-all duration-200 cursor-pointer">
+                <div className="">
+                  <div className="flex items-center justify-between text-stone-400">
+                    <span className="text-xs uppercase font-bold tracking-wider">
+                      Pending KYC Queue
+                    </span>
 
-              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
-                <div className="flex items-center justify-between text-stone-400">
-                  <span className="text-xs uppercase font-bold tracking-wider">
-                    Pending KYC Queue
-                  </span>
+                    <FileCheck className="w-4 h-4 text-amber-600" />
+                  </div>
 
-                  <FileCheck className="w-4 h-4 text-amber-600" />
+                  <div className="text-3xl font-bold text-stone-900 font-mono">
+                    {metrics?.pendingKyc ?? 0}
+
+                    <span className="text-xs font-sans text-amber-700 font-semibold ml-2">
+                      Verification Queue
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-stone-500 pt-1">
+                    {metrics?.totalKycApplications ?? 0}{' '}
+                    total applications on file
+                  </div>
                 </div>
-
-                <div className="text-3xl font-bold text-stone-900 font-mono">
-                  {metrics?.pendingKyc ?? 0}
-
-                  <span className="text-xs font-sans text-amber-700 font-semibold ml-2">
-                    Verification Queue
-                  </span>
-                </div>
-
-                <div className="text-xs text-stone-500 pt-1">
-                  {metrics?.totalKycApplications ?? 0}{' '}
-                  total applications on file
-                </div>
-              </div>
-
+              </Link>
               {/* Active Enquiries */}
 
-              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
+              <Link
+                href="/admin/orders"
+                className="block bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1 hover:border-rose-300 hover:shadow-md transition-all duration-200 cursor-pointer"
+              >
                 <div className="flex items-center justify-between text-stone-400">
                   <span className="text-xs uppercase font-bold tracking-wider">
                     Active Order Enquiries
@@ -340,10 +344,9 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="text-xs text-stone-500 pt-1">
-                  {metrics?.totalSetsInPipeline ?? 0}{' '}
-                  garment sets in pipeline
+                  {metrics?.totalSetsInPipeline ?? 0} garment sets in pipeline
                 </div>
-              </div>
+              </Link>
 
               {/* Pipeline */}
 
@@ -369,7 +372,10 @@ export default function AdminDashboardPage() {
 
               {/* Catalogue */}
 
-              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
+              <Link
+                href="/admin/collections"
+                className="block bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1 hover:border-sky-300 hover:shadow-md transition-all duration-200 cursor-pointer"
+              >
                 <div className="flex items-center justify-between text-stone-400">
                   <span className="text-xs uppercase font-bold tracking-wider">
                     Live Kurti Catalogue
@@ -387,10 +393,9 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="text-xs text-stone-500 pt-1">
-                  {metrics?.lowStockProducts ?? 0}{' '}
-                  designs in low stock
+                  {metrics?.lowStockProducts ?? 0} designs in low stock
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* ------------------------------------------------ */}

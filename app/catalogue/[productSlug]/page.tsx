@@ -579,7 +579,7 @@ export default function RetailerProductDetailPage() {
 
                   <span>•</span>
 
-                  <span>Design #{product.designNumber}</span>
+                  {product.designNumber && <span>Design #{product.designNumber}</span>}
 
                   <span>•</span>
 
@@ -1296,32 +1296,32 @@ export default function RetailerProductDetailPage() {
                 </h3>
 
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                  <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
+                  {product.fabric && <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
                     <span className="text-stone-400 text-[9px] sm:text-[10px] uppercase font-bold block mb-0.5">
                       Fabric
                     </span>
                     <strong className="text-stone-800 text-xs sm:text-sm truncate block">
                       {product.fabric}
                     </strong>
-                  </div>
+                  </div>}
 
-                  <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
+                  {product.workType && <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
                     <span className="text-stone-400 text-[9px] sm:text-[10px] uppercase font-bold block mb-0.5">
                       Work / Craft
                     </span>
                     <strong className="text-stone-800 text-xs sm:text-sm truncate block">
                       {product.workType}
                     </strong>
-                  </div>
+                  </div>}
 
-                  <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
+                  {product.style && <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
                     <span className="text-stone-400 text-[9px] sm:text-[10px] uppercase font-bold block mb-0.5">
                       Style / Silhouette
                     </span>
                     <strong className="text-stone-800 text-xs sm:text-sm truncate block">
                       {product.style}
                     </strong>
-                  </div>
+                  </div>}
 
                   {Array.isArray(product.size) && product.size.length > 0 && (
                     <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
@@ -1341,14 +1341,14 @@ export default function RetailerProductDetailPage() {
                     </div>
                   )}
 
-                  <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
+                  {product.clothingType && <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
                     <span className="text-stone-400 text-[9px] sm:text-[10px] uppercase font-bold block mb-0.5">
                       Clothing Type
                     </span>
                     <strong className="text-stone-800 text-xs sm:text-sm truncate block">
                       {formatClothingType(product.clothingType)}
                     </strong>
-                  </div>
+                  </div>}
 
                   <div className="bg-stone-50/80 rounded-lg p-2 sm:p-2.5 border border-stone-200/60">
                     <span className="text-stone-400 text-[9px] sm:text-[10px] uppercase font-bold block mb-0.5">

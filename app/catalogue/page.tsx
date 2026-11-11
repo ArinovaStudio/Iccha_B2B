@@ -38,7 +38,7 @@ interface Vendor {
 interface RetailerProduct {
   id: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   name: string;
   slug: string;
   categoryId: string;
@@ -50,10 +50,10 @@ interface RetailerProduct {
   availableSets: number;
   minOrderSets: number;
   sizeCombination: string;
-  fabric: string;
-  workType: string;
-  style: string;
-  clothingType: string;
+  fabric: string | null;
+  workType: string | null;
+  style: string | null;
+  clothingType: string | null;
   media?: { mediaAsset: { publicUrl: string } }[];
 }
 

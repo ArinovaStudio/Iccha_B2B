@@ -17,20 +17,16 @@ import {
   Loader2,
   QrCode,
   RefreshCw,
+  FileImage,
 } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { useApp } from '@/lib/context/AppContext';
 import MultiColorInput from '@/components/admin/ColorPicker';
 
-const SIZE_CHART_OPTIONS = [
-  'M to 2XL',
-  'M to 3XL',
-  'M to 5XL',
-  'L to 3XL',
-  'L to 6XL',
-  '3XL to 6XL',
-  '4XL to 6XL',
-];
+interface SizeChartOption {
+  id: string;
+  name: string;
+}
 
 interface Vendor {
   id: string;
@@ -38,6 +34,7 @@ interface Vendor {
   contactName: string;
   mobile: string;
   gstin: string;
+  hsnCode?: string | null;
   isActive: boolean;
   _count: { products: number };
 }
@@ -72,7 +69,7 @@ interface Warehouse {
 interface Product {
   id: string;
   sku: string;
-  designNumber: string;
+  designNumber: string | null;
   name: string;
   description?: string | null;
   socialLink?: string | null;
@@ -109,11 +106,11 @@ interface Product {
   availableSets: number;
   sizeCombination: string;
   color: string;
-  fabric: string;
-  workType: string;
-  style: string;
+  fabric: string | null;
+  workType: string | null;
+  style: string | null;
   size?: string[];
-  clothingType: string;
+  clothingType: string | null;
   hsnCode: string;
   lining?: string | null;
   margin?: string | null;
@@ -142,6 +139,15 @@ export default function AdminProductsPage() {
   const [billingEntities, setBillingEntities] = useState<BillingEntity[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [ownGstin, setOwnGstin] = useState<string | null>(null);
+  const [userHsnCode, setUserHsnCode] = useState('');
+  const [selectedVendorHsnCode, setSelectedVendorHsnCode] = useState('');
+  const [sizeChartOptions, setSizeChartOptions] = useState<SizeChartOption[]>([]);
+  const [sizeChartLoading, setSizeChartLoading] = useState(false);
+  const [sizeChartManagerOpen, setSizeChartManagerOpen] = useState(false);
+  const [newSizeChartName, setNewSizeChartName] = useState('');
+  const [sizeChartSaving, setSizeChartSaving] = useState(false);
+  const [editingSizeChartId, setEditingSizeChartId] = useState<string | null>(null);
+  const [editingSizeChartName, setEditingSizeChartName] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/billing-entities')
@@ -157,10 +163,25 @@ export default function AdminProductsPage() {
     fetch('/api/vendor/profile')
       .then(res => res.json())
       .then(json => {
-        if (json.success) setOwnGstin(json.data.gstin);
+        if (json.success) {
+          setOwnGstin(json.data.gstin);
+          setSelectedVendorHsnCode(json.data.hsnCode || '');
+        }
       })
       .catch(() => { });
   }, [currentUserRole]);
+
+  useEffect(() => {
+    if (!selectedVendor?.id || currentUserRole === 'VENDOR') return;
+
+    setSelectedVendorHsnCode('');
+    fetch(`/api/admin/vendors/${selectedVendor.id}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) setSelectedVendorHsnCode(json.data.hsnCode || '');
+      })
+      .catch(() => setSelectedVendorHsnCode(''));
+  }, [currentUserRole, selectedVendor?.id]);
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(true);
@@ -192,6 +213,7 @@ export default function AdminProductsPage() {
 
   const [uploading, setUploading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHsnEditable, setIsHsnEditable] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentUserChecked, setCurrentUserChecked] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -214,7 +236,7 @@ export default function AdminProductsPage() {
     style: '',
     size: [] as string[],
     clothingType: '',
-    hsnCode: '621142',
+    hsnCode: '',
     lining: '',
     margin: '',
     minOrderSets: 1,
@@ -223,8 +245,110 @@ export default function AdminProductsPage() {
     socialLink: ''
   });
 
+  useEffect(() => {
+    if (!isModalOpen || editingProduct || isHsnEditable) return;
+    if (!selectedVendor && currentUserRole !== 'VENDOR') return;
+
+    setFormData(prev => ({ ...prev, hsnCode: selectedVendorHsnCode }));
+  }, [currentUserRole, editingProduct, isHsnEditable, isModalOpen, selectedVendor, selectedVendorHsnCode]);
+
   const [isSizeChartDropdownOpen, setIsSizeChartDropdownOpen] = useState(false);
   const sizeChartDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const loadSizeCharts = useCallback(async (silent = false) => {
+    setSizeChartLoading(true);
+    try {
+      const res = await fetch('/api/admin/size-charts', { cache: 'no-store' });
+      const json = await res.json();
+      if (json.success) {
+        setSizeChartOptions(json.data);
+      } else if (!silent) {
+        addToast({ type: 'error', title: 'Could not load size charts', message: json.error });
+      }
+    } catch {
+      if (!silent) addToast({ type: 'error', title: 'Network error', message: 'Could not load size charts.' });
+    } finally {
+      setSizeChartLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    if (!currentUserRole) return;
+    loadSizeCharts(true);
+  }, [currentUserRole, loadSizeCharts]);
+
+  const createSizeChart = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newSizeChartName.trim();
+    if (!name || sizeChartSaving) return;
+
+    setSizeChartSaving(true);
+    try {
+      const res = await fetch('/api/admin/size-charts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        addToast({ type: 'error', title: 'Could not create size chart', message: json.error });
+        return;
+      }
+      setSizeChartOptions(previous => [...previous, json.data]);
+      setNewSizeChartName('');
+      addToast({ type: 'success', title: 'Size chart created', message: `${name} is ready to use.` });
+    } catch {
+      addToast({ type: 'error', title: 'Network error', message: 'Could not create the size chart.' });
+    } finally {
+      setSizeChartSaving(false);
+    }
+  };
+
+  const deleteSizeChart = async (option: SizeChartOption) => {
+    try {
+      const res = await fetch(`/api/admin/size-charts/${option.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) {
+        addToast({ type: 'error', title: 'Could not remove size chart', message: json.error });
+        return;
+      }
+      setSizeChartOptions(previous => previous.filter(item => item.id !== option.id));
+      setFormData(previous => ({ ...previous, size: previous.size.filter(name => name !== option.name) }));
+      addToast({ type: 'success', title: 'Size chart removed', message: `${option.name} was removed from the options.` });
+    } catch {
+      addToast({ type: 'error', title: 'Network error', message: 'Could not remove the size chart.' });
+    }
+  };
+
+  const updateSizeChart = async (option: SizeChartOption) => {
+    const name = editingSizeChartName.trim();
+    if (!name || sizeChartSaving) return;
+
+    setSizeChartSaving(true);
+    try {
+      const res = await fetch(`/api/admin/size-charts/${option.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        addToast({ type: 'error', title: 'Could not update size chart', message: json.error });
+        return;
+      }
+      setSizeChartOptions(previous => previous.map(item => item.id === option.id ? json.data : item));
+      if (name !== option.name) {
+        setFormData(previous => ({ ...previous, size: previous.size.map(value => value === option.name ? name : value) }));
+      }
+      setEditingSizeChartId(null);
+      setEditingSizeChartName('');
+      addToast({ type: 'success', title: 'Size chart updated', message: `${name} was saved.` });
+    } catch {
+      addToast({ type: 'error', title: 'Network error', message: 'Could not update the size chart.' });
+    } finally {
+      setSizeChartSaving(false);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -441,6 +565,7 @@ export default function AdminProductsPage() {
       .then(json => {
         if (json.success) {
           setCurrentUserRole(json.data.role);
+          setUserHsnCode(json.data.hsnCode || '');
           if (json.data.role === 'VENDOR') {
             setView('products');
             loadProducts(null, '', undefined, 'newest');
@@ -486,11 +611,13 @@ export default function AdminProductsPage() {
   // --- Create product ---
   const openAddModal = () => {
     setEditingProduct(null);
+    setIsHsnEditable(false);
+    loadSizeCharts(true);
 
     setFormData({
       name: '',
       sku: '',
-      designNumber: `${Math.floor(1000 + Math.random() * 9000)}`,
+      designNumber: '',
       categoryId: categories[0]?.id || '',
       warehouseId: '',
       wholesalePricePerPiece: 500,
@@ -502,7 +629,11 @@ export default function AdminProductsPage() {
       style: '',
       size: [] as string[],
       clothingType: '',
-      hsnCode: '621142',
+      hsnCode: selectedVendor
+        ? selectedVendor.hsnCode || selectedVendorHsnCode
+        : currentUserRole === 'VENDOR'
+          ? selectedVendorHsnCode
+          : userHsnCode,
       lining: '',
       margin: '',
       minOrderSets: 1,
@@ -763,6 +894,7 @@ export default function AdminProductsPage() {
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
+    setIsHsnEditable(false);
 
     setFormData({
       name: product.name || '',
@@ -779,7 +911,7 @@ export default function AdminProductsPage() {
       style: product.style || '',
       size: Array.isArray(product.size) ? product.size : [],
       clothingType: product.clothingType || '',
-      hsnCode: product.hsnCode || '621142',
+      hsnCode: product.hsnCode || '',
       lining: product.lining || '',
       margin: product.margin || '',
       minOrderSets: Math.max(1, Number(product.minOrderSets) || 1),
@@ -1126,7 +1258,7 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="p-4">
                           <span className="font-mono font-bold text-stone-900">{p.sku}</span>
-                          <span className="text-[10px] text-stone-400 block">#{p.designNumber}</span>
+                          {p.designNumber && <span className="text-[10px] text-stone-400 block">#{p.designNumber}</span>}
                         </td>
                         <td className="p-4">
                           {p.category?.name || '—'}
@@ -1266,20 +1398,29 @@ export default function AdminProductsPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">HSN Code *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="product-hsn-code" className="block font-bold text-stone-800">HSN Code (optional)</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsHsnEditable(editable => !editable)}
+                      className="text-[10px] font-bold text-rose-900 hover:text-rose-700"
+                    >
+                      {isHsnEditable ? 'Lock' : 'Edit'}
+                    </button>
+                  </div>
                   <input
+                    id="product-hsn-code"
                     type="text"
-                    required
                     inputMode="numeric"
-                    pattern="[0-9]{4,8}"
                     maxLength={8}
+                    disabled={!isHsnEditable}
                     title="HSN code must be 4 to 8 digits"
                     value={formData.hsnCode}
                     onChange={e => setFormData({ ...formData, hsnCode: e.target.value.replace(/\D/g, '') })}
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono font-bold focus:outline-none focus:border-rose-900"
+                    className={`w-full px-3 py-2 border rounded-xl font-mono font-bold focus:outline-none focus:border-rose-900 disabled:opacity-100 disabled:text-stone-800 ${isHsnEditable ? 'bg-stone-50 border-stone-300' : 'bg-stone-100 border-stone-200 cursor-not-allowed'}`}
                   />
                 </div>
-                {previewEntity && (
+                {/* {previewEntity && (
                   <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 space-y-1.5">
                     <div className="flex items-center gap-2 font-bold text-stone-800 mb-1">
                       <Building2 className="w-3.5 h-3.5 text-stone-500" />
@@ -1317,7 +1458,7 @@ export default function AdminProductsPage() {
                       </p>
                     )}
                   </div>
-                )}
+                )} */}
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <label className="block font-bold text-stone-800">Product Photos {editingProduct ? '(optional while editing)' : '* (minimum 2)'}</label>
@@ -1408,38 +1549,73 @@ export default function AdminProductsPage() {
                           </button>
                         </div>
                       ))}
-                      {imageFiles.map((file, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 bg-stone-100 border border-stone-300 rounded-full pl-1 pr-2.5 py-1">
-                          {imagePreviews[idx] ? (
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+                        {imageFiles.map((file, idx) => (
+                          <div
+                            key={`${file.name}-${idx}`}
+                            className="relative group rounded-xl border border-stone-200 bg-white p-2 shadow-sm hover:shadow-md hover:border-stone-300 transition-all"
+                          >
+                            {/* Remove Button */}
+                            <button
+                              type="button"
+                              title="Remove photo"
+                              onClick={() => {
+                                setImageFiles(prev => prev.filter((_, i) => i !== idx));
+                                setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+                              }}
+                              className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/95 border border-stone-200 text-stone-500 hover:bg-rose-600 hover:text-white hover:border-rose-600 shadow-sm transition-all"
+                            >
+                              &times;
+                            </button>
+
+                            {/* Image Preview */}
                             <button
                               type="button"
                               title="View photo"
-                              onClick={() => setPreviewImage(imagePreviews[idx])}
-                              className="shrink-0 w-7 h-7 rounded-full overflow-hidden border border-stone-300 bg-white cursor-zoom-in"
+                              onClick={() => {
+                                if (imagePreviews[idx]) {
+                                  setPreviewImage(imagePreviews[idx]);
+                                }
+                              }}
+                              className="block w-full aspect-square rounded-lg overflow-hidden bg-stone-100 cursor-zoom-in"
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={imagePreviews[idx]} alt={file.name} className="w-full h-full object-cover object-top" />
+                              {imagePreviews[idx] ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={imagePreviews[idx]}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <FileImage className="w-8 h-8 text-stone-300" />
+                                </div>
+                              )}
                             </button>
-                          ) : (
-                            <span className="shrink-0 w-7 h-7 rounded-full bg-stone-200" />
-                          )}
-                          <span className="text-[10px] text-stone-700 truncate max-w-[100px]">{file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))}
-                            className="text-stone-400 hover:text-rose-700 font-bold text-xs leading-none"
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      ))}
+
+                            {/* File Information */}
+                            <div className="pt-2 px-1">
+                              <p
+                                className="text-xs font-semibold text-stone-700 truncate"
+                                title={file.name}
+                              >
+                                {file.name}
+                              </p>
+                              <p className="text-[10px] text-stone-400 mt-0.5">
+                                {(file.size / 1024).toFixed(0)} KB
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-                <div>
+                {/* <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block font-bold text-stone-800">
-                      Warehouse{currentUserRole === 'VENDOR' ? ' *' : ''}
+                      Warehouse (optional)
                     </label>
                     <div className="flex items-center gap-2">
                       <a
@@ -1466,7 +1642,6 @@ export default function AdminProductsPage() {
                   </div>
 
                   <select
-                    required={currentUserRole === 'VENDOR'}
                     value={formData.warehouseId}
                     onChange={e =>
                       setFormData({
@@ -1498,13 +1673,20 @@ export default function AdminProductsPage() {
                   {!warehousesLoading &&
                     warehouses.filter(warehouse => warehouse.isActive && !warehouse.isDisabled).length === 0 && (
                       <p className="text-[10px] text-amber-700 mt-1">
-                        {currentUserRole === 'VENDOR'
-                          ? 'You have not added a warehouse yet. Please add a warehouse before creating a product.'
-                          : 'No active warehouses are available. You can leave this product unassigned or add a warehouse first.'}
+                        No active warehouses are available. You can leave this product unassigned or add a warehouse first.
                       </p>
                     )}
+                </div> */}
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Colors *</label>
+                  <MultiColorInput
+                    required
+                    value={formData.color}
+                    onChange={color => setFormData({ ...formData, color })}
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                {/* grid grid-cols-2 gap-3 */}
+                <div className="">
                   <div>
                     <label className="block font-bold text-stone-800 mb-1">SKU Code *</label>
                     <input
@@ -1516,16 +1698,15 @@ export default function AdminProductsPage() {
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono font-bold focus:outline-none focus:border-rose-900"
                     />
                   </div>
-                  <div>
-                    <label className="block font-bold text-stone-800 mb-1">Design Number *</label>
+                  {/* <div>
+                    <label className="block font-bold text-stone-800 mb-1">Design Number (optional)</label>
                     <input
                       type="text"
-                      required
                       value={formData.designNumber}
                       onChange={e => setFormData({ ...formData, designNumber: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono focus:outline-none focus:border-rose-900"
                     />
-                  </div>
+                  </div> */}
                 </div>
 
                 <div>
@@ -1606,20 +1787,18 @@ export default function AdminProductsPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-stone-800 mb-1">Fabric *</label>
+                    <label className="block font-bold text-stone-800 mb-1">Fabric (optional)</label>
                     <input
                       type="text"
-                      required
                       value={formData.fabric}
                       onChange={e => setFormData({ ...formData, fabric: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-stone-800 mb-1">Work / Embroidery *</label>
+                    <label className="block font-bold text-stone-800 mb-1">Work / Embroidery (optional)</label>
                     <input
                       type="text"
-                      required
                       value={formData.workType}
                       onChange={e => setFormData({ ...formData, workType: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
@@ -1629,20 +1808,18 @@ export default function AdminProductsPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-stone-800 mb-1">Style *</label>
+                    <label className="block font-bold text-stone-800 mb-1">Style (optional)</label>
                     <input
                       type="text"
-                      required
                       value={formData.style}
                       onChange={e => setFormData({ ...formData, style: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
                     />
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-stone-800 mb-1">Clothing Type *</label>
+                  {/* <div>
+                    <label className="block font-bold text-stone-800 mb-1">Clothing Type (optional)</label>
                     <select
-                      required
                       value={formData.clothingType}
                       onChange={e => setFormData({ ...formData, clothingType: e.target.value })}
                       className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-rose-900"
@@ -1652,20 +1829,27 @@ export default function AdminProductsPage() {
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
-                  </div>
+                  </div> */}
 
                   <div className="relative" ref={sizeChartDropdownRef}>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block font-bold text-stone-800">Size Charts</label>
-                      {formData.size && formData.size.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, size: [] })}
-                          className="text-[11px] text-rose-800 hover:underline font-semibold"
-                        >
-                          Clear
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {currentUserRole && currentUserRole !== 'VENDOR' && (
+                          <button type="button" onClick={() => setSizeChartManagerOpen(true)} className="text-[11px] text-rose-800 hover:underline font-semibold">
+                            Manage
+                          </button>
+                        )}
+                        {formData.size && formData.size.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, size: [] })}
+                            className="text-[11px] text-rose-800 hover:underline font-semibold"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Trigger Button */}
@@ -1712,26 +1896,24 @@ export default function AdminProductsPage() {
                           </span>
                         </div>
                         <div className="max-h-52 overflow-y-auto space-y-0.5 py-1">
-                          {SIZE_CHART_OPTIONS.map((opt) => {
+                          {sizeChartOptions.map(({ name: opt }) => {
                             const isChecked = formData.size?.includes(opt);
                             return (
                               <button
                                 key={opt}
                                 type="button"
                                 onClick={() => toggleSizeChart(opt)}
-                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition ${
-                                  isChecked
-                                    ? 'bg-rose-50 text-rose-900 font-semibold'
-                                    : 'text-stone-700 hover:bg-stone-50'
-                                }`}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition ${isChecked
+                                  ? 'bg-rose-50 text-rose-900 font-semibold'
+                                  : 'text-stone-700 hover:bg-stone-50'
+                                  }`}
                               >
                                 <span className="flex items-center gap-2">
                                   <span
-                                    className={`w-4 h-4 rounded border flex items-center justify-center ${
-                                      isChecked
-                                        ? 'bg-rose-900 border-rose-900 text-white'
-                                        : 'border-stone-300 bg-white'
-                                    }`}
+                                    className={`w-4 h-4 rounded border flex items-center justify-center ${isChecked
+                                      ? 'bg-rose-900 border-rose-900 text-white'
+                                      : 'border-stone-300 bg-white'
+                                      }`}
                                   >
                                     {isChecked && <Check className="w-3 h-3" />}
                                   </span>
@@ -1740,24 +1922,26 @@ export default function AdminProductsPage() {
                               </button>
                             );
                           })}
+                          {!sizeChartLoading && sizeChartOptions.length === 0 && (
+                            <p className="px-2.5 py-2 text-xs text-stone-500">No size charts available yet.</p>
+                          )}
                         </div>
                       </div>
                     )}
 
                     {/* Quick-toggle pill chips */}
                     <div className="flex flex-wrap gap-1 mt-1.5">
-                      {SIZE_CHART_OPTIONS.map((opt) => {
+                      {sizeChartOptions.map(({ name: opt }) => {
                         const isChecked = formData.size?.includes(opt);
                         return (
                           <button
                             key={opt}
                             type="button"
                             onClick={() => toggleSizeChart(opt)}
-                            className={`text-[10px] px-2 py-0.5 rounded-md border transition ${
-                              isChecked
-                                ? 'bg-rose-800 text-white border-rose-800 font-semibold shadow-xs'
-                                : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
-                            }`}
+                            className={`text-[10px] px-2 py-0.5 rounded-md border transition ${isChecked
+                              ? 'bg-rose-800 text-white border-rose-800 font-semibold shadow-xs'
+                              : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
+                              }`}
                           >
                             {isChecked ? '✓ ' : '+ '}
                             {opt}
@@ -1793,14 +1977,7 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-bold text-stone-800 mb-1">Colors *</label>
-                  <MultiColorInput
-                    required
-                    value={formData.color}
-                    onChange={color => setFormData({ ...formData, color })}
-                  />
-                </div>
+
                 {categories.find(c => c.id === formData.categoryId)?.requiresSize ? (
                   <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
                     <div>
@@ -1939,6 +2116,72 @@ export default function AdminProductsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {sizeChartManagerOpen && currentUserRole !== 'VENDOR' && (
+        <div className="fixed inset-0 z-[65] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-2xl border border-stone-200">
+            <div className="p-5 border-b border-stone-100 flex items-center justify-between">
+              <div>
+                <h2 className="font-serif text-lg font-bold text-stone-900">Manage Size Charts</h2>
+                <p className="text-xs text-stone-500 mt-1">Changes appear in the product form for all stores.</p>
+              </div>
+              <button type="button" onClick={() => setSizeChartManagerOpen(false)} aria-label="Close size chart manager" className="text-stone-400 hover:text-stone-800 text-xl leading-none">&times;</button>
+            </div>
+
+            <form onSubmit={createSizeChart} className="p-5 flex gap-2 border-b border-stone-100">
+              <input
+                value={newSizeChartName}
+                onChange={e => setNewSizeChartName(e.target.value)}
+                maxLength={50}
+                placeholder="e.g. S to 2XL"
+                className="flex-1 min-w-0 px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:border-rose-900"
+              />
+              <button type="submit" disabled={!newSizeChartName.trim() || sizeChartSaving} className="px-4 py-2 bg-[#831843] hover:bg-rose-900 text-white rounded-xl text-xs font-bold disabled:opacity-50 flex items-center gap-1.5">
+                {sizeChartSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                Add
+              </button>
+            </form>
+
+            <div className="p-5 max-h-[50vh] overflow-y-auto">
+              {sizeChartLoading ? (
+                <p className="text-sm text-stone-500 text-center py-6">Loading size charts...</p>
+              ) : sizeChartOptions.length === 0 ? (
+                <p className="text-sm text-stone-500 text-center py-6">No size charts created yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {sizeChartOptions.map(option => (
+                    <li key={option.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-stone-200 bg-stone-50">
+                      {editingSizeChartId === option.id ? (
+                        <>
+                          <input autoFocus value={editingSizeChartName} onChange={e => setEditingSizeChartName(e.target.value)} maxLength={50} className="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-sm focus:outline-none focus:border-rose-900" />
+                          <button type="button" disabled={!editingSizeChartName.trim() || sizeChartSaving} onClick={() => updateSizeChart(option)} className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg disabled:opacity-50" aria-label="Save size chart" title="Save">
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => { setEditingSizeChartId(null); setEditingSizeChartName(''); }} className="p-1.5 text-stone-400 hover:bg-stone-200 rounded-lg" aria-label="Cancel size chart edit" title="Cancel">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 text-sm font-medium text-stone-800">{option.name}</span>
+                          <button type="button" onClick={() => { setEditingSizeChartId(option.id); setEditingSizeChartName(option.name); }} className="p-1.5 text-stone-400 hover:text-rose-800 hover:bg-rose-50 rounded-lg" aria-label={`Edit ${option.name}`} title="Edit size chart">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => deleteSizeChart(option)} className="p-1.5 text-stone-400 hover:text-rose-800 hover:bg-rose-50 rounded-lg" aria-label={`Remove ${option.name}`} title="Remove size chart">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex justify-end">
+              <button type="button" onClick={() => setSizeChartManagerOpen(false)} className="px-4 py-2 text-xs font-bold text-stone-700 bg-white border border-stone-200 hover:bg-stone-100 rounded-xl">Done</button>
             </div>
           </div>
         </div>

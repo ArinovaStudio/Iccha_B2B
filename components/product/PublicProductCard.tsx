@@ -94,9 +94,11 @@ export default function PublicProductCard({ product }: PublicProductCardProps) {
               {categoryLabel}
             </span>
           )}
-          <span className={`ml-auto shrink-0 tabular-nums ${glassPill}`}>
-            #{product.designNumber}
-          </span>
+          {product.designNumber && (
+            <span className={`ml-auto shrink-0 tabular-nums ${glassPill}`}>
+              #{product.designNumber}
+            </span>
+          )}
         </div>
 
         {/* Floating info panel */}
@@ -108,9 +110,9 @@ export default function PublicProductCard({ product }: PublicProductCardProps) {
 
           <p
             className="mt-1 truncate text-[12px] text-white/65"
-            title={`${product.fabric} · ${product.style}`}
+            title={[product.fabric, product.style].filter(Boolean).join(' · ')}
           >
-            {product.fabric} · {product.style}
+            {[product.fabric, product.style].filter(Boolean).join(' · ')}
           </p>
 
           {status === 'checking' && (

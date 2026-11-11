@@ -2,6 +2,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireStaff } from "@/lib/auth/guard";
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const guard = await requireStaff(request);
+
+  if ("error" in guard) {
+    return NextResponse.json(
+      { success: false, error: guard.error },
+      { status: guard.status }
+    );
+  }
+
+  const { id } = await params;
+
+  try {
+    const vendor = await prisma.vendorProfile.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        businessName: true,
+        user: { select: { hsnCode: true } },
+      },
+    });
+
+    if (!vendor) {
+      return NextResponse.json(
+        { success: false, error: "Vendor not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { id: vendor.id, businessName: vendor.businessName, hsnCode: vendor.user.hsnCode },
+    });
+  } catch (error) {
+    console.error("Fetch vendor error:", error);
+    return NextResponse.json(
+      { success: false, error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -117,7 +117,7 @@ function productErrorResponse(error: unknown, logLabel: string) {
 
 const productFieldsSchema = z.object({
     sku: z.string().trim().min(1, "SKU is required"),
-    designNumber: z.string().trim().min(1, "Design number is required"),
+    designNumber: z.string().trim().nullable().optional(),
     name: z.string().trim().min(1, "Product name is required"),
     slug: z.string().trim().min(1, "Slug is required"),
     description: z.string().optional(),
@@ -139,14 +139,14 @@ const productFieldsSchema = z.object({
         availableSets: z.number().int().min(0, "Size stock cannot be negative"),
     })).optional(),
     color: z.string(),
-    fabric: z.string(),
-    workType: z.string(),
-    style: z.string(),
+    fabric: z.string().trim().optional().nullable(),
+    workType: z.string().trim().optional().nullable(),
+    style: z.string().trim().optional().nullable(),
     size: z.union([
         z.array(z.string()),
         z.string().transform((s) => (s.trim() ? [s.trim()] : [])),
     ]).optional().default([]),
-    clothingType: z.string(),
+    clothingType: z.string().trim().optional().nullable(),
     hsnCode: z.string().regex(/^\d{4,8}$/, "HSN code must be 4 to 8 digits"),
     lining: z.string().trim().max(200).optional(),
     margin: z.string().trim().max(200).optional(),
@@ -155,7 +155,7 @@ const productFieldsSchema = z.object({
     billingEntityId: z.string().uuid().optional(),
     mediaAssetIds: z.array(z.string()).optional(),
     vendorId: z.string().optional(),
-    warehouseId: z.string().optional(),
+    warehouseId: z.string().optional().transform(value => value || undefined),
     // Vendor edits treat these values as additions to existing inventory.
     stockAdjustment: z.number().int().min(0).optional(),
     sizeStockAdjustments: z.array(z.object({
@@ -200,29 +200,23 @@ async function validateVendorAndWarehouse(
     }
 
     if (auth.kind === "vendor") {
-        if (!warehouseId) {
-            return {
-                error:
-                    "You have not added a warehouse yet. Please add a warehouse before creating a product.",
-                status: 400,
-            };
-        }
+        if (warehouseId) {
+            const warehouse = await prisma.warehouse.findFirst({
+                where: {
+                    id: warehouseId,
+                    vendorId: auth.vendorProfile.id,
+                    isActive: true,
+                    isDisabled: false,
+                },
+                select: { id: true },
+            });
 
-        const warehouse = await prisma.warehouse.findFirst({
-            where: {
-                id: warehouseId,
-                vendorId: auth.vendorProfile.id,
-                isActive: true,
-                isDisabled: false,
-            },
-            select: { id: true },
-        });
-
-        if (!warehouse) {
-            return {
-                error: "The selected warehouse is invalid or inactive.",
-                status: 400,
-            };
+            if (!warehouse) {
+                return {
+                    error: "The selected warehouse is invalid or inactive.",
+                    status: 400,
+                };
+            }
         }
     } else if (vendorId && warehouseId) {
         const warehouse = await prisma.warehouse.findFirst({

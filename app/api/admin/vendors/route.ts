@@ -55,13 +55,16 @@ export async function GET(request: NextRequest) {
         isActive: true,
         createdAt: true,
         bannerAsset: { select: { publicUrl: true } },
-        user: { select: { email: true, lastLoginAt: true } },
+        user: { select: { email: true, lastLoginAt: true, hsnCode: true } },
         _count: { select: { products: true, warehouses: true, sellerOrders: true } },
       },
     });
 
     const hasMore = vendors.length > PAGE_SIZE;
-    const items = hasMore ? vendors.slice(0, PAGE_SIZE) : vendors;
+    const items = (hasMore ? vendors.slice(0, PAGE_SIZE) : vendors).map(vendor => ({
+      ...vendor,
+      hsnCode: vendor.user.hsnCode,
+    }));
     const nextCursor = hasMore ? items[items.length - 1].id : null;
 
     return NextResponse.json({ success: true, data: items, nextCursor });

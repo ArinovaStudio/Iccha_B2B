@@ -22,7 +22,7 @@ type Vendor = {
 type Item = {
   id: string;
   productId?: string | null;
-  designNumber: string;
+  designNumber: string | null;
   color?: string | null;
   sets: number;
 };
@@ -34,14 +34,14 @@ function groupItemsByProduct(items: Item[]) {
     string,
     {
       key: string;
-      designNumber: string;
+      designNumber: string | null;
       sets: number;
       colors: string[];
     }
   >();
 
   for (const i of items) {
-    const key = i.productId ?? i.designNumber;
+    const key = i.productId ?? i.designNumber ?? i.id;
 
     const g = map.get(key) ?? {
       key,
@@ -612,7 +612,7 @@ export default function AdminOrdersPage() {
                             key={g.key}
                             className="px-2.5 py-1.5 rounded-lg bg-stone-50 border border-stone-100 text-[10px] text-stone-600"
                           >
-                            {g.designNumber} · {g.sets} sets
+                            {g.designNumber ? `Design ${g.designNumber}` : 'Product'} · {g.sets} sets
                             {g.colors.length > 1
                               ? ` · ${g.colors.length} colours`
                               : g.colors.length === 1

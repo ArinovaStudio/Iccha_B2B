@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Pipette, Plus, X } from 'lucide-react';
 import {
   parseColors,
   serializeColors,
@@ -24,6 +24,7 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
   const [hex, setHex] = useState('#800000');
   const [colorCode, setColorCode] = useState('#800000');
   const [name, setName] = useState(() => nearestColorName('#800000'));
+  const colorInputRef = useRef<HTMLInputElement>(null);
   // Once the user types their own name we stop overwriting it when they move the picker.
   const [nameEdited, setNameEdited] = useState(false);
 
@@ -54,6 +55,40 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
     setHex(value);
     setColorCode(value);
     if (!nameEdited) setName(nearestColorName(value));
+  };
+
+  const openColorPicker = () => {
+    type EyeDropperResult = { sRGBHex: string };
+    type EyeDropperInstance = { open: () => Promise<EyeDropperResult> };
+    type EyeDropperWindow = Window & { EyeDropper?: new () => EyeDropperInstance };
+
+    const EyeDropperConstructor = (window as EyeDropperWindow).EyeDropper;
+    if (EyeDropperConstructor) {
+      new EyeDropperConstructor().open()
+        .then(result => handlePick(result.sRGBHex))
+        .catch(error => {
+          // Canceling the page eyedropper is intentional; don't open another picker.
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          openNativeColorPicker();
+        });
+      return;
+    }
+
+    openNativeColorPicker();
+  };
+
+  const openNativeColorPicker = () => {
+    const input = colorInputRef.current;
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+        return;
+      }
+    } catch {
+      // Fall back to a normal click if the browser blocks showPicker().
+    }
+    input.click();
   };
 
   const normalizeColorCode = (code: string): string | null => {
@@ -128,12 +163,23 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
       </p>
       <div className="flex items-center gap-2">
         <input
+          ref={colorInputRef}
           type="color"
           value={hex}
           onChange={e => handlePick(e.target.value)}
           aria-label="Pick a colour"
-          className="h-10 w-10 shrink-0 cursor-pointer rounded-xl border border-stone-300 bg-stone-50 p-1"
+          className="sr-only"
+          tabIndex={-1}
         />
+        <button
+          type="button"
+          onClick={openNativeColorPicker}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-stone-300 bg-white shadow-sm hover:border-rose-900 hover:bg-rose-50"
+          aria-label="Open colour palette"
+          title="Choose a colour"
+        >
+          <span className="h-5 w-5 rounded-md border border-stone-300" style={{ backgroundColor: hex }} />
+        </button>
         <input
           type="text"
           value={name}
@@ -150,6 +196,15 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
             duplicate === 'name' ? 'border-rose-500' : 'border-stone-300'
           }`}
         />
+        <button
+          type="button"
+          onClick={openColorPicker}
+          className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-stone-300 bg-white px-2.5 text-stone-700 shadow-sm hover:border-rose-900 hover:bg-rose-50"
+          aria-label="Pick a colour from anywhere on the page"
+          title="Pick a colour from anywhere on the page"
+        >
+          <Pipette className="h-3.5 w-3.5" />
+        </button>
         <button
           type="button"
           onClick={() => addColor(validColorCode ?? undefined)}
@@ -189,7 +244,7 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
         {duplicateMessage && <span className="block text-rose-700">{duplicateMessage}</span>}
       </label>
 
-      <div>
+      {/* <div>
         <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">Or tap a common colour</p>
         <div className="flex flex-wrap gap-1.5">
           {NAMED_COLORS.map(c => {
@@ -210,7 +265,7 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
             );
           })}
         </div>
-      </div>
+      </div> */}
 
       {required && (
         <input

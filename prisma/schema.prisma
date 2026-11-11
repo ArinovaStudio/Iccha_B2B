@@ -101,6 +101,7 @@ model User {
   passwordHash String
   name         String
   mobile       String?
+  hsnCode      String?
   role         UserRole  @default(RETAILER)
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
@@ -428,7 +429,7 @@ model CollectionProduct {
 model Product {
   id            String  @id @default(uuid())
   sku           String  @unique
-  designNumber  String
+  designNumber  String?
   name          String
   slug          String  @unique
   description   String?
@@ -446,11 +447,11 @@ model Product {
 
   sizeCombination String
   color           String
-  fabric          String
-  workType        String
-  style           String
+  fabric          String?
+  workType        String?
+  style           String?
   size            String[] @default([])
-  clothingType    String
+  clothingType    String?
   hsnCode         String  @default("621142")
   minOrderSets    Int     @default(1)
   lining          String? // e.g. "Premium Crepe Attached"
@@ -512,6 +513,16 @@ model ProductSize {
 
   @@unique([productId, size])
   @@index([productId])
+}
+
+model SizeChartOption {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
 }
 
 model ProductMedia {

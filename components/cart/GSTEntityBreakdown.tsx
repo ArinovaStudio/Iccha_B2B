@@ -201,9 +201,7 @@ export default function GSTEntityBreakdown({
 
                             <span aria-hidden="true">•</span>
 
-                            <span>
-                              Design {item.product.designNumber}
-                            </span>
+                            {item.product.designNumber && <span>Design {item.product.designNumber}</span>}
 
                             <span aria-hidden="true">•</span>
 

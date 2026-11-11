@@ -58,6 +58,8 @@ interface VendorProfileData {
 
   mobile: string;
 
+  hsnCode: string | null;
+
   email: string;
 
   gstin: string;
@@ -177,7 +179,8 @@ function VendorProfilePage() {
 
     description: '',
 
-    instagramUrl: ''
+    instagramUrl: '',
+    hsnCode: '',
 
   });
 
@@ -210,6 +213,7 @@ function VendorProfilePage() {
     description: data.description || '',
 
     instagramUrl: data.instagramUrl || '',
+    hsnCode: data.hsnCode || '',
 
   });
 
@@ -801,6 +805,13 @@ function VendorProfilePage() {
 
               </div>
 
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">HSN Code (optional)</label>
+                <input type="text" inputMode="numeric" maxLength={8} disabled={!isEditing} value={form.hsnCode}
+                  onChange={e => setForm({ ...form, hsnCode: e.target.value.replace(/\D/g, '') })}
+                  className={`${fieldClass(isEditing)} font-mono`} />
+              </div>
+
             </div>
 
           </div>
@@ -1301,6 +1312,8 @@ interface StaffProfileData {
 
   mobile: string | null;
 
+  hsnCode: string | null;
+
   role: string;
 
   createdAt: string;
@@ -1430,6 +1443,7 @@ function StaffProfilePage() {
     email: '',
 
     mobile: '',
+    hsnCode: '',
 
     bankName: '',
 
@@ -1454,6 +1468,7 @@ function StaffProfilePage() {
     email: data.email || '',
 
     mobile: data.mobile || '',
+    hsnCode: data.hsnCode || '',
 
     bankName: data.bankDetails?.bankName || '',
 
@@ -2067,6 +2082,13 @@ function StaffProfilePage() {
 
                 />
 
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">HSN Code (optional)</label>
+                <input type="text" inputMode="numeric" maxLength={8} disabled={!isEditing} value={form.hsnCode}
+                  onChange={e => setForm({ ...form, hsnCode: e.target.value.replace(/\D/g, '') })}
+                  className={`${fieldClass(isEditing)} font-mono`} />
               </div>
 
             </div>

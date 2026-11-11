@@ -8,6 +8,7 @@ const updateProfileSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   email: z.string().trim().email("Invalid email address"),
   mobile: z.string().trim().optional().or(z.literal("")),
+  hsnCode: z.string().trim().regex(/^\d{4,8}$/, "HSN code must be 4 to 8 digits").optional().or(z.literal("")),
 
   mainStoreDescription: z
     .string()
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
         name: auth.user.name,
         email: auth.user.email,
         mobile: auth.user.mobile,
+        hsnCode: auth.user.hsnCode,
         role: auth.user.role,
         createdAt: auth.user.createdAt,
         lastLoginAt: auth.user.lastLoginAt,
@@ -112,6 +114,7 @@ export async function PATCH(request: NextRequest) {
       name,
       email,
       mobile,
+      hsnCode,
       mainStoreDescription,
       bankName,
       accountHolder,
@@ -130,11 +133,13 @@ export async function PATCH(request: NextRequest) {
           name,
           email,
           mobile: mobile || null,
+          hsnCode: hsnCode || null,
         },
         select: {
           name: true,
           email: true,
           mobile: true,
+          hsnCode: true,
           role: true,
           createdAt: true,
           lastLoginAt: true,
