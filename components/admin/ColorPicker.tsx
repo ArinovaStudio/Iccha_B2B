@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Pipette, Plus, X } from 'lucide-react';
+import { Pipette, Plus, TriangleAlert, X } from 'lucide-react';
 import {
   parseColors,
   serializeColors,
@@ -15,11 +15,12 @@ interface MultiColorInputProps {
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  missingImageColors?: string[];
 }
 
 const norm = (s?: string) => (s || '').trim().toLowerCase();
 
-export default function MultiColorInput({ value, onChange, required }: MultiColorInputProps) {
+export default function MultiColorInput({ value, onChange, required, missingImageColors = [] }: MultiColorInputProps) {
   const colors = parseColors(value);
   const [hex, setHex] = useState('#800000');
   const [colorCode, setColorCode] = useState('#800000');
@@ -31,7 +32,7 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
   const commit = (next: ProductColor[]) => onChange(serializeColors(next));
 
   // A colour is a duplicate if EITHER its name OR its hex is already added.
-  const findDuplicate = (entryName: string, entryHex?: string): 'name' | 'hex' | null => {
+  const findDuplicate = (entryName: string, entryHex?: string | null): 'name' | 'hex' | null => {
     if (colors.some(c => norm(c.name) === norm(entryName))) return 'name';
     if (entryHex && colors.some(c => c.hex && norm(c.hex) === norm(entryHex))) return 'hex';
     return null;
@@ -155,6 +156,16 @@ export default function MultiColorInput({ value, onChange, required }: MultiColo
               </button>
             </span>
           ))}
+        </div>
+      )}
+
+      {missingImageColors.length > 0 && (
+        <div role="status" className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <p>
+            <strong>Photos missing for {missingImageColors.length === 1 ? 'this colour' : 'these colours'}:</strong>{' '}
+            {missingImageColors.join(', ')}. Assign at least one product photo to each colour below.
+          </p>
         </div>
       )}
 

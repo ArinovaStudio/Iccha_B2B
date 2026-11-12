@@ -70,6 +70,7 @@ model VendorProfile {
   sellerOrders   SellerOrder[]
   uploadSessions ProductUploadSession[]
   collections    Collection[]
+  sizeChartOptions SizeChartOption[]
 
   @@index([businessName])
   @@index([bannerAssetId])
@@ -116,6 +117,7 @@ model User {
   vendorProfile    VendorProfile?
   staffBankDetails StaffBankDetails?
   collections      Collection[]      @relation("CollectionCreator")
+  sizeChartOptions SizeChartOption[] @relation("SizeChartCreator")
 
   @@index([email])
   @@index([role])
@@ -516,13 +518,20 @@ model ProductSize {
 }
 
 model SizeChartOption {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String         @id @default(uuid())
+  name        String
+  sortOrder   Int            @default(0)
+  userId      String?
+  vendorId    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  createdBy   User?          @relation("SizeChartCreator", fields: [userId], references: [id], onDelete: Cascade)
+  vendor      VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
-  @@index([sortOrder])
+  @@unique([userId, name])
+  @@unique([vendorId, name])
+  @@index([userId, sortOrder])
+  @@index([vendorId, sortOrder])
 }
 
 model ProductMedia {
@@ -532,6 +541,7 @@ model ProductMedia {
   mediaType    String   @default("MAIN_IMAGE") // "MAIN_IMAGE" | "ALTERNATE_IMAGE" | "DETAIL_IMAGE" | "VIDEO"
   sortOrder    Int      @default(0)
   isPrimary    Boolean  @default(false)
+  color        String?
   createdAt    DateTime @default(now())
 
   product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)

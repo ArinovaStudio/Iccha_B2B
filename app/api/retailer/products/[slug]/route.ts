@@ -187,6 +187,7 @@ export async function GET(
         url: m.mediaAsset.publicUrl,
         alt: product.name,
         isPrimary: m.isPrimary,
+        color: m.color,
       })),
     };
 

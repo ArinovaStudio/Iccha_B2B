@@ -22,6 +22,7 @@ import {
 import AdminSidebar from '@/components/layout/AdminSidebar';
 import { useApp } from '@/lib/context/AppContext';
 import MultiColorInput from '@/components/admin/ColorPicker';
+import { parseColors } from '@/lib/product-colors';
 
 interface SizeChartOption {
   id: string;
@@ -116,7 +117,7 @@ interface Product {
   margin?: string | null;
   minOrderSets: number;
   isActive: boolean;
-  media?: { mediaAsset: { id: string; publicUrl: string } }[]
+  media?: { color?: string | null; mediaAsset: { id: string; publicUrl: string } }[]
   sizes?: { id: string; size: string; availableSets: number; sortOrder: number }[]
 }
 
@@ -195,6 +196,7 @@ export default function AdminProductsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageColors, setImageColors] = useState<(string | null)[]>([]);
   // Local preview URLs for the files picked in the form (created/revoked in an effect so React strict mode is safe).
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   useEffect(() => {
@@ -205,9 +207,9 @@ export default function AdminProductsPage() {
   // Photos the product already has (edit mode). Removing one here drops it when the product is saved.
   // Full-size preview of a current photo, shown on top of the form (same page).
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [existingMedia, setExistingMedia] = useState<{ id: string; url: string }[]>([]);
+  const [existingMedia, setExistingMedia] = useState<{ id: string; url: string; color: string | null }[]>([]);
 
-  const [qrMediaAssets, setQrMediaAssets] = useState<{ id: string; url: string }[]>([]);
+  const [qrMediaAssets, setQrMediaAssets] = useState<{ id: string; url: string; color: string | null }[]>([]);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrToken, setQrToken] = useState<string | null>(null);
 
@@ -245,6 +247,16 @@ export default function AdminProductsPage() {
     socialLink: ''
   });
 
+  const configuredColorNames = parseColors(formData.color).map(color => color.name);
+  const assignedPhotoColors = [
+    ...existingMedia.map(media => media.color),
+    ...qrMediaAssets.map(media => media.color),
+    ...imageColors,
+  ].filter((color): color is string => Boolean(color));
+  const missingImageColors = configuredColorNames.filter(color =>
+    !assignedPhotoColors.some(assigned => assigned.toLowerCase() === color.toLowerCase())
+  );
+
   useEffect(() => {
     if (!isModalOpen || editingProduct || isHsnEditable) return;
     if (!selectedVendor && currentUserRole !== 'VENDOR') return;
@@ -255,10 +267,13 @@ export default function AdminProductsPage() {
   const [isSizeChartDropdownOpen, setIsSizeChartDropdownOpen] = useState(false);
   const sizeChartDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const loadSizeCharts = useCallback(async (silent = false) => {
+  const loadSizeCharts = useCallback(async (silent = false, vendorId?: string | null) => {
     setSizeChartLoading(true);
     try {
-      const res = await fetch('/api/admin/size-charts', { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (vendorId) params.set('vendorId', vendorId);
+      const query = params.toString();
+      const res = await fetch(`/api/admin/size-charts${query ? `?${query}` : ''}`, { cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
         setSizeChartOptions(json.data);
@@ -274,8 +289,8 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     if (!currentUserRole) return;
-    loadSizeCharts(true);
-  }, [currentUserRole, loadSizeCharts]);
+    loadSizeCharts(true, currentUserRole === 'VENDOR' ? null : selectedVendor?.id ?? null);
+  }, [currentUserRole, loadSizeCharts, selectedVendor?.id]);
 
   const createSizeChart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -284,7 +299,10 @@ export default function AdminProductsPage() {
 
     setSizeChartSaving(true);
     try {
-      const res = await fetch('/api/admin/size-charts', {
+      const query = currentUserRole === 'VENDOR' || !selectedVendor?.id
+        ? ''
+        : `?vendorId=${encodeURIComponent(selectedVendor.id)}`;
+      const res = await fetch(`/api/admin/size-charts${query}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
@@ -612,7 +630,7 @@ export default function AdminProductsPage() {
   const openAddModal = () => {
     setEditingProduct(null);
     setIsHsnEditable(false);
-    loadSizeCharts(true);
+    loadSizeCharts(true, currentUserRole === 'VENDOR' ? null : selectedVendor?.id ?? null);
 
     setFormData({
       name: '',
@@ -645,6 +663,7 @@ export default function AdminProductsPage() {
     setStockAddition(0);
     setSizeStockAdditions([]);
     setImageFiles([]);
+    setImageColors([]);
     setQrMediaAssets([]);
     setExistingMedia([]);
     setIsModalOpen(true);
@@ -683,7 +702,7 @@ export default function AdminProductsPage() {
         if (!json.success) return;
 
         if (json.data.status === 'uploaded' && json.data.mediaAssets?.length) {
-          setQrMediaAssets(prev => [...prev, ...json.data.mediaAssets.map((a: { id: string; publicUrl: string }) => ({ id: a.id, url: a.publicUrl })),]);
+          setQrMediaAssets(prev => [...prev, ...json.data.mediaAssets.map((a: { id: string; publicUrl: string }) => ({ id: a.id, url: a.publicUrl, color: null })),]);
           setFormData(prev => ({
             ...prev,
             sku: prev.sku || `IC-${(json.data.vendor?.vendorCode || 'GEN')}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -747,6 +766,7 @@ export default function AdminProductsPage() {
 
     // Kept existing photos first (so the primary photo stays primary), then new ones.
     const mediaAssetIds: string[] = [...existingMedia.map(m => m.id), ...qrMediaAssets.map(m => m.id)];
+    const mediaColors: (string | null)[] = [...existingMedia.map(m => m.color), ...qrMediaAssets.map(m => m.color)];
 
     if (imageFiles.length > 0) {
       setUploading(true);
@@ -764,6 +784,7 @@ export default function AdminProductsPage() {
         const uploadJson = await uploadRes.json();
         if (uploadJson.success) {
           mediaAssetIds.push(uploadJson.data.id);
+          mediaColors.push(imageColors[imageFiles.indexOf(file)] || null);
         } else {
           addToast({ type: 'error', title: 'Image upload failed', message: uploadJson.error?.message || 'Try again.' });
           setUploading(false);
@@ -827,6 +848,7 @@ export default function AdminProductsPage() {
 
     if (mediaAssetIds.length > 0) {
       payload.mediaAssetIds = mediaAssetIds;
+      payload.mediaColors = mediaColors;
     }
 
     if (selectedVendor) {
@@ -928,11 +950,12 @@ export default function AdminProductsPage() {
       (product.sizes || []).map(s => ({ size: s.size, availableSets: 0 }))
     );
     setImageFiles([]);
+    setImageColors([]);
     setQrMediaAssets([]);
     setExistingMedia(
       (product.media || [])
         .filter(m => m.mediaAsset?.id && m.mediaAsset?.publicUrl)
-        .map(m => ({ id: m.mediaAsset.id, url: m.mediaAsset.publicUrl }))
+        .map(m => ({ id: m.mediaAsset.id, url: m.mediaAsset.publicUrl, color: m.color || null }))
     );
     setIsModalOpen(true);
   };
@@ -1491,6 +1514,17 @@ export default function AdminProductsPage() {
                                 Main
                               </span>
                             )}
+                            <div className="absolute bottom-0 inset-x-0 bg-white/95 p-1">
+                              <select
+                                aria-label={`Color for current photo ${idx + 1}`}
+                                value={m.color || ''}
+                                onChange={e => setExistingMedia(prev => prev.map(item => item.id === m.id ? { ...item, color: e.target.value || null } : item))}
+                                className="w-full rounded border border-stone-300 bg-white px-1 py-0.5 text-[9px]"
+                              >
+                                <option value="">Shared image</option>
+                                {parseColors(formData.color).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                              </select>
+                            </div>
                             <button
                               type="button"
                               aria-label={`Remove current photo ${idx + 1}`}
@@ -1511,6 +1545,7 @@ export default function AdminProductsPage() {
                     onChange={e => {
                       const newFiles = Array.from(e.target.files || []);
                       setImageFiles(prev => [...prev, ...newFiles]);
+                      setImageColors(prev => [...prev, ...newFiles.map(() => parseColors(formData.color)[0]?.name || null)]);
                       e.target.value = '';
                     }}
                     className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-[11px]"
@@ -1539,7 +1574,15 @@ export default function AdminProductsPage() {
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={asset.url} alt="Uploaded from phone" className="w-full h-full object-cover object-top" />
                           </button>
-                          <span className="text-[10px] text-rose-900 font-medium">From phone</span>
+                          <select
+                            aria-label="Color for phone uploaded photo"
+                            value={asset.color || ''}
+                            onChange={e => setQrMediaAssets(prev => prev.map(item => item.id === asset.id ? { ...item, color: e.target.value || null } : item))}
+                            className="max-w-28 rounded border border-rose-200 bg-white px-1 py-0.5 text-[9px]"
+                          >
+                            <option value="">Shared image</option>
+                            {parseColors(formData.color).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                          </select>
                           <button
                             type="button"
                             onClick={() => setQrMediaAssets(prev => prev.filter((_, i) => i !== idx))}
@@ -1562,6 +1605,7 @@ export default function AdminProductsPage() {
                               title="Remove photo"
                               onClick={() => {
                                 setImageFiles(prev => prev.filter((_, i) => i !== idx));
+                                setImageColors(prev => prev.filter((_, i) => i !== idx));
                                 setImagePreviews(prev => prev.filter((_, i) => i !== idx));
                               }}
                               className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/95 border border-stone-200 text-stone-500 hover:bg-rose-600 hover:text-white hover:border-rose-600 shadow-sm transition-all"
@@ -1605,6 +1649,15 @@ export default function AdminProductsPage() {
                               <p className="text-[10px] text-stone-400 mt-0.5">
                                 {(file.size / 1024).toFixed(0)} KB
                               </p>
+                              <select
+                                aria-label={`Color for ${file.name}`}
+                                value={imageColors[idx] || ''}
+                                onChange={e => setImageColors(prev => prev.map((color, i) => i === idx ? (e.target.value || null) : color))}
+                                className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-1.5 py-1 text-[10px]"
+                              >
+                                <option value="">Shared image</option>
+                                {parseColors(formData.color).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                              </select>
                             </div>
                           </div>
                         ))}
@@ -1683,6 +1736,7 @@ export default function AdminProductsPage() {
                     required
                     value={formData.color}
                     onChange={color => setFormData({ ...formData, color })}
+                    missingImageColors={missingImageColors}
                   />
                 </div>
                 {/* grid grid-cols-2 gap-3 */}
@@ -1835,7 +1889,7 @@ export default function AdminProductsPage() {
                     <div className="flex items-center justify-between mb-1">
                       <label className="block font-bold text-stone-800">Size Charts</label>
                       <div className="flex items-center gap-3">
-                        {currentUserRole && currentUserRole !== 'VENDOR' && (
+                        {currentUserRole && (
                           <button type="button" onClick={() => setSizeChartManagerOpen(true)} className="text-[11px] text-rose-800 hover:underline font-semibold">
                             Manage
                           </button>
@@ -2120,13 +2174,13 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
-      {sizeChartManagerOpen && currentUserRole !== 'VENDOR' && (
+      {sizeChartManagerOpen && currentUserRole && (
         <div className="fixed inset-0 z-[65] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-2xl border border-stone-200">
             <div className="p-5 border-b border-stone-100 flex items-center justify-between">
               <div>
                 <h2 className="font-serif text-lg font-bold text-stone-900">Manage Size Charts</h2>
-                <p className="text-xs text-stone-500 mt-1">Changes appear in the product form for all stores.</p>
+                <p className="text-xs text-stone-500 mt-1">Size charts are available to products for this store.</p>
               </div>
               <button type="button" onClick={() => setSizeChartManagerOpen(false)} aria-label="Close size chart manager" className="text-stone-400 hover:text-stone-800 text-xl leading-none">&times;</button>
             </div>

@@ -111,6 +111,7 @@ export default function RetailerProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isMagnifying, setIsMagnifying] = useState(false);
@@ -208,6 +209,8 @@ export default function RetailerProductDetailPage() {
   setHasInitializedSets(true);
 
   const firstColor = product.colorOptions?.[0]?.name;
+  setSelectedColor(firstColor || null);
+  setSelectedImageIdx(0);
   if (firstColor) {
     setColorQty((cur) =>
       Object.keys(cur).length ? cur : { [firstColor]: minOrderSets }
@@ -339,6 +342,10 @@ export default function RetailerProductDetailPage() {
 
   const colorOptions = product.colorOptions ?? [];
   const hasColors = colorOptions.length > 0;
+  const colorMedia = selectedColor
+    ? media.filter((item) => !item.color || item.color.toLowerCase() === selectedColor.toLowerCase())
+    : media;
+  const visibleMedia = colorMedia.length > 0 ? colorMedia : media.filter((item) => !item.color);
 
   const colorLines = colorOptions
     .map((c) => ({ color: c.name, sets: colorQty[c.name] || 0 }))
@@ -353,8 +360,8 @@ export default function RetailerProductDetailPage() {
     setColorQty((cur) => ({ ...cur, [name]: Math.max(0, Math.floor(next) || 0) }));
 
   const currentImage =
-    media[selectedImageIdx]?.url ||
-    media[0]?.url ||
+    visibleMedia[selectedImageIdx]?.url ||
+    visibleMedia[0]?.url ||
     '/placeholder-product.jpg';
 
   const handleAddToColorCart = async () => {
@@ -504,11 +511,11 @@ export default function RetailerProductDetailPage() {
 
               {/* Image Thumbnails */}
 
-              {media.length > 1 && (
+              {visibleMedia.length > 1 && (
 
                 <div className="flex gap-3 overflow-x-auto pb-2">
 
-                  {media.map((img, idx) => (
+                  {visibleMedia.map((img, idx) => (
 
                     <button
 
@@ -907,11 +914,12 @@ export default function RetailerProductDetailPage() {
 
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
 
                         {colorOptions.map((c) => {
 
                           const qty = colorQty[c.name] ?? 0;
+                          const isColorSelected = selectedColor?.toLowerCase() === c.name.toLowerCase();
 
                           return (
 
@@ -919,14 +927,13 @@ export default function RetailerProductDetailPage() {
 
                               key={c.name}
 
-                              className={`flex items-center justify-between gap-3 rounded-xl border-2 px-3 py-2 transition ${qty > 0 ? 'border-amber-500 bg-amber-50' : 'border-stone-200 bg-stone-50'
+                              className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 transition ${isColorSelected ? 'border-rose-800 bg-rose-50' : 'border-stone-200 bg-stone-50'
 
                                 }`}
 
                             >
 
-                              <div className="flex items-center gap-2.5 min-w-0">
-
+                              <button type="button" onClick={() => { setSelectedColor(c.name); setSelectedImageIdx(0); }} aria-pressed={isColorSelected} className="flex items-center gap-2.5 min-w-0 text-left">
                                 <span
 
                                   className="w-6 h-6 rounded-full border border-stone-300 shrink-0"
@@ -937,7 +944,7 @@ export default function RetailerProductDetailPage() {
 
                                 <span className="text-xs font-semibold text-stone-900 truncate">{c.name}</span>
 
-                              </div>
+                              </button>
 
                               <div className="flex items-center gap-2 shrink-0">
 

@@ -145,6 +145,7 @@ export interface ProductMedia {
   url: string;
   alt: string;
   isPrimary?: boolean;
+  color?: string | null;
   caption?: string;
 }
 

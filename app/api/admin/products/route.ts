@@ -154,6 +154,7 @@ const productFieldsSchema = z.object({
     // Vendor products use the vendor's GST/billing details; house products use the platform entity.
     billingEntityId: z.string().uuid().optional(),
     mediaAssetIds: z.array(z.string()).optional(),
+    mediaColors: z.array(z.string().trim().nullable()).optional(),
     vendorId: z.string().optional(),
     warehouseId: z.string().optional().transform(value => value || undefined),
     // Vendor edits treat these values as additions to existing inventory.
@@ -312,7 +313,7 @@ const productInclude = {
             },
         },
     },
-} as const;
+} satisfies Prisma.ProductInclude;
 
 /**
  * Product names don't have to be unique, but the slug (used in /catalogue/<slug>) does.
@@ -398,6 +399,20 @@ export async function POST(request: NextRequest) {
                 ? auth.vendorProfile.id
                 : data.vendorId ?? null;
 
+        if (Array.isArray(data.size) && data.size.length > 0) {
+            const availableSizeCharts = await prisma.sizeChartOption.findMany({
+                where: vendorId ? { vendorId } : { userId: auth.user.id },
+                select: { name: true },
+            });
+            const allowedSizeNames = new Set(availableSizeCharts.map((option) => option.name));
+            if (data.size.some((size: string) => !allowedSizeNames.has(size))) {
+                return NextResponse.json(
+                    { success: false, error: "One or more selected size charts are not available for this store." },
+                    { status: 400 },
+                );
+            }
+        }
+
         const validationError = await validateVendorAndWarehouse(
             auth,
             vendorId,
@@ -471,6 +486,7 @@ export async function POST(request: NextRequest) {
                     create: (data.mediaAssetIds ?? []).map(
                         (mediaAssetId, index) => ({
                             mediaAssetId,
+                            color: data.mediaColors?.[index] || null,
                             mediaType:
                                 index === 0
                                     ? "MAIN_IMAGE"
@@ -546,6 +562,7 @@ export async function PATCH(request: NextRequest) {
             select: {
                 id: true,
                 vendorId: true,
+                size: true,
             },
         });
 
@@ -576,6 +593,23 @@ export async function PATCH(request: NextRequest) {
             auth.kind === "vendor"
                 ? auth.vendorProfile.id
                 : data.vendorId ?? existingProduct.vendorId ?? null;
+
+        if (Array.isArray(data.size) && data.size.length > 0) {
+            const availableSizeCharts = await prisma.sizeChartOption.findMany({
+                where: vendorId ? { vendorId } : { userId: auth.user.id },
+                select: { name: true },
+            });
+            const allowedSizeNames = new Set(availableSizeCharts.map((option) => option.name));
+            const previouslyAssignedSizes = new Set(
+                (existingProduct.size ?? []).filter((size: string) => size && !availableSizeCharts.some((option) => option.name === size)),
+            );
+            if (data.size.some((size: string) => !allowedSizeNames.has(size) && !previouslyAssignedSizes.has(size))) {
+                return NextResponse.json(
+                    { success: false, error: "One or more selected size charts are not available for this store." },
+                    { status: 400 },
+                );
+            }
+        }
 
         const validationError = await validateVendorAndWarehouse(
             auth,
@@ -717,6 +751,7 @@ export async function PATCH(request: NextRequest) {
                                         deleteMany: {},
                                         create: data.mediaAssetIds.map((mediaAssetId, index) => ({
                                             mediaAssetId,
+                                            color: data.mediaColors?.[index] || null,
                                             mediaType: index === 0 ? "MAIN_IMAGE" : "ALTERNATE_IMAGE",
                                             isPrimary: index === 0,
                                             sortOrder: index,
@@ -823,6 +858,7 @@ export async function PATCH(request: NextRequest) {
                             create: data.mediaAssetIds.map(
                                 (mediaAssetId, index) => ({
                                     mediaAssetId,
+                                    color: data.mediaColors?.[index] || null,
                                     mediaType:
                                         index === 0
                                             ? "MAIN_IMAGE"

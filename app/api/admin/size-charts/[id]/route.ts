@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireStaff } from "@/lib/auth/guard";
+import { requireStaffOrVendor } from "@/lib/auth/guard";
 
 const updateSchema = z.object({
   name: z.string().trim().min(1, "Enter a size chart name.").max(50, "Size chart names must be 50 characters or fewer."),
@@ -12,7 +12,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireStaff(request);
+  const auth = await requireStaffOrVendor(request);
   if ("error" in auth) {
     return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
   }
@@ -24,11 +24,17 @@ export async function PUT(
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const option = await prisma.sizeChartOption.update({
-      where: { id },
+    const vendorId = (auth as { vendorProfile?: { id: string } }).vendorProfile?.id;
+    const owner = vendorId
+      ? { vendorId }
+      : { userId: auth.user.id };
+    const option = await prisma.sizeChartOption.updateMany({
+      where: { id, ...owner },
       data: { name: parsed.data.name },
     });
-    return NextResponse.json({ success: true, data: option });
+    if (!option.count) return NextResponse.json({ success: false, error: "Size chart not found." }, { status: 404 });
+    const updated = await prisma.sizeChartOption.findUnique({ where: { id } });
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
@@ -47,14 +53,19 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireStaff(request);
+  const auth = await requireStaffOrVendor(request);
   if ("error" in auth) {
     return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
   }
 
   const { id } = await params;
   try {
-    await prisma.sizeChartOption.delete({ where: { id } });
+    const vendorId = (auth as { vendorProfile?: { id: string } }).vendorProfile?.id;
+    const owner = vendorId
+      ? { vendorId }
+      : { userId: auth.user.id };
+    const deleted = await prisma.sizeChartOption.deleteMany({ where: { id, ...owner } });
+    if (!deleted.count) return NextResponse.json({ success: false, error: "Size chart not found." }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {

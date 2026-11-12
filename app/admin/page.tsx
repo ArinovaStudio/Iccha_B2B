@@ -373,7 +373,7 @@ export default function AdminDashboardPage() {
               {/* Catalogue */}
 
               <Link
-                href="/admin/collections"
+                href="/admin/products"
                 className="block bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1 hover:border-sky-300 hover:shadow-md transition-all duration-200 cursor-pointer"
               >
                 <div className="flex items-center justify-between text-stone-400">

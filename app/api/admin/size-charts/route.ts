@@ -11,7 +11,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const options = await prisma.sizeChartOption.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+    const requestedVendorId = request.nextUrl.searchParams.get("vendorId");
+    const vendorId = (auth as { vendorProfile?: { id: string } }).vendorProfile?.id;
+    const owner = vendorId
+      ? { vendorId }
+      : requestedVendorId
+        ? { vendorId: requestedVendorId }
+        : { userId: auth.user.id };
+    const options = await prisma.sizeChartOption.findMany({
+      where: owner,
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
     return NextResponse.json(
       { success: true, data: options },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
@@ -27,7 +37,7 @@ const createSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const auth = await requireStaff(request);
+  const auth = await requireStaffOrVendor(request);
   if ("error" in auth) {
     return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
   }
@@ -38,9 +48,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const maximum = await prisma.sizeChartOption.aggregate({ _max: { sortOrder: true } });
+    const requestedVendorId = request.nextUrl.searchParams.get("vendorId");
+    let owner: { userId: string } | { vendorId: string };
+    const authenticatedVendorId = (auth as { vendorProfile?: { id: string } }).vendorProfile?.id;
+    if (authenticatedVendorId) {
+      owner = { vendorId: authenticatedVendorId };
+    } else if (requestedVendorId) {
+      const vendor = await prisma.vendorProfile.findUnique({ where: { id: requestedVendorId }, select: { id: true } });
+      if (!vendor) return NextResponse.json({ success: false, error: "Vendor not found." }, { status: 404 });
+      owner = { vendorId: vendor.id };
+    } else {
+      owner = { userId: auth.user.id };
+    }
+    const maximum = await prisma.sizeChartOption.aggregate({ where: owner, _max: { sortOrder: true } });
     const option = await prisma.sizeChartOption.create({
-      data: { name: parsed.data.name, sortOrder: (maximum._max.sortOrder ?? -1) + 1 },
+      data: { ...owner, name: parsed.data.name, sortOrder: (maximum._max.sortOrder ?? -1) + 1 },
     });
     return NextResponse.json({ success: true, data: option }, { status: 201 });
   } catch (error) {
