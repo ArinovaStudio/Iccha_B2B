@@ -796,7 +796,7 @@ export default function RetailerProductDetailPage() {
                   </div>
 
                   {/* Warehouse */}
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 border-l border-stone-200 pl-2 sm:pl-4">
+                  {/* <div className="flex items-center gap-2 sm:gap-3 min-w-0 border-l border-stone-200 pl-2 sm:pl-4">
                     <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
                       <Building2 className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-amber-800" />
                     </div>
@@ -816,7 +816,7 @@ export default function RetailerProductDetailPage() {
                           </p>
                         )}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
