@@ -356,8 +356,22 @@ export default function RetailerProductDetailPage() {
   // The per-design minimum counts sets already in the cart for this design (this size) plus what's being added now.
   const colorShortfall = Math.max(0, product.minOrderSets - existingSets - colorTotalSets);
 
-  const setColorSets = (name: string, next: number) =>
+  const setColorSets = (name: string, next: number) => {
     setColorQty((cur) => ({ ...cur, [name]: Math.max(0, Math.floor(next) || 0) }));
+  };
+
+  const selectColor = (name: string) => {
+    const previousColor = selectedColor;
+    setSelectedColor(name);
+    setSelectedImageIdx(0);
+    setColorQty((cur) => {
+      const selectedQty = cur[name] ?? 0;
+      const next = { ...cur };
+      if (previousColor && previousColor !== name) next[previousColor] = 0;
+      if (selectedQty <= 0) next[name] = Math.max(1, product.minOrderSets || 1);
+      return next;
+    });
+  };
 
   const currentImage =
     visibleMedia[selectedImageIdx]?.url ||
@@ -639,6 +653,126 @@ export default function RetailerProductDetailPage() {
 
               </div>
 
+              {hasColors && (
+                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-stone-200 shadow-2xs">
+                    <div className="pt-2 space-y-3">
+
+                      <div className="flex items-center justify-between text-xs">
+
+                        <strong className="text-stone-800">Select Colours & Sets:</strong>
+
+                        <span className="text-[10px] text-stone-500">It is compulsory to take all the sizes in each colour.</span>
+
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+
+                        {colorOptions.map((c) => {
+
+                          const qty = colorQty[c.name] ?? 0;
+                          const isColorSelected = selectedColor?.toLowerCase() === c.name.toLowerCase();
+
+                          return (
+
+                            <div
+
+                              key={c.name}
+
+                              className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 transition ${isColorSelected ? 'border-rose-800 bg-rose-50' : 'border-stone-200 bg-stone-50'
+
+                                }`}
+
+                            >
+
+                              <button type="button" onClick={() => selectColor(c.name)} aria-pressed={isColorSelected} className="flex items-center gap-2.5 min-w-0 text-left">
+                                <span
+
+                                  className="w-6 h-6 rounded-full border border-stone-300 shrink-0"
+
+                                  style={{ backgroundColor: c.hex || 'transparent' }}
+
+                                />
+
+                                <span className="text-xs font-semibold text-stone-900 truncate">{c.name}</span>
+
+                              </button>
+
+                              {isColorSelected && <div className="flex items-center gap-2 shrink-0">
+
+                                <div className="flex items-center border border-stone-300 rounded-lg bg-white overflow-hidden">
+
+                                  <button
+
+                                    type="button"
+
+                                    onClick={() => setColorSets(c.name, qty - 1)}
+
+                                    disabled={qty <= 0}
+
+                                    className="p-2 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700"
+
+                                    aria-label={`Decrease ${c.name} sets`}
+
+                                  >
+
+                                    <Minus className="w-3.5 h-3.5" />
+
+                                  </button>
+
+                                  <input
+
+                                    type="number"
+
+                                    min={0}
+
+                                    value={qty}
+
+                                    onChange={(e) => setColorSets(c.name, Number(e.target.value))}
+
+                                    className="w-14 text-center text-xs font-bold text-stone-900 outline-none py-1.5"
+
+                                    aria-label={`${c.name} sets`}
+
+                                  />
+
+                                  <button
+
+                                    type="button"
+
+                                    onClick={() => setColorSets(c.name, qty + 1)}
+
+                                    className="p-2 hover:bg-stone-100 text-stone-700"
+
+                                    aria-label={`Increase ${c.name} sets`}
+
+                                  >
+
+                                    <Plus className="w-3.5 h-3.5" />
+
+                                  </button>
+
+                                </div>
+
+                                <span className="text-[10px] text-stone-400 w-12 text-right">
+
+                                  {qty > 0 ? `${qty * product.piecesPerSet} pcs` : ''}
+
+                                </span>
+
+                              </div>}
+
+                            </div>
+
+                          );
+
+                        })}
+
+                      </div>
+
+                    </div>
+                </div>
+              )}
+
               {/* =======================================================
                   VENDOR + WAREHOUSE
               ======================================================= */}
@@ -905,120 +1039,6 @@ export default function RetailerProductDetailPage() {
                   {hasColors ? (
 
                     <div className="pt-2 space-y-3">
-
-                      <div className="flex items-center justify-between text-xs">
-
-                        <strong className="text-stone-800">Select Colours & Sets:</strong>
-
-                        <span className="text-[10px] text-stone-500">It is compulsory to take all the sizes in each colour.</span>
-
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-
-                        {colorOptions.map((c) => {
-
-                          const qty = colorQty[c.name] ?? 0;
-                          const isColorSelected = selectedColor?.toLowerCase() === c.name.toLowerCase();
-
-                          return (
-
-                            <div
-
-                              key={c.name}
-
-                              className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 transition ${isColorSelected ? 'border-rose-800 bg-rose-50' : 'border-stone-200 bg-stone-50'
-
-                                }`}
-
-                            >
-
-                              <button type="button" onClick={() => { setSelectedColor(c.name); setSelectedImageIdx(0); }} aria-pressed={isColorSelected} className="flex items-center gap-2.5 min-w-0 text-left">
-                                <span
-
-                                  className="w-6 h-6 rounded-full border border-stone-300 shrink-0"
-
-                                  style={{ backgroundColor: c.hex || 'transparent' }}
-
-                                />
-
-                                <span className="text-xs font-semibold text-stone-900 truncate">{c.name}</span>
-
-                              </button>
-
-                              <div className="flex items-center gap-2 shrink-0">
-
-                                <div className="flex items-center border border-stone-300 rounded-lg bg-white overflow-hidden">
-
-                                  <button
-
-                                    type="button"
-
-                                    onClick={() => setColorSets(c.name, qty - 1)}
-
-                                    disabled={qty <= 0}
-
-                                    className="p-2 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700"
-
-                                    aria-label={`Decrease ${c.name} sets`}
-
-                                  >
-
-                                    <Minus className="w-3.5 h-3.5" />
-
-                                  </button>
-
-                                  <input
-
-                                    type="number"
-
-                                    min={0}
-
-                                    value={qty}
-
-                                    onChange={(e) => setColorSets(c.name, Number(e.target.value))}
-
-                                    className="w-14 text-center text-xs font-bold text-stone-900 outline-none py-1.5"
-
-                                    aria-label={`${c.name} sets`}
-
-                                  />
-
-                                  <button
-
-                                    type="button"
-
-                                    onClick={() => setColorSets(c.name, qty + 1)}
-
-                                    className="p-2 hover:bg-stone-100 text-stone-700"
-
-                                    aria-label={`Increase ${c.name} sets`}
-
-                                  >
-
-                                    <Plus className="w-3.5 h-3.5" />
-
-                                  </button>
-
-                                </div>
-
-                                <span className="text-[10px] text-stone-400 w-12 text-right">
-
-                                  {qty > 0 ? `${qty * product.piecesPerSet} pcs` : ''}
-
-                                </span>
-
-                              </div>
-
-                            </div>
-
-                          );
-
-                        })}
-
-                      </div>
-
-
 
                       <div
 

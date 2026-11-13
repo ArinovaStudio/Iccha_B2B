@@ -1665,6 +1665,7 @@ export default function AdminProductsPage() {
                     </div>
                   )}
                 </div>
+                
                 {/* <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block font-bold text-stone-800">
@@ -1730,6 +1731,7 @@ export default function AdminProductsPage() {
                       </p>
                     )}
                 </div> */}
+
                 <div>
                   <label className="block font-bold text-stone-800 mb-1">Colors *</label>
                   <MultiColorInput
