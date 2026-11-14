@@ -454,7 +454,7 @@ model Product {
   style           String?
   size            String[] @default([])
   clothingType    String?
-  hsnCode         String  @default("621142")
+  hsnCode         String?
   minOrderSets    Int     @default(1)
   lining          String? // e.g. "Premium Crepe Attached"
   margin          String? // e.g. "2-inch Boutique Alteration Margin"
