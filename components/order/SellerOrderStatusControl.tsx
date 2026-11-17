@@ -3,11 +3,9 @@
 import React, { useState } from "react";
 import { CheckCircle2, Loader2, Save } from "lucide-react";
 import { useApp } from "@/lib/context/AppContext";
+import { SellerOrderStatus } from "@prisma/client";
 
-export const SELLER_ORDER_STATUSES = [
-  "ENQUIRY_RECEIVED",
-  "ORDER_ACCEPTED",
-] as const;
+export const SELLER_ORDER_STATUSES = Object.values(SellerOrderStatus);
 
 type Props = {
   sellerOrderId: string;
@@ -145,7 +143,7 @@ export default function SellerOrderStatusControl({
                 disabled={saving}
                 className="min-w-[210px] px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-stone-800 outline-none focus:border-[#831843]"
               >
-                {!SELLER_ORDER_STATUSES.includes(status as typeof SELLER_ORDER_STATUSES[number]) && (
+                {!SELLER_ORDER_STATUSES.includes(status as SellerOrderStatus) && (
                   <option value={status}>{label(status)}</option>
                 )}
                 {SELLER_ORDER_STATUSES.map(value => (

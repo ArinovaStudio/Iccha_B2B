@@ -90,22 +90,22 @@ function RetailerCatalogueContent() {
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
 
-  // Mobile viewport detection for mobile-specific vendor flow
-  const [isMobile, setIsMobile] = useState<boolean>(false);
-  const [isMobileVendorModalOpen, setIsMobileVendorModalOpen] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [vendorListLoaded, setVendorListLoaded] = useState(false);
+  const initialVendorPickerHandledRef = useRef(false);
 
   // Vendor selection is 100% URL-driven with query parameter ?vendor=<vendorId>
   const vendorParam = searchParams.get('vendor') || '';
   // Default (no ?vendor=): ALL sellers - the admin's own products plus every vendor's.
   // Picking a seller narrows the catalogue to just that seller ('icchastore' = the admin/house products).
   const selectedVendor = vendorParam || ALL_SELLERS;
+
+  // Show the vendor picker on each fresh catalogue visit, but preserve explicit vendor links.
+  useEffect(() => {
+    if (!vendorListLoaded || initialVendorPickerHandledRef.current) return;
+    initialVendorPickerHandledRef.current = true;
+    if (!vendorParam) setIsVendorModalOpen(true);
+  }, [vendorListLoaded, vendorParam]);
   const allProductCount = vendors.reduce((sum, v) => sum + (v.productCount || 0), 0);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
@@ -155,7 +155,10 @@ function RetailerCatalogueContent() {
     fetch('/api/retailer/vendors', { cache: 'no-store' })
       .then(res => res.json())
       .then(json => {
-        if (json.success) setVendors(json.data);
+        if (json.success) {
+          setVendors(json.data);
+          setVendorListLoaded(true);
+        }
       })
       .catch(() => {
         // Vendor filter list will just be empty.
@@ -316,8 +319,12 @@ function RetailerCatalogueContent() {
     params.delete('category');
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
-    setIsMobileVendorModalOpen(false);
+    setIsVendorModalOpen(false);
   }, [router, pathname, searchParams]);
+
+  const closeVendorPicker = useCallback(() => {
+    handleVendorChange(ALL_SELLERS);
+  }, [handleVendorChange]);
 
   const resetFilters = useCallback(() => {
     setSearch('');
@@ -546,8 +553,8 @@ function RetailerCatalogueContent() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setIsMobileVendorModalOpen(true)}
-                    className="md:hidden text-[10px] text-[#831843] font-bold underline hover:text-[#701a75]"
+                    onClick={() => setIsVendorModalOpen(true)}
+                  className="text-[10px] text-[#831843] font-bold underline hover:text-[#701a75]"
                   >
                     Change
                   </button>
@@ -560,7 +567,7 @@ function RetailerCatalogueContent() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setIsMobileVendorModalOpen(true)}
+                  onClick={() => setIsVendorModalOpen(true)}
                   className="px-2.5 py-1 bg-[#831843] text-white text-[10px] font-bold rounded-lg shadow-2xs hover:bg-[#701a75]"
                 >
                   Select Manufacturer
@@ -803,13 +810,16 @@ function RetailerCatalogueContent() {
                 MOBILE FLOATING VENDOR SELECTOR MODAL
                 Applies to mobile view only. Displays first when no vendor is selected.
             ========================================================= */}
-            {isMobile && isMobileVendorModalOpen && (
+            {isVendorModalOpen && (
               <div
-                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 md:hidden animate-in fade-in duration-200"
-                onClick={() => setIsMobileVendorModalOpen(false)}
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/45 backdrop-blur-md p-3 sm:p-6 animate-in fade-in duration-200"
+                onClick={closeVendorPicker}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="catalogue-vendor-picker-title"
               >
                 <div
-                  className="bg-white w-full max-h-[85vh] rounded-t-2xl sm:rounded-2xl p-4 sm:p-5 overflow-hidden flex flex-col shadow-2xl border border-stone-200 animate-in slide-in-from-bottom duration-200"
+                  className="bg-white/95 backdrop-blur-2xl w-full max-w-5xl max-h-[90dvh] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden flex flex-col shadow-2xl border border-white/90 animate-in zoom-in-95 duration-200"
                   onClick={e => e.stopPropagation()}
                 >
                   {/* Header */}
@@ -819,19 +829,19 @@ function RetailerCatalogueContent() {
                         <Store className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="font-serif text-sm sm:text-base font-bold text-stone-900 leading-tight">
-                          Select Manufacturer
+                        <h3 id="catalogue-vendor-picker-title" className="font-serif text-lg sm:text-2xl font-bold text-stone-900 leading-tight">
+                          Choose a Seller
                         </h3>
-                        <p className="text-[10px] text-stone-500">
-                          Tap a vendor to browse their live catalogue
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          Pick a seller to browse their products. Close to view all sellers.
                         </p>
                       </div>
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => setIsMobileVendorModalOpen(false)}
-                      className="w-7 h-7 rounded-full bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center transition"
+                      onClick={closeVendorPicker}
+                      className="w-10 h-10 rounded-full bg-white/80 border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white flex items-center justify-center transition"
                       aria-label="Close"
                     >
                       <X className="w-4 h-4" />
@@ -839,25 +849,7 @@ function RetailerCatalogueContent() {
                   </div>
 
                   {/* Vendor List */}
-                  <div className="overflow-y-auto py-2.5 space-y-2 flex-1 pr-0.5">
-                    <button
-                      type="button"
-                      onClick={() => handleVendorChange(ALL_SELLERS)}
-                      className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${selectedVendor === ALL_SELLERS
-                        ? 'border-[#831843] bg-rose-50/90'
-                        : 'border-stone-200 bg-white hover:border-stone-300'
-                        }`}
-                    >
-                      <span className="font-serif font-bold text-xs sm:text-sm text-stone-900">
-                        All Sellers
-                        <span className="ml-2 text-[10px] text-stone-400 font-medium">
-                          {allProductCount ? `${allProductCount} designs` : ''}
-                        </span>
-                      </span>
-                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${selectedVendor === ALL_SELLERS ? 'bg-[#831843] text-white' : 'bg-stone-100 text-stone-700'}`}>
-                        {selectedVendor === ALL_SELLERS ? 'Selected' : 'Select'}
-                      </span>
-                    </button>
+                  <div className="overflow-y-auto py-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 pr-1">
                     {vendors.map((v) => {
                       const isSelected = selectedVendor === v.id;
                       const initials = v.name
@@ -873,15 +865,15 @@ function RetailerCatalogueContent() {
                           key={v.id}
                           type="button"
                           onClick={() => handleVendorChange(v.id)}
-                          className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer group ${isSelected
-                              ? 'border-[#831843] bg-rose-50/90 shadow-2xs ring-1 ring-[#831843]/20'
-                              : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/70'
+                          className={`aspect-square min-h-0 w-full text-center p-4 sm:p-6 rounded-2xl border transition-all flex flex-col items-center justify-center gap-4 cursor-pointer group ${isSelected
+                              ? 'border-[#831843] bg-rose-50/90 shadow-md ring-1 ring-[#831843]/20'
+                              : 'border-stone-200 bg-white/80 hover:border-[#831843]/50 hover:bg-white hover:shadow-md'
                             }`}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex w-full flex-col items-center gap-3 min-w-0">
                             {/* Avatar */}
                             <div className="relative shrink-0">
-                              <div className={`w-11 h-11 rounded-full overflow-hidden border transition-transform ${isSelected
+                              <div className={`w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full overflow-hidden border transition-transform ${isSelected
                                   ? 'border-[#831843] ring-1 ring-rose-400/40'
                                   : 'border-stone-200'
                                 }`}>
@@ -893,7 +885,7 @@ function RetailerCatalogueContent() {
                                     loading="lazy"
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center font-bold text-xs tracking-wider">
+                                  <div className="w-full h-full bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center font-bold text-base tracking-wider">
                                     {initials || <Store className="w-4 h-4" />}
                                   </div>
                                 )}
@@ -907,18 +899,16 @@ function RetailerCatalogueContent() {
                             </div>
 
                             {/* Text info */}
-                            <div className="min-w-0 space-y-0.5">
-                              <h4 className="font-serif font-bold text-xs sm:text-sm text-stone-900 group-hover:text-[#831843] transition-colors truncate">
+                            <div className="min-w-0 w-full space-y-2 text-center">
+                              <h4 className="font-serif font-bold text-base sm:text-lg text-stone-900 group-hover:text-[#831843] transition-colors line-clamp-2">
                                 {v.name}
                               </h4>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="inline-block text-[10px] font-semibold text-rose-900 bg-rose-100/70 border border-rose-200/80 px-2 py-0.5 rounded-md whitespace-normal leading-snug">
-                                  {v.specialty || ''}
-                                </span>
-                                <span className="text-[9px] text-stone-400 font-medium">
-                                  {v.productCount ? `${v.productCount} design${v.productCount > 1 ? 's' : ''}` : 'Active'}
-                                </span>
-                              </div>
+                              <span className="block mx-auto w-fit max-w-full text-xs font-semibold text-rose-900 bg-rose-100/70 border border-rose-200/80 px-2.5 py-1 rounded-lg whitespace-normal leading-snug">
+                                {v.specialty || 'Wholesale Collections'}
+                              </span>
+                              <span className="block text-[11px] text-stone-500 font-medium">
+                                {v.productCount ? `${v.productCount} designs` : 'Active'}
+                              </span>
                             </div>
                           </div>
 
@@ -960,7 +950,7 @@ function RetailerCatalogueContent() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => setIsMobileVendorModalOpen(true)}
+                    onClick={() => setIsVendorModalOpen(true)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#831843] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#701a75] transition"
                   >
                     <Store className="w-4 h-4" />

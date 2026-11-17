@@ -231,7 +231,7 @@ export default function RetailerHeader() {
         <div className="mx-auto grid h-[68px] max-w-[1400px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:px-8">
           {/* LOGO */}
           <Link
-            href="/catalogue"
+            href="/"
             aria-label="Iccha - The Women's Label"
             className={`flex shrink-0 items-center justify-self-start rounded-sm ${focusRing}`}
           >

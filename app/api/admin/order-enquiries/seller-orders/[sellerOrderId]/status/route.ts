@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireStaff } from "@/lib/auth/guard";
+import { SellerOrderStatus } from "@prisma/client";
 
 const statusSchema = z.object({
-  status: z.enum([
-    "ENQUIRY_RECEIVED",
-    "ORDER_ACCEPTED",
-    "PROCESSING",
-    "READY_FOR_DISPATCH",
-    "DISPATCHED",
-    "CANCELLED",
-  ]),
+  status: z.nativeEnum(SellerOrderStatus),
   notes: z.string().trim().max(1000).optional(),
 });
 

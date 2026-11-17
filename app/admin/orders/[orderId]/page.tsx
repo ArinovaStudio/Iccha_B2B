@@ -5,6 +5,7 @@ import { ArrowLeft, Clock3, Package, Store, Warehouse } from "lucide-react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { useApp } from "@/lib/context/AppContext";
 import SellerOrderStatusControl from "@/components/order/SellerOrderStatusControl";
+import { parseColors } from "@/lib/product-colors";
 type Item = {
   id: string;
   productId?: string | null;
@@ -20,6 +21,7 @@ type Item = {
   gstRate?: number;
   hsn?: string | null;
   color?: string | null;
+  colorHex?: string | null;
   sizeCombination?: string | null;
   lineSubtotal: number;
   gstAmount: number;
@@ -27,6 +29,7 @@ type Item = {
   imageUrl?: string | null;
   product?: {
     vendorId: string | null;
+    color?: string | null;
     vendor?: {
       id: string;
       businessName: string;
@@ -683,17 +686,71 @@ export default function AdminOrderDetailPage({
                       </p>
                     </div>
 
-                    {(item.sizeCombination || item.hsn) && (
-                      <p className="text-xs text-stone-500 mt-1">
-                        {[
-                          item.sizeCombination
-                            ? `Size: ${item.sizeCombination}`
-                            : null,
-                          item.hsn ? `HSN ${item.hsn}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
+                    {(item.sizeCombination || item.hsn || g.lines.some((l) => l.color)) && (
+
+                      <div className="flex flex-wrap items-center gap-3 mt-3">
+
+                        {/* Size Highlight */}
+                        {item.sizeCombination && (
+                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                              Size
+                            </span>
+
+                            <span className="text-base font-extrabold text-[#831843] tracking-wide">
+                              {item.sizeCombination}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Color Highlight */}
+                        {[...new Set(g.lines.map((l) => l.color).filter(Boolean))].map((color) => (
+                          (() => {
+                            const line = g.lines.find((entry) => entry.color === color);
+                            const hex = line?.colorHex ?? (line?.product?.color
+                              ? parseColors(line.product.color).find(
+                                (option) => option.name.toLowerCase() === color.toLowerCase()
+                              )?.hex
+                              : null);
+
+                            return (
+                              <div
+                                key={color}
+                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200"
+                              >
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                                  Color
+                                </span>
+
+                                <span
+                                  aria-label={`${color} color swatch`}
+                                  title={hex ?? "No hex value saved for this color"}
+                                  className="h-4 w-4 shrink-0 rounded-full border border-amber-300"
+                                  style={{ backgroundColor: hex ?? "transparent" }}
+                                />
+
+                                <span className="text-sm font-extrabold text-amber-900">
+                                  {color}
+                                </span>
+                              </div>
+                            );
+                          })()
+                        ))}
+
+                        {/* HSN */}
+                        {item.hsn && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-50 border border-stone-200">
+                            <span className="text-[10px] font-bold text-stone-400 uppercase">
+                              HSN
+                            </span>
+
+                            <span className="text-xs font-semibold text-stone-600">
+                              {item.hsn}
+                            </span>
+                          </div>
+                        )}
+
+                      </div>
                     )}
 
                     <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
@@ -822,8 +879,8 @@ export default function AdminOrderDetailPage({
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-3 h-3 rounded-full ${i === order.history.length - 1
-                        ? "bg-[#831843]"
-                        : "bg-stone-300"
+                      ? "bg-[#831843]"
+                      : "bg-stone-300"
                       }`}
                   />
 

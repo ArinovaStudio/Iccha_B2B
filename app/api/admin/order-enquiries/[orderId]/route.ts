@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireStaff, requireVendor } from "@/lib/auth/guard";
+import { parseColors } from "@/lib/product-colors";
 
 function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -102,6 +103,7 @@ export async function GET(
               select: {
                 id: true,
                 vendorId: true,
+                color: true,
                 vendor: {
                   select: {
                     id: true,
@@ -151,6 +153,11 @@ export async function GET(
 
     const items = order.items.map(item => ({
       ...item,
+      colorHex: item.color && item.product?.color
+        ? parseColors(item.product.color).find(
+            option => option.name.toLowerCase() === item.color.toLowerCase()
+          )?.hex ?? null
+        : null,
       pieceRate: Number(item.pieceRate),
       setRate: Number(item.setRate),
       lineSubtotal: Number(item.lineSubtotal),
