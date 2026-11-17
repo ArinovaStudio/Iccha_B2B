@@ -47,16 +47,16 @@ export async function PATCH(
       );
     }
 
-    // Admin can update only IcchaStore-owned SellerOrders.
-    // Vendor-owned SellerOrders must be updated by their vendor.
+    // Staff can manage any seller order. Vendor access remains restricted to
+    // the vendor-owned status endpoint, which verifies ownership separately.
     const sellerOrder = await prisma.sellerOrder.findFirst({
       where: {
         id: sellerOrderId,
-        vendorId: null,
       },
       select: {
         id: true,
         status: true,
+        sellerName: true,
         orderEnquiry: {
           select: {
             orderNumber: true,
@@ -69,7 +69,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "IcchaStore seller order not found.",
+          error: "Seller order not found.",
         },
         { status: 404 }
       );
@@ -99,7 +99,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: `IcchaStore order ${sellerOrder.orderEnquiry.orderNumber} status updated successfully.`,
+      message: `${sellerOrder.sellerName} order ${sellerOrder.orderEnquiry.orderNumber} status updated successfully.`,
       data: {
         id: updated.id,
         status: updated.status.toLowerCase(),

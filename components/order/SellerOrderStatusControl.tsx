@@ -112,7 +112,9 @@ export default function SellerOrderStatusControl({
           <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400">
             {mode === "vendor"
               ? "Your Seller Order"
-              : "IcchaStore Order"}
+              : sellerName.toLowerCase() === "icchastore"
+                ? "IcchaStore Order"
+                : "Vendor Order"}
           </p>
 
           <div className="flex items-center gap-2 mt-1">
@@ -126,7 +128,7 @@ export default function SellerOrderStatusControl({
           <p className="text-xs text-stone-500 mt-1">
             {mode === "vendor"
               ? "You can update the status of your products only."
-              : "Admin controls the status of IcchaStore-owned products only."}
+              : "Admin can update the status of this seller order."}
           </p>
         </div>
 

@@ -104,6 +104,15 @@ function money(v: number) {
   })}`;
 }
 
+function colorBadgeText(hex: string | null | undefined) {
+  if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return "#1c1917";
+  const channels = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const luminance = channels
+    .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  return luminance > 0.42 ? "#1c1917" : "#ffffff";
+}
+
 function parseAddress(raw?: string | null): Address | null {
   if (!raw) return null;
 
@@ -716,20 +725,25 @@ export default function AdminOrderDetailPage({
                             return (
                               <div
                                 key={color}
-                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200"
+                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border"
+                                style={{
+                                  backgroundColor: hex ?? "#f5f5f4",
+                                  borderColor: hex ?? "#d6d3d1",
+                                  color: colorBadgeText(hex),
+                                }}
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">
                                   Color
                                 </span>
 
-                                <span
+                                {/* <span
                                   aria-label={`${color} color swatch`}
                                   title={hex ?? "No hex value saved for this color"}
-                                  className="h-4 w-4 shrink-0 rounded-full border border-amber-300"
+                                  className="h-4 w-4 shrink-0 rounded-full border border-current"
                                   style={{ backgroundColor: hex ?? "transparent" }}
-                                />
+                                /> */}
 
-                                <span className="text-sm font-extrabold text-amber-900">
+                                <span className="text-sm font-extrabold">
                                   {color}
                                 </span>
                               </div>

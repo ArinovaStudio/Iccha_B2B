@@ -79,7 +79,9 @@ function serializeOrder(order: any, items: any[], scoped: boolean) {
     retailerContact: order.retailerContact,
     retailerEmail: order.retailerEmail,
     customerRemarks: order.customerRemarks,
-    status: order.status,
+    // The list is scoped to one seller (house or vendor), so show that seller's
+    // status to match the status control on the order detail page.
+    status: order.sellerOrders?.[0]?.status ?? order.status,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     totalDesigns: scoped ? designs : order.totalDesigns,
@@ -175,6 +177,10 @@ export async function GET(request: NextRequest) {
           where: itemWhere,
           orderBy: { id: "asc" },
           select: itemSelect,
+        },
+        sellerOrders: {
+          where: vendorId ? { vendorId } : house ? { vendorId: null } : undefined,
+          select: { status: true },
         },
       },
     });
