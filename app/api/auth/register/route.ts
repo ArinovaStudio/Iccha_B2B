@@ -37,6 +37,7 @@ const registerSchema = z.object({
   state: z.string().min(1, "State is required"),
   stateCode: z.string().min(1, "State code is required"),
   pincode: z.string().optional().default(""),
+  billingAddress: z.string().trim().min(1, "Billing address is required").max(500),
 }).superRefine((data, ctx) => {
   if (data.accountType === "retailer" && !data.gstin) {
     ctx.addIssue({
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
             applicantName: data.applicantName,
             mobile,
             whatsapp,
+            billingAddress: data.billingAddress,
             gstin: data.accountType === "retailer" ? data.gstin : null,
             pan: data.pan || null,
             businessType: data.accountType === "drop_shipper" ? "drop_shipper" : null,

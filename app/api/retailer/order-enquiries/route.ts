@@ -11,17 +11,16 @@ const FREE_SHIPPING_THRESHOLD = 20000;
 const FLAT_SHIPPING = 350;
 const NO_SIZE = "__NO_SIZE__";
 const addressSchema = z.object({
-  street: z.string().trim().min(1, "Delivery address is required"),
-  city: z.string().trim().min(1, "City is required"),
-  state: z.string().trim().min(1, "State is required"),
-  stateCode: z.string().trim().min(1, "State code is required"),
-  pincode: z.string().trim().min(4, "Valid pincode is required"),
+  street: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  state: z.string().trim().optional(),
+  stateCode: z.string().trim().optional(),
+  pincode: z.string().trim().optional(),
   area: z.string().trim().nullish(),
   landmark: z.string().trim().nullish(),
 });
 const submitSchema = z.object({
-  billingAddress: addressSchema,
-  shippingAddress: addressSchema,
+  shippingAddress: addressSchema.optional(),
   transportAgency: z.string().trim().min(1, "Transporter agency is required"),
   preferredStation: z.string().trim().nullish(),
   remarks: z.string().trim().nullish(),
@@ -216,7 +215,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { billingAddress, shippingAddress, transportAgency, preferredStation, remarks } = parsed.data;
+    const { shippingAddress = {}, transportAgency, preferredStation, remarks } = parsed.data;
     const retailerProfileId = guard.retailerProfile.id;
     const result = await prisma.$transaction(
       async (tx) => {
@@ -229,6 +228,38 @@ export async function POST(request: NextRequest) {
         if (!retailer) {
           throw new Error("Wholesaler profile not found");
         }
+        const billingAddress = retailer.billingAddress;
+        if (!billingAddress) {
+          throw new Error("Please add a billing address to your retailer profile before placing an order.");
+        }
+        const savedShippingAddress =
+          (await tx.retailerAddress.findFirst({
+            where: { retailerProfileId: retailer.id, type: "shipping" },
+            orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+          })) ??
+          (await tx.retailerAddress.findFirst({
+            where: { retailerProfileId: retailer.id, type: "billing" },
+            orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+          }));
+        const shippingAddress = savedShippingAddress
+          ? {
+              street: savedShippingAddress.street,
+              area: savedShippingAddress.area,
+              city: savedShippingAddress.city,
+              state: savedShippingAddress.state,
+              stateCode: savedShippingAddress.stateCode,
+              pincode: savedShippingAddress.pincode,
+              landmark: savedShippingAddress.landmark,
+            }
+          : {
+              street: "",
+              area: null,
+              city: "",
+              state: "",
+              stateCode: "",
+              pincode: "",
+              landmark: null,
+            };
         const cart = await tx.cart.findUnique({
           where: { retailerProfileId },
           include: {
@@ -438,7 +469,15 @@ export async function POST(request: NextRequest) {
             retailerGstin: retailer.gstin,
             retailerContact: retailer.mobile,
             retailerEmail: retailer.user.email,
-            billingAddressJson: JSON.stringify(billingAddress),
+            billingAddressJson: JSON.stringify({
+              street: billingAddress,
+              area: null,
+              city: "",
+              state: "",
+              stateCode: "",
+              pincode: "",
+              landmark: null,
+            }),
             shippingAddressJson: JSON.stringify(shippingAddress),
             totalDesigns,
             totalSets,
@@ -578,7 +617,7 @@ export async function POST(request: NextRequest) {
           });
         }
         for (const [index, group] of Array.from(entityGroups.values()).entries()) {
-          const isInterState = shippingAddress.stateCode !== group.entity.stateCode;
+          const isInterState = Boolean(shippingAddress.stateCode) && shippingAddress.stateCode !== group.entity.stateCode;
           const cgstAmount = isInterState ? 0 : roundMoney(group.gst / 2);
           const sgstAmount = isInterState ? 0 : roundMoney(group.gst / 2);
           const igstAmount = isInterState ? group.gst : 0;

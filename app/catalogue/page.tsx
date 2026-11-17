@@ -812,14 +812,14 @@ function RetailerCatalogueContent() {
             ========================================================= */}
             {isVendorModalOpen && (
               <div
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/45 backdrop-blur-md p-3 sm:p-6 animate-in fade-in duration-200"
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/45 backdrop-blur-md p-2.5 sm:p-6 animate-in fade-in duration-200"
                 onClick={closeVendorPicker}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="catalogue-vendor-picker-title"
               >
                 <div
-                  className="bg-white/95 backdrop-blur-2xl w-full max-w-5xl max-h-[90dvh] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden flex flex-col shadow-2xl border border-white/90 animate-in zoom-in-95 duration-200"
+                  className="bg-white/95 backdrop-blur-2xl w-full max-w-5xl max-h-[90dvh] rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 overflow-hidden flex flex-col shadow-2xl border border-white/90 animate-in zoom-in-95 duration-200"
                   onClick={e => e.stopPropagation()}
                 >
                   {/* Header */}
@@ -849,7 +849,7 @@ function RetailerCatalogueContent() {
                   </div>
 
                   {/* Vendor List */}
-                  <div className="overflow-y-auto py-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 pr-1">
+                  <div className="overflow-y-auto py-3 sm:py-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4 flex-1 pr-1">
                     {vendors.map((v) => {
                       const isSelected = selectedVendor === v.id;
                       const initials = v.name
@@ -865,15 +865,15 @@ function RetailerCatalogueContent() {
                           key={v.id}
                           type="button"
                           onClick={() => handleVendorChange(v.id)}
-                          className={`aspect-square min-h-0 w-full text-center p-4 sm:p-6 rounded-2xl border transition-all flex flex-col items-center justify-center gap-4 cursor-pointer group ${isSelected
+                          className={`min-h-28 sm:aspect-square sm:min-h-0 w-full text-left sm:text-center p-3 sm:p-6 rounded-2xl border transition-all flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-3 sm:gap-4 cursor-pointer group ${isSelected
                               ? 'border-[#831843] bg-rose-50/90 shadow-md ring-1 ring-[#831843]/20'
                               : 'border-stone-200 bg-white/80 hover:border-[#831843]/50 hover:bg-white hover:shadow-md'
                             }`}
                         >
-                          <div className="flex w-full flex-col items-center gap-3 min-w-0">
+                          <div className="flex flex-1 min-w-0 items-center gap-3 sm:w-full sm:flex-col sm:justify-center sm:gap-3">
                             {/* Avatar */}
                             <div className="relative shrink-0">
-                              <div className={`w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full overflow-hidden border transition-transform ${isSelected
+                              <div className={`w-12 h-12 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full overflow-hidden border transition-transform ${isSelected
                                   ? 'border-[#831843] ring-1 ring-rose-400/40'
                                   : 'border-stone-200'
                                 }`}>
@@ -899,21 +899,21 @@ function RetailerCatalogueContent() {
                             </div>
 
                             {/* Text info */}
-                            <div className="min-w-0 w-full space-y-2 text-center">
-                              <h4 className="font-serif font-bold text-base sm:text-lg text-stone-900 group-hover:text-[#831843] transition-colors line-clamp-2">
+                            <div className="min-w-0 flex-1 space-y-1 text-left sm:w-full sm:flex-none sm:space-y-2 sm:text-center">
+                              <h4 className="font-serif font-bold text-sm sm:text-lg text-stone-900 group-hover:text-[#831843] transition-colors line-clamp-2">
                                 {v.name}
                               </h4>
-                              <span className="block mx-auto w-fit max-w-full text-xs font-semibold text-rose-900 bg-rose-100/70 border border-rose-200/80 px-2.5 py-1 rounded-lg whitespace-normal leading-snug">
+                              <span className="block sm:mx-auto w-fit max-w-full text-[10px] sm:text-xs font-semibold text-rose-900 bg-rose-100/70 border border-rose-200/80 px-2 py-1 rounded-lg whitespace-normal leading-snug line-clamp-2">
                                 {v.specialty || 'Wholesale Collections'}
                               </span>
-                              <span className="block text-[11px] text-stone-500 font-medium">
+                              <span className="block text-[10px] sm:text-[11px] text-stone-500 font-medium">
                                 {v.productCount ? `${v.productCount} designs` : 'Active'}
                               </span>
                             </div>
                           </div>
 
                           <div className="shrink-0 flex items-center gap-1">
-                            <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg ${isSelected
+                            <span className={`text-[9px] sm:text-[10px] font-semibold px-2 sm:px-2.5 py-1 rounded-lg ${isSelected
                                 ? 'bg-[#831843] text-white'
                                 : 'bg-stone-100 text-stone-700 group-hover:bg-[#831843] group-hover:text-white transition-colors'
                               }`}>

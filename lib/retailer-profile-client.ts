@@ -15,6 +15,7 @@ export interface RetailerProfileData {
     mobile: string;
     whatsapp: string | null;
     email: string;
+    billingAddress: string | null;
     gstin: string | null;
     pan: string | null;
     businessType: string | null;

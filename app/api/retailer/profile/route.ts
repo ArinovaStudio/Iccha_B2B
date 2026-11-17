@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
           mobile: retailerProfile.mobile,
           whatsapp: retailerProfile.whatsapp,
           email: user.email,
+          billingAddress: retailerProfile.billingAddress || billing?.street || null,
           gstin: retailerProfile.gstin,
           pan: retailerProfile.pan,
           businessType: retailerProfile.businessType,

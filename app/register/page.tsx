@@ -30,6 +30,8 @@ interface FormData {
   whatsapp: string;
   email: string;
   address: string;
+  billingAddress: string;
+  billingAddressSameAsBusiness: boolean;
 }
 
 interface AttachedDocument {
@@ -102,6 +104,8 @@ export default function RegisterPage() {
     whatsapp: '',
     email: '',
     address: '',
+    billingAddress: '',
+    billingAddressSameAsBusiness: false,
   });
   const [gstin, setGstin] = useState('');
   const [password, setPassword] = useState('');
@@ -204,6 +208,9 @@ export default function RegisterPage() {
           street: formData.address.trim(),
           city: '',
           pincode: '',
+          billingAddress: formData.billingAddressSameAsBusiness
+            ? formData.address.trim()
+            : formData.billingAddress.trim(),
         }),
       });
       const result = await response.json();
@@ -289,6 +296,35 @@ export default function RegisterPage() {
                 <label className={labelClass}>Address (including state) *</label>
                 <textarea className={inputClass} required rows={3} maxLength={300} value={formData.address} onChange={(e) => updateForm('address', e.target.value)} placeholder="Shop / building, street, city, state, pincode" />
                 <p className="mt-1 text-[11px] text-stone-500">Enter your complete address with the state name in one place.</p>
+              </div>
+              <div className="space-y-2 rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
+                <label className="flex cursor-pointer items-start gap-2.5 text-xs font-medium text-stone-700">
+                  <input
+                    type="checkbox"
+                    checked={formData.billingAddressSameAsBusiness}
+                    onChange={(event) => updateForm('billingAddressSameAsBusiness', event.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded accent-[#831843]"
+                  />
+                  <span>Billing address is the same as business address</span>
+                </label>
+                <div>
+                  <label className={labelClass}>Billing address *</label>
+                  <textarea
+                    className={`${inputClass} ${formData.billingAddressSameAsBusiness ? 'cursor-not-allowed bg-stone-100 text-stone-500' : ''}`}
+                    required
+                    rows={3}
+                    maxLength={500}
+                    readOnly={formData.billingAddressSameAsBusiness}
+                    value={formData.billingAddressSameAsBusiness ? formData.address : formData.billingAddress}
+                    onChange={(event) => updateForm('billingAddress', event.target.value)}
+                    placeholder="Enter billing address including state and pincode"
+                  />
+                  <p className="mt-1 text-[11px] text-stone-500">
+                    {formData.billingAddressSameAsBusiness
+                      ? 'This follows your business address. Uncheck above to enter a different billing address.'
+                      : 'Enter the complete billing address, including state and pincode.'}
+                  </p>
+                </div>
               </div>
             </section>
 

@@ -1,0 +1,1 @@
+ALTER TABLE "RetailerProfile" ADD COLUMN "billingAddress" TEXT;

@@ -1,0 +1,1 @@
+ALTER TABLE "User" DROP COLUMN IF EXISTS "passwordResetOtpHash", DROP COLUMN IF EXISTS "passwordResetOtpExpiresAt", DROP COLUMN IF EXISTS "passwordResetOtpSentAt", DROP COLUMN IF EXISTS "passwordResetOtpAttempts";

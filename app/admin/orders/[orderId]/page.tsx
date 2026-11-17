@@ -123,7 +123,7 @@ function parseAddress(raw?: string | null): Address | null {
   }
 }
 
-function AddressLines({ address }: { address: Address | null }) {
+function AddressLines({ address, originalTextOnly = false }: { address: Address | null; originalTextOnly?: boolean }) {
   if (!address) {
     return (
       <p className="text-xs text-stone-400 mt-2">
@@ -132,16 +132,24 @@ function AddressLines({ address }: { address: Address | null }) {
     );
   }
 
+  if (originalTextOnly) {
+    return (
+      <div className="text-xs text-stone-600 mt-2 leading-relaxed">
+        {address.street ? <p>{address.street}</p> : <p className="text-stone-400">Not provided</p>}
+      </div>
+    );
+  }
+
+  const streetLine = [address.street, address.area].filter(Boolean).join(", ");
+  const cityStateLine = [address.city, address.state].filter(Boolean).join(", ");
+  const localityLine = [cityStateLine, address.pincode ? `- ${address.pincode}` : ""]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div className="text-xs text-stone-600 mt-2 leading-relaxed">
-      <p>
-        {[address.street, address.area].filter(Boolean).join(", ")}
-      </p>
-
-      <p>
-        {[address.city, address.state].filter(Boolean).join(", ")}
-        {address.pincode ? ` - ${address.pincode}` : ""}
-      </p>
+      {streetLine && <p>{streetLine}</p>}
+      {localityLine && <p>{localityLine}</p>}
 
       {address.landmark && (
         <p className="text-stone-500">
@@ -151,6 +159,12 @@ function AddressLines({ address }: { address: Address | null }) {
     </div>
   );
 }
+
+function addressSignature(address: Address | null) {
+  if (!address) return "";
+  return [...new Set((address.street || "").toLowerCase().match(/[a-z0-9]+/g) || [])].sort().join("|");
+}
+
 function groupItems(items: Item[]) {
   const map = new Map<
     string,
@@ -405,6 +419,10 @@ export default function AdminOrderDetailPage({
 
   const shippingAddress = parseAddress(order.shippingAddressJson);
   const billingAddress = parseAddress(order.billingAddressJson);
+  const shippingSignature = addressSignature(shippingAddress);
+  const addressesMatch = Boolean(
+    shippingSignature && shippingSignature === addressSignature(billingAddress)
+  );
 
   // Calculate the visible total without shipping.
   const visibleTotal =
@@ -612,7 +630,7 @@ export default function AdminOrderDetailPage({
 
         {/* Order Details and Addresses */}
         <section
-          className={`grid grid-cols-1 gap-4 ${isStaffView ? "md:grid-cols-3" : "md:grid-cols-2"
+          className={`grid grid-cols-1 gap-4 ${isStaffView && !addressesMatch ? "md:grid-cols-3" : "md:grid-cols-2"
             }`}
         >
           <div className="bg-white rounded-3xl border border-stone-200 p-5">
@@ -626,13 +644,15 @@ export default function AdminOrderDetailPage({
 
           <div className="bg-white rounded-3xl border border-stone-200 p-5">
             <p className="text-[10px] uppercase tracking-widest text-stone-400">
-              Shipping Address
+              {isStaffView && addressesMatch
+                ? "Shipping Address / Billing Address"
+                : "Shipping Address"}
             </p>
 
-            <AddressLines address={shippingAddress} />
+            <AddressLines address={shippingAddress} originalTextOnly />
           </div>
 
-          {isStaffView && (
+          {isStaffView && !addressesMatch && (
             <div className="bg-white rounded-3xl border border-stone-200 p-5">
               <p className="text-[10px] uppercase tracking-widest text-stone-400">
                 Billing Address

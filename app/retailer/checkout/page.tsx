@@ -22,32 +22,16 @@ import {
 import RetailerHeader from '@/components/layout/RetailerHeader';
 import Footer from '@/components/layout/Footer';
 import { useApp } from '@/lib/context/AppContext';
-const INDIAN_STATE_CODES: Record<string, string> = {
-  "andhra pradesh": "37", "arunachal pradesh": "12", assam: "18",
-  bihar: "10", chhattisgarh: "22", goa: "30", gujarat: "24",
-  haryana: "06", "himachal pradesh": "02", jharkhand: "20",
-  karnataka: "29", kerala: "32", "madhya pradesh": "23",
-  maharashtra: "27", manipur: "14", meghalaya: "17", mizoram: "15",
-  nagaland: "13", odisha: "21", orissa: "21", punjab: "03",
-  rajasthan: "08", sikkim: "11", "tamil nadu": "33", telangana: "36",
-  tripura: "16", "uttar pradesh": "09", uttarakhand: "05",
-  "west bengal": "19", delhi: "07", "new delhi": "07",
-  "jammu and kashmir": "01", ladakh: "38", chandigarh: "04",
-  puducherry: "34", "andaman and nicobar islands": "35",
-  "dadra and nagar haveli and daman and diu": "26", lakshadweep: "31",
-};
-function normalizeAddress(address: any) {
-  const state = String(address?.state ?? "").trim();
-  return {
-    street: String(address?.street ?? "").trim(),
-    area: address?.area ? String(address.area) : null,
-    city: String(address?.city ?? "").trim(),
-    state,
-    stateCode: String(address?.stateCode ?? "").trim() || INDIAN_STATE_CODES[state.toLowerCase()] || "",
-    pincode: String(address?.pincode ?? "").trim(),
-    landmark: address?.landmark ? String(address.landmark) : null,
-  };
+
+function formatAddress(address: RetailerProfileData['shippingAddress']) {
+  if (!address) return '';
+  return address.street?.trim() || '';
 }
+
+function addressSignature(value: string) {
+  return [...new Set(value.toLowerCase().match(/[a-z0-9]+/g) || [])].sort().join('|');
+}
+
 export default function RetailerCheckoutPage() {
   const router = useRouter();
   const {
@@ -62,25 +46,12 @@ export default function RetailerCheckoutPage() {
   const [preferredStation, setPreferredStation] = useState('City Transporter Godown / Local Delivery');
   const [remarks, setRemarks] = useState('Please ensure moisture-proof poly wrapping inside cardboard boxes.');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Address State
-  const [shippingAddress, setShippingAddress] = useState({
-    street: '',
-    area: null as string | null,
-    city: '',
-    state: '',
-    stateCode: '',
-    pincode: '',
-    landmark: null as string | null,
-  });
-  const [billingAddress, setBillingAddress] = useState({
-    street: '',
-    area: null as string | null,
-    city: '',
-    state: '',
-    stateCode: '',
-    pincode: '',
-    landmark: null as string | null,
-  });
+  const billingAddressText = retailerProfile?.profile.billingAddress?.trim() || '';
+  const shippingAddressText = formatAddress(retailerProfile?.shippingAddress ?? null);
+  const addressesMatch = Boolean(
+    billingAddressText && shippingAddressText &&
+    addressSignature(billingAddressText) === addressSignature(shippingAddressText)
+  );
   // Load retailer profile + addresses
   useEffect(() => {
     let cancelled = false;
@@ -90,14 +61,6 @@ export default function RetailerCheckoutPage() {
         const data = await fetchRetailerProfile();
         if (cancelled) return;
         setRetailerProfile(data);
-        if (data.shippingAddress) {
-          setShippingAddress(normalizeAddress(data.shippingAddress));
-        }
-        if (data.billingAddress) {
-          setBillingAddress(normalizeAddress(data.billingAddress));
-        } else if (data.shippingAddress) {
-          setBillingAddress(normalizeAddress(data.shippingAddress));
-        }
       } catch (error) {
         console.error('Failed to load retailer profile:', error);
         if (!cancelled) {
@@ -125,27 +88,12 @@ export default function RetailerCheckoutPage() {
       router.push('/catalogue');
       return;
     }
-    const normalizedShippingAddress = normalizeAddress(shippingAddress);
-    // This checkout is for a delivery destination chosen by the retailer. Use that address for this order instead of blocking on the saved profile billing address.
-    const normalizedBillingAddress = normalizedShippingAddress;
-    const isAddressComplete = (address: ReturnType<typeof normalizeAddress>) =>
-      Boolean(address.street && address.city && address.state && address.stateCode && address.pincode.length >= 4);
-    if (!isAddressComplete(normalizedShippingAddress)) {
-      addToast({
-        type: 'error',
-        title: 'Incomplete Delivery Address',
-        message: 'Please check the delivery address, city, state, and pincode. Use a recognized Indian state name.',
-      });
-      return;
-    }
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/retailer/order-enquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          billingAddress: normalizedBillingAddress,
-          shippingAddress: normalizedShippingAddress,
           transportAgency,
           preferredStation,
           remarks,
@@ -281,57 +229,31 @@ export default function RetailerCheckoutPage() {
                   2\. Consignee & Shipping Destination
                 </h3>
                 <div className="space-y-3">
-                  <div>
-                    <label className="block font-semibold text-stone-800 mb-1">
-                      Delivery Address (Store / Godown) *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={shippingAddress.street}
-                      onChange={e => setShippingAddress({ ...shippingAddress, street: e.target.value })}
-                      className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-medium focus:outline-none focus:border-rose-900"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  {addressesMatch ? (
                     <div>
-                      <label className="block font-semibold text-stone-800 mb-1">City *</label>
-                      <input
-                        type="text"
-                        required
-                        value={shippingAddress.city}
-                        onChange={e => setShippingAddress({ ...shippingAddress, city: e.target.value })}
-                        className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-medium focus:outline-none focus:border-rose-900"
-                      />
+                      <span className="block font-semibold text-stone-800 mb-1">
+                        Billing Address / Shipping Address
+                      </span>
+                      <p className="min-h-12 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2.5 text-sm leading-relaxed text-stone-700 whitespace-pre-wrap">
+                        {billingAddressText}
+                      </p>
                     </div>
-                    <div>
-                      <label className="block font-semibold text-stone-800 mb-1">State (Place of Supply) *</label>
-                      <input
-                        type="text"
-                        required
-                        value={shippingAddress.state}
-                        onChange={e => {
-                          const state = e.target.value;
-                          setShippingAddress({
-                            ...shippingAddress,
-                            state,
-                            stateCode: INDIAN_STATE_CODES[state.trim().toLowerCase()] || '',
-                          });
-                        }}
-                        className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-medium focus:outline-none focus:border-rose-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-800 mb-1">Pincode *</label>
-                      <input
-                        type="text"
-                        required
-                        value={shippingAddress.pincode}
-                        onChange={e => setShippingAddress({ ...shippingAddress, pincode: e.target.value })}
-                        className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-medium font-mono focus:outline-none focus:border-rose-900"
-                      />
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div>
+                        <span className="block font-semibold text-stone-800 mb-1">Billing Address</span>
+                        <p className="min-h-12 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2.5 text-sm leading-relaxed text-stone-700 whitespace-pre-wrap">
+                          {billingAddressText || 'Billing address not available. Please update your retailer profile.'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="block font-semibold text-stone-800 mb-1">Shipping Address</span>
+                        <p className="min-h-12 rounded-xl border border-stone-200 bg-stone-100 px-3 py-2.5 text-sm leading-relaxed text-stone-700 whitespace-pre-wrap">
+                          {shippingAddressText || 'Shipping address not available. Please update your retailer profile.'}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               {/* Transporter Preferences */}

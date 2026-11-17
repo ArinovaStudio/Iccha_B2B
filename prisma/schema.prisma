@@ -164,6 +164,7 @@ model RetailerProfile {
   applicantName    String
   mobile           String
   whatsapp         String?
+  billingAddress   String?               @db.Text
   gstin            String?               @unique
   pan              String?
   businessType     String?

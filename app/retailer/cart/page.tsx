@@ -285,7 +285,7 @@ export default function RetailerCartPage() {
                       : 'bg-stone-200 text-stone-500 cursor-not-allowed'
                       }`}
                   >
-                    <span>Proceed to Order Enquiry Checkout</span>
+                    <span>PLACE MY ORDER</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
 

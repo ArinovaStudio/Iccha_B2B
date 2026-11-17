@@ -171,7 +171,13 @@ const handlePrint = () => {
                 GSTIN: <strong>{estimate.retailer.gstin}</strong>
               </div>
               <div className="text-[11px] text-stone-600 mt-0.5">
-                {estimate.retailer.billingAddress.street}, {estimate.retailer.billingAddress.city}, {estimate.retailer.billingAddress.state} - {estimate.retailer.billingAddress.pincode}
+                {[
+                  estimate.retailer.billingAddress.street,
+                  estimate.retailer.billingAddress.area,
+                  estimate.retailer.billingAddress.city,
+                  estimate.retailer.billingAddress.state,
+                  estimate.retailer.billingAddress.pincode,
+                ].filter(Boolean).join(", ")}
               </div>
             </div>
 
