@@ -6,6 +6,20 @@ function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+const VALID_STATUSES = new Set([
+  "ENQUIRY_RECEIVED",
+  "UNDER_REVIEW",
+  "SELLER_CONTACTED",
+  "ESTIMATE_GENERATED",
+  "CONFIRMED",
+  "AWAITING_PAYMENT",
+  "PROCESSING",
+  "READY_FOR_DISPATCH",
+  "DISPATCHED",
+  "COMPLETED",
+  "CANCELLED",
+]);
+
 async function getAuth(request: NextRequest) {
   const staff = await requireStaff(request);
   if (!("error" in staff)) return { kind: "staff" as const, ...staff };
@@ -111,6 +125,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search")?.trim() || "";
     const view = searchParams.get("view") || "mine";
     const requestedVendorId = searchParams.get("vendorId");
+    const status = searchParams.get("status")?.trim() || "ALL";
+
+    if (status !== "ALL" && !VALID_STATUSES.has(status)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid status filter." },
+        { status: 400 }
+      );
+    }
 
     let vendorId: string | null = null;
     let house = false;
@@ -151,6 +173,32 @@ export async function GET(request: NextRequest) {
         ? { product: { vendorId: null } }
         : undefined;
 
+    const sellerOrderWhere = vendorId
+      ? { vendorId }
+      : house
+        ? { vendorId: null }
+        : undefined;
+
+    // The status shown in the list is the seller's status (sellerOrders[0]),
+    // falling back to the order's own status when there is no seller order.
+    // Filter on exactly the same rule so results match what the UI displays.
+    // Uses AND so it doesn't collide with the search `where.OR` above.
+    if (status !== "ALL") {
+      where.AND = [
+        {
+          OR: [
+            { sellerOrders: { some: { ...(sellerOrderWhere || {}), status } } },
+            {
+              AND: [
+                { sellerOrders: { none: sellerOrderWhere || {} } },
+                { status },
+              ],
+            },
+          ],
+        },
+      ];
+    }
+
     const orders = await prisma.orderEnquiry.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -179,7 +227,7 @@ export async function GET(request: NextRequest) {
           select: itemSelect,
         },
         sellerOrders: {
-          where: vendorId ? { vendorId } : house ? { vendorId: null } : undefined,
+          where: sellerOrderWhere,
           select: { status: true },
         },
       },

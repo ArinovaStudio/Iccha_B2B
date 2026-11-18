@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { PhoneCall, CheckCircle2, XCircle, Clock, Package, User, RefreshCw } from 'lucide-react';
 import AdminSidebar from '@/components/layout/AdminSidebar';
+import Link from 'next/link';
 
 type RequestStatus = 'pending' | 'approved' | 'rejected';
 
@@ -16,7 +17,7 @@ type SampleCallRequest = {
   status: string;
   rejectionReason: string | null;
   createdAt: string;
-  product: { name: string; sku: string | null; designNumber: string | null } | null;
+  product: { name: string; slug: string, media: any, sku: string | null; designNumber: string | null } | null;
   retailerProfile: {
     businessName: string;
     applicantName: string;
@@ -82,9 +83,7 @@ export default function SampleCallRequestsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
 
   // Vendors only see/act on their own requests; staff only on admin-owned ones.
-  const isVendor = role === 'VENDOR';
-  const base = isVendor ? '/api/vendor/sample-call-requests' : '/api/admin/sample-call-requests';
-
+  
   const loadRole = async () => {
     try {
       const response = await fetch('/api/auth/me', { cache: 'no-store' });
@@ -94,7 +93,9 @@ export default function SampleCallRequestsPage() {
       console.error('Could not load user role:', err);
     }
   };
-
+  
+  const isVendor = role === 'VENDOR';
+  const base = isVendor ? '/api/vendor/sample-call-requests' : '/api/admin/sample-call-requests';
   const loadRequests = async () => {
     try {
       setLoading(true);
@@ -109,6 +110,7 @@ export default function SampleCallRequestsPage() {
       if (!response.ok || !json.success) {
         throw new Error(json.error || 'Could not load sample call requests.');
       }
+      
       setRequests(json.data || []);
     } catch (err) {
       console.error('Sample call request loading error:', err);
@@ -256,13 +258,20 @@ export default function SampleCallRequestsPage() {
                   <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div>
                       <SectionTitle icon={Package} color="text-[#831843]">Product</SectionTitle>
-                      {item.product ? (
+                      {item.product ? 
+                      (  
                         <div className="space-y-1">
+                          <div className="w-16 h-16 rounded-sm">
+                            <img src={item.product.media?.[0]?.mediaAsset?.publicUrl} alt={item.product.name} className='w-full h-full object-cover' />
+                          </div>
+                          <Link href={`/catalogue/${item.product.slug}`} target='_blank' className="underline">
                           <p className="text-sm font-bold text-stone-900">{item.product.name}</p>
+                          </Link>
                           <Line label="SKU" value={item.product.sku} />
                           <Line label="Design" value={item.product.designNumber} />
                         </div>
-                      ) : (
+                      )
+                      : (
                         <p className="text-xs text-stone-500">Product information unavailable.</p>
                       )}
                     </div>

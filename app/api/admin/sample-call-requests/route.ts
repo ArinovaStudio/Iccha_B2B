@@ -45,6 +45,12 @@ export async function GET(request: NextRequest) {
         include: {
           product: {
             select: {
+              slug: true,
+              media: {
+                where: {
+                  isPrimary: true
+                }
+              },
               id: true,
               name: true,
               sku: true,

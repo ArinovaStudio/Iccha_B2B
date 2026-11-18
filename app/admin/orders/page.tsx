@@ -79,6 +79,21 @@ type Order = {
   items: Item[];
 };
 
+const ORDER_STATUSES = [
+  "ALL",
+  "ENQUIRY_RECEIVED",
+  "UNDER_REVIEW",
+  "SELLER_CONTACTED",
+  "ESTIMATE_GENERATED",
+  "CONFIRMED",
+  "AWAITING_PAYMENT",
+  "PROCESSING",
+  "READY_FOR_DISPATCH",
+  "DISPATCHED",
+  "COMPLETED",
+  "CANCELLED",
+];
+
 const statusClass: Record<string, string> = {
   ENQUIRY_RECEIVED: "bg-amber-50 text-amber-700 border-amber-200",
   UNDER_REVIEW: "bg-blue-50 text-blue-700 border-blue-200",
@@ -119,12 +134,14 @@ export default function AdminOrdersPage() {
   const [vendorLoading, setVendorLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [vendorSearch, setVendorSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
 
   const loadOrders = useCallback(
     async (
       mode: "mine" | "vendor",
       vendorId?: string,
-      searchTerm = ""
+      searchTerm = "",
+      statusValue = "ALL",
     ) => {
       setLoading(true);
 
@@ -141,17 +158,18 @@ export default function AdminOrdersPage() {
           p.set("search", searchTerm.trim());
         }
 
-        const res = await fetch(
-          `/api/admin/order-enquiries?${p.toString()}`,
-          { cache: "no-store" }
-        );
+        if (statusValue && statusValue !== "ALL") {
+          p.set("status", statusValue);
+        }
+
+        const res = await fetch(`/api/admin/order-enquiries?${p.toString()}`, {
+          cache: "no-store",
+        });
 
         const json = await res.json();
 
         if (!res.ok || !json.success) {
-          throw new Error(
-            json.error || "Could not load orders."
-          );
+          throw new Error(json.error || "Could not load orders.");
         }
 
         setOrders(json.data || []);
@@ -159,16 +177,13 @@ export default function AdminOrdersPage() {
         addToast({
           type: "error",
           title: "Failed to load orders",
-          message:
-            e instanceof Error
-              ? e.message
-              : "Could not load orders.",
+          message: e instanceof Error ? e.message : "Could not load orders.",
         });
       } finally {
         setLoading(false);
       }
     },
-    [addToast]
+    [addToast],
   );
 
   useEffect(() => {
@@ -177,7 +192,7 @@ export default function AdminOrdersPage() {
       .then((json) => {
         if (!json.success) {
           throw new Error(
-            json.error || "Could not determine the current user."
+            json.error || "Could not determine the current user.",
           );
         }
 
@@ -194,7 +209,7 @@ export default function AdminOrdersPage() {
             error instanceof Error
               ? error.message
               : "Could not determine the current user.",
-        })
+        }),
       )
       .finally(() => setLoadingRole(false));
   }, [addToast, loadOrders]);
@@ -210,9 +225,7 @@ export default function AdminOrdersPage() {
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(
-          json.error || "Could not load vendors."
-        );
+        throw new Error(json.error || "Could not load vendors.");
       }
 
       setVendors(json.data || []);
@@ -220,10 +233,7 @@ export default function AdminOrdersPage() {
       addToast({
         type: "error",
         title: "Failed to load vendors",
-        message:
-          e instanceof Error
-            ? e.message
-            : "Could not load vendors.",
+        message: e instanceof Error ? e.message : "Could not load vendors.",
       });
     } finally {
       setVendorLoading(false);
@@ -242,16 +252,30 @@ export default function AdminOrdersPage() {
     );
   });
 
+  // Instantly filters already-loaded orders by the selected status
+  // while the API call fetches the full list for that status.
+  const displayedOrders =
+    status === "ALL" ? orders : orders.filter((o) => o.status === status);
+
   function selectVendor(vendor: Vendor) {
     setSelectedVendor(vendor);
     setView("vendor");
-    loadOrders("vendor", vendor.id, search.trim());
+    loadOrders("vendor", vendor.id, search.trim(), status);
   }
 
   function openMine() {
     setSelectedVendor(null);
     setView("mine");
-    loadOrders("mine", undefined, search.trim());
+    loadOrders("mine", undefined, search.trim(), status);
+  }
+
+  function handleStatusChange(nextStatus: string) {
+    setStatus(nextStatus);
+
+    // No vendor chosen yet in vendor view -> nothing to fetch.
+    if (view === "vendor" && !selectedVendor) return;
+
+    loadOrders(view, selectedVendor?.id, search.trim(), nextStatus);
   }
 
   if (loadingRole) {
@@ -308,9 +332,7 @@ export default function AdminOrdersPage() {
                 Section 01
               </div>
 
-              <h2 className="font-serif text-xl font-bold mt-1">
-                My Orders
-              </h2>
+              <h2 className="font-serif text-xl font-bold mt-1">My Orders</h2>
 
               <p className="text-xs opacity-70 mt-1">
                 IcchaStore-owned product orders
@@ -358,7 +380,8 @@ export default function AdminOrdersPage() {
                   </h2>
 
                   <p className="text-xs text-stone-500 mt-0.5">
-                    Choose one vendor. Only that vendor&apos;s order items will be loaded.
+                    Choose one vendor. Only that vendor&apos;s order items will
+                    be loaded.
                   </p>
                 </div>
 
@@ -384,7 +407,7 @@ export default function AdminOrdersPage() {
                   value={vendorSearch}
                   onChange={(e) => setVendorSearch(e.target.value)}
                   placeholder="Search vendor by business name or contact..."
-                  className="w-full pl-9 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs outline-none focus:border-[#831843] focus:ring-2 focus:ring-rose-100"
+                  className="w-5/6 pl-9 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs outline-none focus:border-[#831843] focus:ring-2 focus:ring-rose-100"
                 />
               </div>
             </div>
@@ -468,40 +491,51 @@ export default function AdminOrdersPage() {
         )}
 
         {/* Search */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            loadOrders(
-              view,
-              selectedVendor?.id,
-              search.trim()
-            );
-          }}
-          className="bg-white rounded-2xl p-3 sm:p-4 border border-stone-200 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
-        >
-          <div className="flex items-center gap-3 w-full sm:flex-1">
-            <Search className="w-4 h-4 text-stone-400 shrink-0" />
-
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search order number or retailer..."
-              className="flex-1 min-w-0 bg-transparent text-xs outline-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-4 py-2 bg-stone-800 text-white rounded-xl text-xs font-bold"
+        <div className="w-full flex justify-between items-center gap-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              loadOrders(view, selectedVendor?.id, search.trim(), status);
+            }}
+            className="bg-white rounded-2xl w-5/6 p-3 sm:p-4 border border-stone-200 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
           >
-            Search
-          </button>
-        </form>
+            <div className="flex items-center gap-3 w-full sm:flex-1">
+              <Search className="w-4 h-4 text-stone-400 shrink-0" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search order number or retailer..."
+                className="flex-1 min-w-0 bg-transparent text-xs outline-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-4 py-2 bg-stone-800 text-white rounded-xl text-xs font-bold"
+            >
+              Search
+            </button>
+          </form>
+
+          <select
+            value={status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="appearance-none w-1/4 rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-700 shadow-sm outline-none transition-all hover:border-gray-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+          >
+            {ORDER_STATUSES.map((status) => (
+              <option
+                key={status}
+                value={status}
+                className="bg-white px-4 py-3 text-sm font-medium text-gray-700"
+              >
+                {status.replaceAll("_", " ")}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Orders */}
-        {view === "vendor" &&
-        role !== "VENDOR" &&
-        !selectedVendor ? (
+        {view === "vendor" && role !== "VENDOR" && !selectedVendor ? (
           <div className="bg-white rounded-3xl border border-stone-200 p-10 text-center">
             <Building2 className="w-8 h-8 mx-auto text-stone-300" />
 
@@ -513,7 +547,7 @@ export default function AdminOrdersPage() {
           <div className="bg-white rounded-3xl border border-stone-200 p-10 text-center text-xs text-stone-500">
             Loading order enquiries...
           </div>
-        ) : orders.length === 0 ? (
+        ) : displayedOrders.length === 0 ? (
           <div className="bg-white rounded-3xl border border-stone-200 p-10 text-center">
             <Package className="w-8 h-8 mx-auto text-stone-300" />
 
@@ -523,11 +557,10 @@ export default function AdminOrdersPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => {
+            {displayedOrders.map((order) => {
               // Shipping is excluded from the displayed order value.
               const visibleTotal =
-                Number(order.subtotal || 0) +
-                Number(order.totalGst || 0);
+                Number(order.subtotal || 0) + Number(order.totalGst || 0);
 
               return (
                 <Link
@@ -572,9 +605,7 @@ export default function AdminOrdersPage() {
                           <p className="text-[10px] text-stone-400 uppercase">
                             Sets
                           </p>
-                          <p className="font-bold">
-                            {order.totalSets}
-                          </p>
+                          <p className="font-bold">{order.totalSets}</p>
                         </div>
 
                         <div>
@@ -612,7 +643,10 @@ export default function AdminOrdersPage() {
                             key={g.key}
                             className="px-2.5 py-1.5 rounded-lg bg-stone-50 border border-stone-100 text-[10px] text-stone-600"
                           >
-                            {g.designNumber ? `Design ${g.designNumber}` : 'Product'} · {g.sets} sets
+                            {g.designNumber
+                              ? `Design ${g.designNumber}`
+                              : "Product"}{" "}
+                            · {g.sets} sets
                             {g.colors.length > 1
                               ? ` · ${g.colors.length} colours`
                               : g.colors.length === 1

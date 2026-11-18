@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
@@ -72,27 +72,99 @@ interface Filters {
 
 const ALL_SELLERS = 'all';
 
+/**
+ * In-memory snapshot of the catalogue, kept at module level so it survives the
+ * component unmounting when the retailer opens a product page.
+ * It lives only for the browser session (client-side navigation) and is wiped
+ * by a full page reload, which is exactly when fresh data is wanted.
+ */
+interface CatalogueSnapshot {
+  products: RetailerProduct[];
+  categoryMap: Record<string, string>;
+  nextCursor: string | null;
+  vendors: Vendor[];
+  filters: Filters; // the filters the stored products were actually loaded with
+  scrollY: number;
+  docHeight: number; // page height at save time, used to make the scroll target reachable instantly
+  inContainer: boolean; // true if the page scrolls inside an element instead of the window
+  restoreOnNextMount: boolean; // true only right after the user clicked inside the product grid
+}
+
+let catalogueSnapshot: CatalogueSnapshot | null = null;
+
+function isSameFilters(a: Filters | null, b: Filters) {
+  return !!a && a.categoryId === b.categoryId && a.vendorId === b.vendorId && a.search === b.search;
+}
+
+// Finds the nearest scrollable ancestor (null = the window scrolls).
+function findScroller(from: Element | null, requireOverflow: boolean): HTMLElement | null {
+  let el = from?.parentElement ?? null;
+  while (el && el !== document.body && el !== document.documentElement) {
+    const { overflowY } = getComputedStyle(el);
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll') &&
+      (!requireOverflow || el.scrollHeight > el.clientHeight)
+    ) {
+      return el;
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+const readScroll = (el: HTMLElement | null) => (el ? el.scrollTop : window.scrollY);
+
+// 'instant' bypasses any `scroll-behavior: smooth` in the app's CSS, which would
+// otherwise animate the restore and look like jitter.
+const writeScroll = (el: HTMLElement | null, y: number) => {
+  if (el) el.scrollTop = y;
+  else window.scrollTo({ top: y, left: 0, behavior: 'instant' as ScrollBehavior });
+};
+
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 function RetailerCatalogueContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [products, setProducts] = useState<RetailerProduct[]>([]);
-  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  // If we are coming back from a product page, restore everything from the snapshot.
+  // Computed once per mount (lazy state initialiser, no mutation during render).
+  const [restored] = useState<CatalogueSnapshot | null>(() => {
+    const snap = catalogueSnapshot;
+    const vendorFromUrl = searchParams.get('vendor') || ALL_SELLERS;
+    if (snap && snap.restoreOnNextMount && snap.filters.vendorId === vendorFromUrl) {
+      return snap;
+    }
+    return null;
+  });
+
+  const [products, setProducts] = useState<RetailerProduct[]>(() => restored?.products ?? []);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>(() => restored?.categoryMap ?? {});
+  const [vendors, setVendors] = useState<Vendor[]>(() => restored?.vendors ?? []);
   const { role: viewerRole, canOrder } = useCatalogueViewer();
   const [cartSummary, setCartSummary] = useState<CartSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!restored);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(() => restored?.nextCursor ?? null);
 
-  const [search, setSearch] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
+  // While the scroll position is being restored the page is hidden and held at its old height,
+  // so nothing the router does in the meantime is ever visible.
+  const [restoring, setRestoring] = useState(() => Boolean(restored && restored.scrollY));
+  const [minHeightPx, setMinHeightPx] = useState<number | undefined>(() =>
+    restored && restored.scrollY ? restored.docHeight : undefined
+  );
+
+  const [search, setSearch] = useState(() => restored?.filters.search ?? '');
+  const [appliedSearch, setAppliedSearch] = useState(() => restored?.filters.search ?? '');
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    () => restored?.filters.categoryId ?? (searchParams.get('category') || 'all')
+  );
 
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
-  const [vendorListLoaded, setVendorListLoaded] = useState(false);
-  const initialVendorPickerHandledRef = useRef(false);
+  const [vendorListLoaded, setVendorListLoaded] = useState(() => Boolean(restored));
+  // When restoring, the picker must not pop up again over the list the user was browsing.
+  const initialVendorPickerHandledRef = useRef(Boolean(restored));
 
   // Vendor selection is 100% URL-driven with query parameter ?vendor=<vendorId>
   const vendorParam = searchParams.get('vendor') || '';
@@ -110,9 +182,12 @@ function RetailerCatalogueContent() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const isFetchingRef = useRef(false);
   const vendorRailRef = useRef<HTMLDivElement | null>(null);
+  // The filters that the products currently in state were loaded with.
+  const loadedFiltersRef = useRef<Filters | null>(restored?.filters ?? null);
 
   const scrollVendorRail = useCallback((direction: 'left' | 'right') => {
     if (!vendorRailRef.current) return;
@@ -165,30 +240,118 @@ function RetailerCatalogueContent() {
       });
   }, []);
 
-  // One-time data: vendors + cart
+  // One-time data: vendors + cart.
+  // Vendors are skipped when restoring (already in the snapshot). The cart is always
+  // refreshed because it is tiny and may have changed on the product page.
   useEffect(() => {
-    loadVendors();
+    if (!restored) loadVendors();
     refreshCart();
 
     return () => abortRef.current?.abort();
-  }, [loadVendors, refreshCart]);
+  }, [loadVendors, refreshCart, restored]);
 
-  // Re-sync when the retailer comes back to this tab, so products an admin/vendor
-  // re-activated in the meantime show up without a manual reload.
-  const filtersRef = useRef<Filters | null>(null);
+  // The snapshot is only meant for the immediate "come back from a product" trip.
+  // Once this mount has consumed it, disarm it so a later fresh visit loads normally.
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      loadVendors();
-      if (filtersRef.current?.vendorId) {
-        setNextCursor(null);
-        loadProductsRef.current?.(filtersRef.current);
+    const t = setTimeout(() => {
+      if (catalogueSnapshot) catalogueSnapshot.restoreOnNextMount = false;
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Stop the browser from doing its own (too early, wrong height) scroll restoration
+  // for this page. Reverted on leave so other pages keep their normal behaviour.
+  useEffect(() => {
+    if (!('scrollRestoration' in window.history)) return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
+  /**
+   * SCROLL RESTORE
+   *
+   * Phase 1 (page hidden, ~3 frames): put the page at the saved position exactly, before
+   * paint and again after Next.js's own scroll-to-top (which runs in the same commit).
+   * Phase 2 (page visible, up to 1.5s): only undo a jump to the very top. Small scroll
+   * adjustments made by the browser (scroll anchoring while images/cards settle) are left
+   * alone, because fighting them is what made the screen jitter.
+   * Any user input ends the guard immediately.
+   */
+  useIsoLayoutEffect(() => {
+    if (!restored || !restored.scrollY) return;
+
+    const target = restored.scrollY;
+    const root = document.documentElement;
+    const scroller = restored.inContainer ? findScroller(gridRef.current, false) : null;
+
+    const prevBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+
+    const canControlRestoration = 'scrollRestoration' in window.history;
+    const prevRestoration = canControlRestoration ? window.history.scrollRestoration : 'auto';
+    if (canControlRestoration) window.history.scrollRestoration = 'manual';
+
+    const put = () => {
+      if (Math.abs(readScroll(scroller) - target) > 1) writeScroll(scroller, target);
+    };
+
+    let guarding = true;
+    let raf = 0;
+
+    // Phase 2: only react to a jump to the top, never to small adjustments.
+    const onScroll = () => {
+      if (guarding && target > 200 && readScroll(scroller) < 50) {
+        writeScroll(scroller, target);
       }
     };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [loadVendors]);
 
+    const userEvents = ['wheel', 'touchstart', 'pointerdown', 'mousedown', 'keydown'] as const;
+
+    const stopGuarding = () => {
+      if (!guarding) return;
+      guarding = false;
+      document.removeEventListener('scroll', onScroll, true);
+      userEvents.forEach(ev => window.removeEventListener(ev, stopGuarding));
+      setRestoring(false);
+    };
+
+    document.addEventListener('scroll', onScroll, true);
+    userEvents.forEach(ev => window.addEventListener(ev, stopGuarding, { passive: true }));
+
+    // Phase 1: exact positioning while hidden.
+    put();
+    let frames = 0;
+    const step = () => {
+      put();
+      frames += 1;
+      if (frames < 3) raf = requestAnimationFrame(step);
+      else setRestoring(false); // reveal
+    };
+    raf = requestAnimationFrame(step);
+
+    const failSafe = setTimeout(() => setRestoring(false), 600); // never stay hidden
+    const guardTimer = setTimeout(stopGuarding, 1500);
+
+    return () => {
+      guarding = false;
+      cancelAnimationFrame(raf);
+      clearTimeout(failSafe);
+      clearTimeout(guardTimer);
+      document.removeEventListener('scroll', onScroll, true);
+      userEvents.forEach(ev => window.removeEventListener(ev, stopGuarding));
+      root.style.scrollBehavior = prevBehavior;
+      if (canControlRestoration) window.history.scrollRestoration = prevRestoration;
+    };
+  }, [restored]);
+
+  // The saved page height only exists to make the old position reachable on the first frame.
+  // Release it as soon as a new list is being loaded (filter/search change).
+  useEffect(() => {
+    if (loading) setMinHeightPx(undefined);
+  }, [loading]);
   // If the URL points at a seller that no longer has active products, fall back to "All sellers".
   useEffect(() => {
     if (vendors.length === 0) return;
@@ -233,6 +396,9 @@ function RetailerCatalogueContent() {
           return [...prev, ...incoming.filter(p => !seen.has(p.id))];
         });
 
+        // Remember which filters the products in state belong to.
+        loadedFiltersRef.current = f;
+
         // Categories are sent by the server with the first page (all active products of this seller).
         if (!cursor && Array.isArray(json.categories)) {
           setCategoryMap(
@@ -266,15 +432,11 @@ function RetailerCatalogueContent() {
     }
   }, []);
 
-  const loadProductsRef = useRef(loadProducts);
-  useEffect(() => {
-    loadProductsRef.current = loadProducts;
-    filtersRef.current = filters;
-  }, [loadProducts, filters]);
-
-  // Reload from page 1 whenever any filter changes
+  // Reload from page 1 only when the filters differ from what is already loaded.
+  // After coming back from a product page the restored list already matches, so no request is made.
   useEffect(() => {
     if (!filters.vendorId) return;
+    if (isSameFilters(loadedFiltersRef.current, filters)) return;
     setNextCursor(null);
     loadProducts(filters);
   }, [filters, loadProducts]);
@@ -296,6 +458,31 @@ function RetailerCatalogueContent() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [nextCursor, filters, loading, loadProducts]);
+
+  // Any click inside the product grid (opening a product) saves the list + scroll position,
+  // so coming back lands on the same spot without reloading.
+  const rememberPositionForReturn = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const loadedFilters = loadedFiltersRef.current;
+      if (!loadedFilters) return;
+
+      const scroller = findScroller(gridRef.current, true);
+
+      catalogueSnapshot = {
+        products,
+        categoryMap,
+        nextCursor,
+        vendors,
+        filters: loadedFilters,
+        scrollY: readScroll(scroller),
+        docHeight: document.documentElement.scrollHeight,
+        inContainer: Boolean(scroller),
+        restoreOnNextMount: true
+      };
+    },
+    [products, categoryMap, nextCursor, vendors]
+  );
 
   const handleSearchSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -343,7 +530,13 @@ function RetailerCatalogueContent() {
   ].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div
+      className="flex flex-col min-h-screen"
+      style={{
+        visibility: restoring ? 'hidden' : undefined,
+        minHeight: minHeightPx ? `${minHeightPx}px` : undefined
+      }}
+    >
       <RetailerHeader />
 
       <main className="flex-1 py-3 sm:py-8 bg-[#faf8f5]">
@@ -963,7 +1156,11 @@ function RetailerCatalogueContent() {
                 </div>
               ) : products.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div
+                    ref={gridRef}
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                    onClickCapture={rememberPositionForReturn}
+                  >
                     {products.map(product => (
                       <RetailerProductCard
                         key={product.id}

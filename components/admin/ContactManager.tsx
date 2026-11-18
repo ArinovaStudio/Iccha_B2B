@@ -122,7 +122,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 
 export default function ContactManager() {
   const [items, setItems] = useState<Contact[]>([]);
-  const [max, setMax] = useState(3);
+  // const [max, setMax] = useState(3);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -135,7 +135,7 @@ export default function ContactManager() {
     try {
       const { data } = await axios.get(API, { params: { all: 1 } });
       setItems(data.data ?? []);
-      if (typeof data.max === "number") setMax(data.max);
+      // if (typeof data.max === "number") setMax(data.max);
       setLoadError("");
     } catch (e) {
       setLoadError(extractErrors(e)[0]);
@@ -148,7 +148,7 @@ export default function ContactManager() {
     load();
   }, [load]);
 
-  const atLimit = !editingId && items.length >= max;
+  // const atLimit = !editingId && items.length >= max;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -171,7 +171,7 @@ export default function ContactManager() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (atLimit) return;
+    // if (atLimit) return;
 
     setSaving(true);
     setErrors([]);
@@ -212,17 +212,7 @@ export default function ContactManager() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-stone-900">Contact cards</h1>
-          <p className="mt-1 text-sm text-stone-600">
-            These appear on the public contact page. You can have up to {max}.
-          </p>
         </div>
-        <p
-          className={`rounded-full px-3 py-1 text-sm font-medium ${
-            items.length >= max ? "bg-amber-100 text-amber-800" : "bg-stone-100 text-stone-700"
-          }`}
-        >
-          {items.length} of {max} used
-        </p>
       </header>
 
       {loadError && (
@@ -279,11 +269,6 @@ export default function ContactManager() {
             {editingId ? "Edit contact card" : "Add contact card"}
           </h2>
 
-          {atLimit && (
-            <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
-              You&rsquo;ve reached the limit of {max} cards. Edit or delete one to add another.
-            </p>
-          )}
 
           {notice && (
             <p className="mt-3 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
@@ -301,37 +286,37 @@ export default function ContactManager() {
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-7">
             <Group title="Card heading">
-              <Field label="Name" name="name" value={form.name} onChange={handleChange} required disabled={atLimit} placeholder="Mumbai Showroom" />
-              <Field label="Label" name="tag" value={form.tag} onChange={handleChange} disabled={atLimit} placeholder="Head office" hint="Small text above the name." />
-              <Field label="Contact person" name="contactPerson" value={form.contactPerson} onChange={handleChange} disabled={atLimit} placeholder="Rahul Sharma" />
+              <Field label="Name" name="name" value={form.name} onChange={handleChange} required  placeholder="Mumbai Showroom" />
+              <Field label="Label" name="tag" value={form.tag} onChange={handleChange}  placeholder="Head office" hint="Small text above the name." />
+              <Field label="Contact person" name="contactPerson" value={form.contactPerson} onChange={handleChange}  placeholder="Rahul Sharma" />
             </Group>
 
             <Group title="Phone & email">
-              <Field label="Phone" name="phone" type="tel" value={form.phone} onChange={handleChange} required disabled={atLimit} placeholder="+91 98765 43210" />
-              <Field label="Alternate phone" name="altPhone" type="tel" value={form.altPhone} onChange={handleChange} disabled={atLimit} />
-              <Field label="WhatsApp number" name="whatsapp" type="tel" value={form.whatsapp} onChange={handleChange} disabled={atLimit} placeholder="919876543210" hint="With country code. Leave empty to hide the button." />
-              <Field label="Email" name="email" type="email" value={form.email} onChange={handleChange} disabled={atLimit} placeholder="mumbai@example.com" />
+              <Field label="Phone" name="phone" type="tel" value={form.phone} onChange={handleChange} required  placeholder="+91 98765 43210" />
+              <Field label="Alternate phone" name="altPhone" type="tel" value={form.altPhone} onChange={handleChange}  />
+              <Field label="WhatsApp number" name="whatsapp" type="tel" value={form.whatsapp} onChange={handleChange}  placeholder="919876543210" hint="With country code. Leave empty to hide the button." />
+              <Field label="Email" name="email" type="email" value={form.email} onChange={handleChange}  placeholder="mumbai@example.com" />
             </Group>
 
             <Group title="Address">
               <div className="sm:col-span-2">
-                <Field label="Address line" name="addressLine" value={form.addressLine} onChange={handleChange} required disabled={atLimit} placeholder="Shop No. 12, Example Market, Dadar" />
+                <Field label="Address line" name="addressLine" value={form.addressLine} onChange={handleChange} required  placeholder="Shop No. 12, Example Market, Dadar" />
               </div>
-              <Field label="City" name="city" value={form.city} onChange={handleChange} required disabled={atLimit} />
-              <Field label="State" name="state" value={form.state} onChange={handleChange} disabled={atLimit} />
-              <Field label="Pincode" name="pincode" value={form.pincode} onChange={handleChange} disabled={atLimit} />
-              <Field label="Google Maps link" name="mapUrl" type="url" value={form.mapUrl} onChange={handleChange} disabled={atLimit} placeholder="https://maps.google.com/…" hint="Must start with https://" />
+              <Field label="City" name="city" value={form.city} onChange={handleChange} required  />
+              <Field label="State" name="state" value={form.state} onChange={handleChange}  />
+              <Field label="Pincode" name="pincode" value={form.pincode} onChange={handleChange}  />
+              <Field label="Google Maps link" name="mapUrl" type="url" value={form.mapUrl} onChange={handleChange}  placeholder="https://maps.google.com/…" hint="Must start with https://" />
             </Group>
 
             <Group title="Hours & display">
-              <Field label="Opening hours" name="hours" value={form.hours} onChange={handleChange} disabled={atLimit} placeholder="Mon–Sat, 10:30 am – 7:30 pm" />
-              <Field label="Closed days" name="closedDays" value={form.closedDays} onChange={handleChange} disabled={atLimit} placeholder="Sunday closed" />
-              <Field label="Display order" name="sortOrder" type="number" value={form.sortOrder} onChange={handleChange} disabled={atLimit} placeholder="1" hint="Lowest number shows first." />
+              <Field label="Opening hours" name="hours" value={form.hours} onChange={handleChange}  placeholder="Mon–Sat, 10:30 am – 7:30 pm" />
+              <Field label="Closed days" name="closedDays" value={form.closedDays} onChange={handleChange}  placeholder="Sunday closed" />
+              <Field label="Display order" name="sortOrder" type="number" value={form.sortOrder} onChange={handleChange}  placeholder="1" hint="Lowest number shows first." />
               <label className="flex items-center gap-2 self-end pb-2 text-sm text-stone-700">
                 <input
                   type="checkbox"
                   checked={form.isActive}
-                  disabled={atLimit}
+                  
                   onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
                   className="h-4 w-4 rounded border-stone-300"
                 />
@@ -342,7 +327,7 @@ export default function ContactManager() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="submit"
-                disabled={saving || atLimit}
+                disabled={saving}
                 className="rounded-md bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? "Saving…" : editingId ? "Save changes" : "Add contact"}

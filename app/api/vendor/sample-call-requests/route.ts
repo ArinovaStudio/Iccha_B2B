@@ -13,62 +13,66 @@ export async function GET(request: NextRequest) {
       },
       {
         status: guard.status,
-      }
+      },
     );
   }
 
   try {
-    const status =
-      request.nextUrl.searchParams.get("status") ||
-      "pending";
+    const status = request.nextUrl.searchParams.get("status") || "pending";
 
-    const requests =
-      await prisma.sellerContactRequest.findMany({
-        where: {
-          status,
+    const requests = await prisma.sellerContactRequest.findMany({
+      where: {
+        status,
 
-          /*
-           * SECURITY:
-           *
-           * Vendor can ONLY see requests for products
-           * that belong to this vendor.
-           */
-          product: {
-            vendorId: guard.vendorProfile.id,
-          },
+        /*
+         * SECURITY:
+         *
+         * Vendor can ONLY see requests for products
+         * that belong to this vendor.
+         */
+        product: {
+          vendorId: guard.vendorProfile.id,
         },
+      },
 
-        orderBy: {
-          createdAt: "desc",
-        },
+      orderBy: {
+        createdAt: "desc",
+      },
 
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-              designNumber: true,
+      include: {
+        product: {
+          select: {
+            slug: true,
+            media: {
+              where: {
+                isPrimary: true,
+              },
             },
+
+            id: true,
+            name: true,
+            sku: true,
+            designNumber: true,
           },
+        },
 
-          retailerProfile: {
-            select: {
-              id: true,
-              businessName: true,
-              applicantName: true,
-              mobile: true,
-              whatsapp: true,
+        retailerProfile: {
+          select: {
+            id: true,
+            businessName: true,
+            applicantName: true,
+            mobile: true,
+            whatsapp: true,
 
-              user: {
-                select: {
-                  email: true,
-                },
+            user: {
+              select: {
+                email: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
     return NextResponse.json({
       success: true,
@@ -76,33 +80,24 @@ export async function GET(request: NextRequest) {
       data: requests.map((item) => ({
         ...item,
 
-        cartSubtotal:
-          Number(item.cartSubtotal),
+        cartSubtotal: Number(item.cartSubtotal),
 
-        createdAt:
-          item.createdAt.toISOString(),
+        createdAt: item.createdAt.toISOString(),
 
-        updatedAt:
-          item.updatedAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
 
-        reviewedAt:
-          item.reviewedAt?.toISOString() ??
-          null,
+        reviewedAt: item.reviewedAt?.toISOString() ?? null,
       })),
     });
   } catch (error) {
-    console.error(
-      "Get vendor sample call requests error:",
-      error
-    );
+    console.error("Get vendor sample call requests error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error:
-          "Could not load sample call requests.",
+        error: "Could not load sample call requests.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
