@@ -1,1219 +1,2237 @@
 'use client';
 
 import React, { Suspense, useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
+
 import Link from 'next/link';
+
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
 import {
+
   Search,
+
   Filter,
+
   SlidersHorizontal,
+
   ShoppingBag,
+
   X,
+
   RotateCcw,
+
   Boxes,
+
   Loader2,
+
   Store,
+
   ChevronLeft,
+
   ChevronRight,
+
   Check
+
 } from 'lucide-react';
+
 import RetailerHeader from '@/components/layout/RetailerHeader';
+
 import Footer from '@/components/layout/Footer';
+
 import RetailerProductCard from '@/components/product/RetailerProductCard';
+
 import { useCatalogueViewer } from '@/lib/context/CatalogueViewerContext';
 
 interface Category {
+
   id: string;
+
   name: string;
+
 }
 
 interface Vendor {
+
   id: string;
+
   name: string;
+
   imageUrl?: string | null;
+
   specialty?: string;
+
   productCount?: number;
+
 }
 
 interface RetailerProduct {
+
   id: string;
+
   sku: string;
+
   designNumber: string | null;
+
   name: string;
+
   slug: string;
+
   categoryId: string;
+
   category?: { name: string };
+
   sellerName: string;
+
   wholesalePricePerPiece: string | number;
+
   piecesPerSet: number;
+
   wholesalePricePerSet: string | number;
+
   availableSets: number;
+
   minOrderSets: number;
+
   sizeCombination: string;
+
   fabric: string | null;
+
   workType: string | null;
+
   style: string | null;
+
   clothingType: string | null;
+
   media?: { mediaAsset: { publicUrl: string } }[];
+
 }
 
 interface CartSummary {
+
   totalSets: number;
+
   totalDesigns: number;
+
   subtotal: string;
+
   items: { productId: string; sets: number }[];
+
 }
 
 interface Filters {
+
   categoryId: string;
+
   vendorId: string;
+
   search: string;
+
 }
 
 const ALL_SELLERS = 'all';
 
+// How long the page stays pinned after coming back from a product (ms).
+
+// Anything that tries to scroll the page to the top during this time is a no-op.
+
+// If it ever still lands at the top, raise this (e.g. 1000). Any touch/scroll/key ends it early.
+
+const LOCK_MS = 1500;
+
 /**
+
  * In-memory snapshot of the catalogue, kept at module level so it survives the
+
  * component unmounting when the retailer opens a product page.
+
  * It lives only for the browser session (client-side navigation) and is wiped
+
  * by a full page reload, which is exactly when fresh data is wanted.
+
  */
+
 interface CatalogueSnapshot {
+
   products: RetailerProduct[];
+
   categoryMap: Record<string, string>;
+
   nextCursor: string | null;
+
   vendors: Vendor[];
+
   filters: Filters; // the filters the stored products were actually loaded with
+
   scrollY: number;
-  docHeight: number; // page height at save time, used to make the scroll target reachable instantly
+
+  docHeight: number; // page height at save time, keeps the saved position reachable
+
   inContainer: boolean; // true if the page scrolls inside an element instead of the window
+
   restoreOnNextMount: boolean; // true only right after the user clicked inside the product grid
+
 }
 
 let catalogueSnapshot: CatalogueSnapshot | null = null;
 
 function isSameFilters(a: Filters | null, b: Filters) {
+
   return !!a && a.categoryId === b.categoryId && a.vendorId === b.vendorId && a.search === b.search;
+
 }
 
 // Finds the nearest scrollable ancestor (null = the window scrolls).
+
 function findScroller(from: Element | null, requireOverflow: boolean): HTMLElement | null {
+
   let el = from?.parentElement ?? null;
+
   while (el && el !== document.body && el !== document.documentElement) {
+
     const { overflowY } = getComputedStyle(el);
+
     if (
+
       (overflowY === 'auto' || overflowY === 'scroll') &&
+
       (!requireOverflow || el.scrollHeight > el.clientHeight)
+
     ) {
+
       return el;
+
     }
+
     el = el.parentElement;
+
   }
+
   return null;
+
 }
 
 const readScroll = (el: HTMLElement | null) => (el ? el.scrollTop : window.scrollY);
 
-// 'instant' bypasses any `scroll-behavior: smooth` in the app's CSS, which would
-// otherwise animate the restore and look like jitter.
-const writeScroll = (el: HTMLElement | null, y: number) => {
-  if (el) el.scrollTop = y;
-  else window.scrollTo({ top: y, left: 0, behavior: 'instant' as ScrollBehavior });
-};
-
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 function RetailerCatalogueContent() {
+
   const router = useRouter();
+
   const pathname = usePathname();
+
   const searchParams = useSearchParams();
 
   // If we are coming back from a product page, restore everything from the snapshot.
+
   // Computed once per mount (lazy state initialiser, no mutation during render).
+
   const [restored] = useState<CatalogueSnapshot | null>(() => {
+
     const snap = catalogueSnapshot;
+
     const vendorFromUrl = searchParams.get('vendor') || ALL_SELLERS;
+
     if (snap && snap.restoreOnNextMount && snap.filters.vendorId === vendorFromUrl) {
+
       return snap;
+
     }
+
     return null;
+
   });
 
   const [products, setProducts] = useState<RetailerProduct[]>(() => restored?.products ?? []);
+
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>(() => restored?.categoryMap ?? {});
+
   const [vendors, setVendors] = useState<Vendor[]>(() => restored?.vendors ?? []);
+
   const { role: viewerRole, canOrder } = useCatalogueViewer();
+
   const [cartSummary, setCartSummary] = useState<CartSummary | null>(null);
+
   const [loading, setLoading] = useState(!restored);
+
   const [loadingMore, setLoadingMore] = useState(false);
+
   const [nextCursor, setNextCursor] = useState<string | null>(() => restored?.nextCursor ?? null);
 
-  // While the scroll position is being restored the page is hidden and held at its old height,
-  // so nothing the router does in the meantime is ever visible.
-  const [restoring, setRestoring] = useState(() => Boolean(restored && restored.scrollY));
+  // Keeps the page as tall as it was when the user left, so the saved position is reachable
+
+  // on the first frame. Released as soon as a new list is loaded.
+
   const [minHeightPx, setMinHeightPx] = useState<number | undefined>(() =>
+
     restored && restored.scrollY ? restored.docHeight : undefined
+
   );
 
   const [search, setSearch] = useState(() => restored?.filters.search ?? '');
+
   const [appliedSearch, setAppliedSearch] = useState(() => restored?.filters.search ?? '');
+
   const [selectedCategory, setSelectedCategory] = useState<string>(
+
     () => restored?.filters.categoryId ?? (searchParams.get('category') || 'all')
+
   );
 
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+
   const [vendorListLoaded, setVendorListLoaded] = useState(() => Boolean(restored));
+
   // When restoring, the picker must not pop up again over the list the user was browsing.
+
   const initialVendorPickerHandledRef = useRef(Boolean(restored));
 
   // Vendor selection is 100% URL-driven with query parameter ?vendor=<vendorId>
+
   const vendorParam = searchParams.get('vendor') || '';
+
   // Default (no ?vendor=): ALL sellers - the admin's own products plus every vendor's.
+
   // Picking a seller narrows the catalogue to just that seller ('icchastore' = the admin/house products).
+
   const selectedVendor = vendorParam || ALL_SELLERS;
 
   // Show the vendor picker on each fresh catalogue visit, but preserve explicit vendor links.
+
   useEffect(() => {
+
     if (!vendorListLoaded || initialVendorPickerHandledRef.current) return;
+
     initialVendorPickerHandledRef.current = true;
+
     if (!vendorParam) setIsVendorModalOpen(true);
+
   }, [vendorListLoaded, vendorParam]);
+
   const allProductCount = vendors.reduce((sum, v) => sum + (v.productCount || 0), 0);
+
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   const gridRef = useRef<HTMLDivElement | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
+
   const isFetchingRef = useRef(false);
+
   const vendorRailRef = useRef<HTMLDivElement | null>(null);
+
   // The filters that the products currently in state were loaded with.
+
   const loadedFiltersRef = useRef<Filters | null>(restored?.filters ?? null);
 
   const scrollVendorRail = useCallback((direction: 'left' | 'right') => {
+
     if (!vendorRailRef.current) return;
+
     const scrollAmount = direction === 'left' ? -320 : 320;
+
     vendorRailRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
   }, []);
 
   const filters = useMemo<Filters>(
+
     () => ({ categoryId: selectedCategory, vendorId: selectedVendor, search: appliedSearch }),
+
     [selectedCategory, selectedVendor, appliedSearch]
+
   );
 
   // Only categories that actually have products (built from loaded products)
+
   const categories = useMemo<Category[]>(
+
     () =>
+
       Object.entries(categoryMap)
+
         .map(([id, name]) => ({ id, name }))
+
         .sort((a, b) => a.name.localeCompare(b.name)),
+
     [categoryMap]
+
   );
 
   const cartItemsById = useMemo(
+
     () => new Map((cartSummary?.items ?? []).map(i => [i.productId, i] as const)),
+
     [cartSummary]
+
   );
 
   const refreshCart = useCallback(() => {
+
     if (!canOrder) return; // admins/vendors have no cart
+
     fetch('/api/retailer/cart')
+
       .then(res => res.json())
+
       .then(json => {
+
         if (json.success) setCartSummary(json.data);
+
       })
+
       .catch(() => {
+
         // Cart pill stays stale until next successful refresh.
+
       });
+
   }, [canOrder]);
 
   const loadVendors = useCallback(() => {
+
     fetch('/api/retailer/vendors', { cache: 'no-store' })
+
       .then(res => res.json())
+
       .then(json => {
+
         if (json.success) {
+
           setVendors(json.data);
+
           setVendorListLoaded(true);
+
         }
+
       })
+
       .catch(() => {
+
         // Vendor filter list will just be empty.
+
       });
+
   }, []);
 
   // One-time data: vendors + cart.
+
   // Vendors are skipped when restoring (already in the snapshot). The cart is always
+
   // refreshed because it is tiny and may have changed on the product page.
+
   useEffect(() => {
+
     if (!restored) loadVendors();
+
     refreshCart();
 
     return () => abortRef.current?.abort();
+
   }, [loadVendors, refreshCart, restored]);
 
   // The snapshot is only meant for the immediate "come back from a product" trip.
-  // Once this mount has consumed it, disarm it so a later fresh visit loads normally.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (catalogueSnapshot) catalogueSnapshot.restoreOnNextMount = false;
-    }, 0);
-    return () => clearTimeout(t);
-  }, []);
 
-  // Stop the browser from doing its own (too early, wrong height) scroll restoration
-  // for this page. Reverted on leave so other pages keep their normal behaviour.
+  // Once this mount has consumed it, disarm it so a later fresh visit loads normally.
+
   useEffect(() => {
-    if (!('scrollRestoration' in window.history)) return;
-    const previous = window.history.scrollRestoration;
-    window.history.scrollRestoration = 'manual';
-    return () => {
-      window.history.scrollRestoration = previous;
-    };
+
+    const t = setTimeout(() => {
+
+      if (catalogueSnapshot) catalogueSnapshot.restoreOnNextMount = false;
+
+    }, 0);
+
+    return () => clearTimeout(t);
+
   }, []);
 
   /**
-   * SCROLL RESTORE
+
+   * SCROLL RESTORE (pin, then release once)
+
    *
-   * Phase 1 (page hidden, ~3 frames): put the page at the saved position exactly, before
-   * paint and again after Next.js's own scroll-to-top (which runs in the same commit).
-   * Phase 2 (page visible, up to 1.5s): only undo a jump to the very top. Small scroll
-   * adjustments made by the browser (scroll anchoring while images/cards settle) are left
-   * alone, because fighting them is what made the screen jitter.
-   * Any user input ends the guard immediately.
+
+   * Instead of racing whatever scrolls the page to the top (Next.js router, the browser,
+
+   * other components), we make scrolling to the top impossible for a moment:
+
+   *
+
+   *  1. Before the first paint, <body> is pinned with `position: fixed; top: -savedY`.
+
+   *     The page looks exactly where the user left it, and the document is not scrollable,
+
+   *     so any scrollTo(0) / scrollIntoView() / scrollTop = 0 does nothing.
+
+   *  2. After LOCK_MS (or on the first touch / wheel / key), the pin is removed and the real
+
+   *     scroll position is set in the same task, so no intermediate frame is ever painted.
+
+   *
+
+   * Nothing is hidden and nothing is corrected repeatedly, so there is no flicker.
+
    */
+
   useIsoLayoutEffect(() => {
+
     if (!restored || !restored.scrollY) return;
 
     const target = restored.scrollY;
-    const root = document.documentElement;
-    const scroller = restored.inContainer ? findScroller(gridRef.current, false) : null;
 
-    const prevBehavior = root.style.scrollBehavior;
-    root.style.scrollBehavior = 'auto';
+    // Rare: the layout scrolls inside a container instead of the window.
+
+    // The body pin can't help there, so just set it for a few frames.
+
+    if (restored.inContainer) {
+
+      const scroller = findScroller(gridRef.current, false);
+
+      let raf = 0;
+
+      let frames = 0;
+
+      const step = () => {
+
+        if (scroller && Math.abs(scroller.scrollTop - target) > 1) scroller.scrollTop = target;
+
+        frames += 1;
+
+        if (frames < 30) raf = requestAnimationFrame(step);
+
+      };
+
+      step();
+
+      return () => cancelAnimationFrame(raf);
+
+    }
+
+    const root = document.documentElement;
+
+    const body = document.body;
+
+    const prev = {
+
+      position: body.style.position,
+
+      top: body.style.top,
+
+      left: body.style.left,
+
+      right: body.style.right,
+
+      width: body.style.width,
+
+      overflowY: root.style.overflowY,
+
+      scrollBehavior: root.style.scrollBehavior
+
+    };
 
     const canControlRestoration = 'scrollRestoration' in window.history;
+
     const prevRestoration = canControlRestoration ? window.history.scrollRestoration : 'auto';
+
+    // --- pin ---
+
+    root.style.scrollBehavior = 'auto'; // never animate
+
+    root.style.overflowY = 'scroll'; // keep the scrollbar gutter so the layout width doesn't shift
+
+    body.style.position = 'fixed';
+
+    body.style.top = `-${target}px`;
+
+    body.style.left = '0';
+
+    body.style.right = '0';
+
+    body.style.width = '100%';
+
     if (canControlRestoration) window.history.scrollRestoration = 'manual';
 
-    const put = () => {
-      if (Math.abs(readScroll(scroller) - target) > 1) writeScroll(scroller, target);
+    let released = false;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const userEvents = ['wheel', 'touchstart', 'keydown'] as const;
+
+    const unpin = () => {
+
+      body.style.position = prev.position;
+
+      body.style.top = prev.top;
+
+      body.style.left = prev.left;
+
+      body.style.right = prev.right;
+
+      body.style.width = prev.width;
+
+      root.style.overflowY = prev.overflowY;
+
     };
 
-    let guarding = true;
-    let raf = 0;
+    const finish = (scrollToTarget: boolean) => {
 
-    // Phase 2: only react to a jump to the top, never to small adjustments.
-    const onScroll = () => {
-      if (guarding && target > 200 && readScroll(scroller) < 50) {
-        writeScroll(scroller, target);
+      if (released) return;
+
+      released = true;
+
+      if (timer) clearTimeout(timer);
+
+      userEvents.forEach(ev => window.removeEventListener(ev, onUserInput));
+
+      unpin();
+
+      if (scrollToTarget) {
+
+        // Same task as unpin(): the browser never paints the un-pinned page at the top.
+
+        window.scrollTo({ top: target, left: 0, behavior: 'instant' as ScrollBehavior });
+
       }
+
+      root.style.scrollBehavior = prev.scrollBehavior;
+
+      if (canControlRestoration) window.history.scrollRestoration = prevRestoration;
+
     };
 
-    const userEvents = ['wheel', 'touchstart', 'pointerdown', 'mousedown', 'keydown'] as const;
+    function onUserInput() {
 
-    const stopGuarding = () => {
-      if (!guarding) return;
-      guarding = false;
-      document.removeEventListener('scroll', onScroll, true);
-      userEvents.forEach(ev => window.removeEventListener(ev, stopGuarding));
-      setRestoring(false);
-    };
+      finish(true);
 
-    document.addEventListener('scroll', onScroll, true);
-    userEvents.forEach(ev => window.addEventListener(ev, stopGuarding, { passive: true }));
+    }
 
-    // Phase 1: exact positioning while hidden.
-    put();
-    let frames = 0;
-    const step = () => {
-      put();
-      frames += 1;
-      if (frames < 3) raf = requestAnimationFrame(step);
-      else setRestoring(false); // reveal
-    };
-    raf = requestAnimationFrame(step);
+    userEvents.forEach(ev => window.addEventListener(ev, onUserInput, { passive: true }));
 
-    const failSafe = setTimeout(() => setRestoring(false), 600); // never stay hidden
-    const guardTimer = setTimeout(stopGuarding, 1500);
+    timer = setTimeout(() => finish(true), LOCK_MS);
 
     return () => {
-      guarding = false;
-      cancelAnimationFrame(raf);
-      clearTimeout(failSafe);
-      clearTimeout(guardTimer);
-      document.removeEventListener('scroll', onScroll, true);
-      userEvents.forEach(ev => window.removeEventListener(ev, stopGuarding));
-      root.style.scrollBehavior = prevBehavior;
-      if (canControlRestoration) window.history.scrollRestoration = prevRestoration;
+
+      // Unmounted before the timer fired (navigated away): just undo the pin, don't scroll.
+
+      finish(false);
+
     };
+
   }, [restored]);
 
   // The saved page height only exists to make the old position reachable on the first frame.
+
   // Release it as soon as a new list is being loaded (filter/search change).
+
   useEffect(() => {
+
     if (loading) setMinHeightPx(undefined);
+
   }, [loading]);
+
   // If the URL points at a seller that no longer has active products, fall back to "All sellers".
+
   useEffect(() => {
+
     if (vendors.length === 0) return;
+
     const currentVendor = searchParams.get('vendor');
+
     if (currentVendor && !vendors.some(v => v.id === currentVendor)) {
+
       const params = new URLSearchParams(searchParams.toString());
+
       params.delete('vendor');
+
       const qs = params.toString();
+
       router.replace(qs ? `${pathname}?${qs}` : pathname);
+
     }
+
   }, [vendors, searchParams, router, pathname]);
 
   const loadProducts = useCallback(async (f: Filters, cursor?: string) => {
+
     abortRef.current?.abort();
+
     const controller = new AbortController();
+
     abortRef.current = controller;
+
     isFetchingRef.current = true;
 
     if (cursor) setLoadingMore(true);
+
     else setLoading(true);
 
     try {
+
       const params = new URLSearchParams();
+
       if (f.categoryId !== 'all') params.set('categoryId', f.categoryId);
+
       if (f.vendorId && f.vendorId !== 'all') params.set('vendorId', f.vendorId);
+
       if (f.search) params.set('search', f.search);
+
       if (cursor) params.set('cursor', cursor);
 
       const res = await fetch(`/api/retailer/products?${params.toString()}`, {
+
         signal: controller.signal
+
       });
+
       const json = await res.json();
 
       if (controller.signal.aborted) return;
 
       if (json.success) {
+
         const incoming: RetailerProduct[] = json.data;
 
         setProducts(prev => {
+
           if (!cursor) return incoming;
+
           const seen = new Set(prev.map(p => p.id));
+
           return [...prev, ...incoming.filter(p => !seen.has(p.id))];
+
         });
 
         // Remember which filters the products in state belong to.
+
         loadedFiltersRef.current = f;
 
         // Categories are sent by the server with the first page (all active products of this seller).
+
         if (!cursor && Array.isArray(json.categories)) {
+
           setCategoryMap(
+
             Object.fromEntries((json.categories as { id: string; name: string }[]).map((c) => [c.id, c.name]))
+
           );
+
         } else {
+
           // Fallback (also covers an older API that doesn't send `categories`):
+
           // accumulate the categories of every product loaded so far.
+
           setCategoryMap(prev => {
+
             const next = { ...prev };
+
             for (const p of incoming) {
+
               if (p.categoryId && p.category?.name && !next[p.categoryId]) {
+
                 next[p.categoryId] = p.category.name;
+
               }
+
             }
+
             return next;
+
           });
+
         }
 
         setNextCursor(json.nextCursor ?? null);
+
       }
+
     } catch (err) {
+
       if ((err as Error)?.name === 'AbortError') return;
+
       // Otherwise leave existing products in place.
+
     } finally {
+
       if (abortRef.current === controller) {
+
         isFetchingRef.current = false;
+
         setLoading(false);
+
         setLoadingMore(false);
+
       }
+
     }
+
   }, []);
 
   // Reload from page 1 only when the filters differ from what is already loaded.
+
   // After coming back from a product page the restored list already matches, so no request is made.
+
   useEffect(() => {
+
     if (!filters.vendorId) return;
+
     if (isSameFilters(loadedFiltersRef.current, filters)) return;
+
     setNextCursor(null);
+
     loadProducts(filters);
+
   }, [filters, loadProducts]);
 
   // Infinite scroll: load next page when sentinel enters viewport
+
   useEffect(() => {
+
     const node = sentinelRef.current;
+
     if (!node || !nextCursor) return;
 
     const observer = new IntersectionObserver(
-      entries => {
+
+entries => {
+
         if (entries[0].isIntersecting && !isFetchingRef.current) {
+
           loadProducts(filters, nextCursor);
+
         }
+
       },
+
       { rootMargin: '300px' }
+
     );
 
     observer.observe(node);
+
     return () => observer.disconnect();
+
   }, [nextCursor, filters, loading, loadProducts]);
 
   // Any click inside the product grid (opening a product) saves the list + scroll position,
+
   // so coming back lands on the same spot without reloading.
+
   const rememberPositionForReturn = useCallback(
+
     (e: React.MouseEvent) => {
+
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
       const loadedFilters = loadedFiltersRef.current;
+
       if (!loadedFilters) return;
 
       const scroller = findScroller(gridRef.current, true);
 
       catalogueSnapshot = {
+
         products,
+
         categoryMap,
+
         nextCursor,
+
         vendors,
+
         filters: loadedFilters,
+
         scrollY: readScroll(scroller),
+
         docHeight: document.documentElement.scrollHeight,
+
         inContainer: Boolean(scroller),
+
         restoreOnNextMount: true
+
       };
+
     },
+
     [products, categoryMap, nextCursor, vendors]
+
   );
 
   const handleSearchSubmit = useCallback(
+
     (e: React.FormEvent) => {
+
       e.preventDefault();
+
       setAppliedSearch(search.trim());
+
     },
+
     [search]
+
   );
 
   const clearSearch = useCallback(() => {
+
     setSearch('');
+
     setAppliedSearch('');
+
   }, []);
 
   const handleVendorChange = useCallback((vendorId: string) => {
+
     setSelectedCategory('all'); // category may not exist for the new vendor
+
     setCategoryMap({});         // rebuild categories from this vendor's products
+
     const params = new URLSearchParams(searchParams.toString());
+
     if (vendorId === ALL_SELLERS) params.delete('vendor');
+
     else params.set('vendor', vendorId);
+
     params.delete('category');
+
     const qs = params.toString();
+
     router.push(qs ? `${pathname}?${qs}` : pathname);
+
     setIsVendorModalOpen(false);
+
   }, [router, pathname, searchParams]);
 
   const closeVendorPicker = useCallback(() => {
+
     handleVendorChange(ALL_SELLERS);
+
   }, [handleVendorChange]);
 
   const resetFilters = useCallback(() => {
+
     setSearch('');
+
     setAppliedSearch('');
+
     setSelectedCategory('all');
+
     setCategoryMap({});
+
     const params = new URLSearchParams(searchParams.toString());
+
     params.delete('category');
+
     params.delete('search');
+
     router.push(`${pathname}?${params.toString()}`);
+
   }, [router, pathname, searchParams]);
 
   const activeFiltersCount = [
+
     selectedCategory !== 'all',
+
     appliedSearch.length > 0
+
   ].filter(Boolean).length;
 
   return (
+
     <div
-      className="flex flex-col min-h-screen"
-      style={{
-        visibility: restoring ? 'hidden' : undefined,
-        minHeight: minHeightPx ? `${minHeightPx}px` : undefined
-      }}
+
+className="flex flex-col min-h-screen"
+
+style={minHeightPx ? { minHeight: `${minHeightPx}px` } : undefined}
+
     >
+
       <RetailerHeader />
 
       <main className="flex-1 py-3 sm:py-8 bg-[#faf8f5]">
+
         <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 space-y-3 sm:space-y-5">
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+
             <div>
+
               <nav className="text-[11px] sm:text-xs text-stone-500 mb-0.5 sm:mb-1 flex items-center gap-1.5">
+
                 <Link href={canOrder ? '/retailer' : '/admin'} className="hover:text-stone-900">
+
                   {canOrder ? 'Wholesaler Portal' : viewerRole === 'VENDOR' ? 'Vendor Panel' : 'Admin Panel'}
+
                 </Link>
+
                 <span>/</span>
+
                 <span className="text-stone-900 font-semibold">Wholesale Catalogue</span>
+
               </nav>
+
               <h1 className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-stone-900">
+
                 Live Wholesale Products Catalogue
+
               </h1>
+
             </div>
 
             {canOrder && (
+
               <Link
-                href="/retailer/cart"
-                className="self-start sm:self-center inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-white border border-stone-300 hover:border-rose-400 shadow-2xs text-[11px] sm:text-xs font-semibold text-stone-800 transition"
+
+href="/retailer/cart"
+
+className="self-start sm:self-center inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-white border border-stone-300 hover:border-rose-400 shadow-2xs text-[11px] sm:text-xs font-semibold text-stone-800 transition"
+
               >
+
                 <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#831843]" />
+
                 <span>Cart: <strong>{cartSummary?.totalSets ?? 0} Sets</strong></span>
+
                 <span className="font-mono text-rose-900 font-bold">
+
                   ₹{Number(cartSummary?.subtotal ?? 0).toLocaleString('en-IN')}
+
                 </span>
+
               </Link>
+
             )}
+
           </div>
 
           <form onSubmit={handleSearchSubmit} className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-stone-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+
             <div className="relative flex-1">
+
               <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5 sm:top-3.5" />
+
               <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search by Design No, SKU, Fabric..."
-                className="w-full pl-9 pr-8 py-2 sm:py-2.5 bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl text-xs focus:outline-none focus:border-rose-900 font-medium"
+
+type="text"
+
+value={search}
+
+onChange={e => setSearch(e.target.value)}
+
+placeholder="Search by Design No, SKU, Fabric..."
+
+className="w-full pl-9 pr-8 py-2 sm:py-2.5 bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl text-xs focus:outline-none focus:border-rose-900 font-medium"
+
               />
+
               {search && (
+
                 <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="absolute right-2.5 top-2.5 text-stone-400 hover:text-stone-700"
+
+type="button"
+
+onClick={clearSearch}
+
+className="absolute right-2.5 top-2.5 text-stone-400 hover:text-stone-700"
+
                 >
+
                   <X className="w-4 h-4" />
+
                 </button>
+
               )}
+
             </div>
 
             <div className="flex items-center gap-2 text-xs">
+
               <button type="submit" className="flex-1 sm:flex-initial px-3.5 py-2 sm:py-2.5 bg-stone-900 text-white rounded-lg sm:rounded-xl font-bold text-xs">
+
                 Search
+
               </button>
+
               <button
-                type="button"
-                onClick={() => setIsMobileFilterOpen(true)}
-                className="md:hidden px-3 py-2 bg-stone-900 text-white rounded-lg font-semibold flex items-center justify-center gap-1.5 text-xs"
+
+type="button"
+
+onClick={() => setIsMobileFilterOpen(true)}
+
+className="md:hidden px-3 py-2 bg-stone-900 text-white rounded-lg font-semibold flex items-center justify-center gap-1.5 text-xs"
+
               >
+
                 <Filter className="w-3.5 h-3.5" />
+
                 <span>Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}</span>
+
               </button>
+
             </div>
+
           </form>
 
           {/* =====================================================
+
               VENDOR SHOWCASE / 1-TAP SWITCHER
+
               On mobile: sleek horizontal rectangle boxes for space efficiency.
+
               On desktop: responsive cards with quick scroll.
+
           ===================================================== */}
+
           <section className="bg-white md:hidden block rounded-xl sm:rounded-2xl p-2.5 sm:p-5 border border-stone-200/90 shadow-2xs space-y-2 sm:space-y-3">
+
             <div className="flex items-center justify-between">
+
               <div className="flex items-center gap-2">
+
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-[#831843] shadow-2xs">
+
                   <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+
                 </div>
+
                 <div>
+
                   <h2 className="font-serif text-xs sm:text-base font-bold text-stone-900 leading-tight">
+
                     Wholesale Vendors
+
                   </h2>
+
                   <p className="text-[10px] sm:text-[11px] text-stone-500 hidden sm:block">
+
                     Showing every seller by default - tap one to see only their designs
+
                   </p>
+
                 </div>
+
               </div>
 
-              {/* Desktop Scroll Chevrons */}
+              {/* {/ Desktop Scroll Chevrons /} */}
+
               <div className="hidden sm:flex items-center gap-1.5">
+
                 <button
-                  type="button"
-                  onClick={() => scrollVendorRail('left')}
-                  className="w-7 h-7 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-600 transition shadow-2xs"
-                  title="Scroll Left"
+
+type="button"
+
+onClick={() => scrollVendorRail('left')}
+
+className="w-7 h-7 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-600 transition shadow-2xs"
+
+title="Scroll Left"
+
                 >
+
                   <ChevronLeft className="w-4 h-4" />
+
                 </button>
+
                 <button
-                  type="button"
-                  onClick={() => scrollVendorRail('right')}
-                  className="w-7 h-7 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-600 transition shadow-2xs"
-                  title="Scroll Right"
+
+type="button"
+
+onClick={() => scrollVendorRail('right')}
+
+className="w-7 h-7 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-600 transition shadow-2xs"
+
+title="Scroll Right"
+
                 >
+
                   <ChevronRight className="w-4 h-4" />
+
                 </button>
+
               </div>
+
             </div>
 
-            {/* Vendor Cards Rail: Horizontal rectangle boxes on mobile, responsive tiles on desktop */}
+            {/* {/ Vendor Cards Rail: Horizontal rectangle boxes on mobile, responsive tiles on desktop /} */}
+
             <div
-              ref={vendorRailRef}
-              className="flex items-stretch gap-2 sm:gap-3 overflow-x-auto pb-1.5 pt-0.5 -mx-1 px-1 scroll-smooth snap-x snap-mandatory"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+
+ref={vendorRailRef}
+
+className="flex items-stretch gap-2 sm:gap-3 overflow-x-auto pb-1.5 pt-0.5 -mx-1 px-1 scroll-smooth snap-x snap-mandatory"
+
+style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+
             >
-              {/* Vendor Cards List */}
+
+              {/* {/ Vendor Cards List /} */}
+
               {vendors.map((v) => {
+
                 const isSelected = selectedVendor === v.id;
+
                 const initials = v.name
+
                   .split(' ')
+
                   .map((w) => w[0])
+
                   .filter(Boolean)
+
                   .slice(0, 2)
+
                   .join('')
+
                   .toUpperCase();
 
                 return (
+
                   <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => handleVendorChange(v.id)}
-                    className={`snap-start shrink-0 transition-all flex cursor-pointer group text-left sm:text-center items-center sm:items-center min-w-[170px] max-w-none sm:min-w-[160px] sm:max-w-[240px] p-2 sm:p-3 rounded-lg sm:rounded-xl border flex-row sm:flex-col gap-2 sm:gap-2 justify-start sm:justify-between ${isSelected
+
+key={v.id}
+
+type="button"
+
+onClick={() => handleVendorChange(v.id)}
+
+className={`snap-start shrink-0 transition-all flex cursor-pointer group text-left sm:text-center items-center sm:items-center min-w-[170px] max-w-none sm:min-w-[160px] sm:max-w-[240px] p-2 sm:p-3 rounded-lg sm:rounded-xl border flex-row sm:flex-col gap-2 sm:gap-2 justify-start sm:justify-between ${isSelected
+
                       ? 'border-[#831843] bg-rose-50/90 shadow-2xs ring-1 sm:ring-2 ring-[#831843]/20'
+
                       : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/60'
+
                       }`}
+
                   >
-                    {/* Circular Vendor Photo */}
+
+                    {/* {/ Circular Vendor Photo /} */}
+
                     <div className="relative shrink-0">
+
                       <div className={`w-9 h-9 sm:w-14 sm:h-14 rounded-full overflow-hidden border transition-transform ${isSelected
+
                         ? 'border-[#831843] ring-1 sm:ring-2 ring-rose-400/40 scale-105 shadow-xs'
+
                         : 'border-stone-200 group-hover:scale-105 group-hover:border-stone-400 shadow-2xs'
+
                         }`}>
+
                         {v.imageUrl ? (
+
                           <img
-                            src={v.imageUrl}
-                            alt={v.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
+
+src={v.imageUrl}
+
+alt={v.name}
+
+className="w-full h-full object-cover"
+
+loading="lazy"
+
                           />
+
                         ) : (
+
                           <div className="w-full h-full bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center font-bold text-xs sm:text-sm tracking-wider">
+
                             {initials || <Store className="w-4 h-4 sm:w-5 sm:h-5" />}
+
                           </div>
+
                         )}
+
                       </div>
 
                       {isSelected && (
+
                         <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#831843] text-white border border-white flex items-center justify-center shadow-xs">
+
                           <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+
                         </span>
+
                       )}
+
                     </div>
 
-                    {/* What they sell + Name in rectangle layout */}
+                    {/* {/ What they sell + Name in rectangle layout /} */}
+
                     <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1 sm:w-full">
+
                       <div className="font-serif font-bold text-xs sm:text-sm text-stone-900 group-hover:text-[#831843] transition-colors truncate">
+
                         {v.name}
+
                       </div>
 
-                      {/* Selling specialty badge — fully visible with no ellipsis */}
+                      {/* {/ Selling specialty badge — fully visible with no ellipsis /} */}
+
                       <span className="inline-block text-[10px] font-semibold text-rose-900 bg-rose-100/70 border border-rose-200/80 px-2 py-0.5 rounded-md sm:rounded-full whitespace-normal leading-snug">
+
                         {v.specialty || 'Ethnic Wear · Kurtis'}
+
                       </span>
 
                       <span className="block text-[9px] sm:text-[10px] text-stone-400 font-medium">
+
                         {v.productCount ? `${v.productCount} design${v.productCount > 1 ? 's' : ''}` : 'Active'}
+
                       </span>
+
                     </div>
+
                   </button>
+
                 );
+
               })}
+
             </div>
 
-            {/* Active Vendor Banner */}
+            {/* {/ Active Vendor Banner /} */}
+
             {selectedVendor ? (
+
               <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-stone-100 text-[11px] sm:text-xs">
+
                 <div className="flex items-center gap-1.5 text-stone-700 truncate">
+
                   <span className="text-stone-500 shrink-0">Browsing:</span>
+
                   <strong className="text-stone-900 truncate">
+
                     {selectedVendor === ALL_SELLERS ? 'All Sellers' : vendors.find((v) => v.id === selectedVendor)?.name || 'Selected Vendor'}
+
                   </strong>
+
                   {vendors.find((v) => v.id === selectedVendor)?.specialty && (
+
                     <span className="text-stone-500 hidden sm:inline whitespace-normal">
+
                       • {vendors.find((v) => v.id === selectedVendor)?.specialty}
+
                     </span>
+
                   )}
+
                 </div>
+
                 <div className="flex items-center gap-2 shrink-0">
+
                   <span className="text-[10px] sm:text-[11px] text-stone-400 font-medium">
+
                     {(selectedVendor === ALL_SELLERS
+
                       ? allProductCount
+
                       : vendors.find((v) => v.id === selectedVendor)?.productCount)
+
                       ? `${selectedVendor === ALL_SELLERS ? allProductCount : vendors.find((v) => v.id === selectedVendor)?.productCount} designs`
+
                       : ''}
+
                   </span>
+
                   <button
-                    type="button"
-                    onClick={() => setIsVendorModalOpen(true)}
-                  className="text-[10px] text-[#831843] font-bold underline hover:text-[#701a75]"
+
+type="button"
+
+onClick={() => setIsVendorModalOpen(true)}
+
+className="text-[10px] text-[#831843] font-bold underline hover:text-[#701a75]"
+
                   >
+
                     Change
+
                   </button>
+
                 </div>
+
               </div>
+
             ) : (
+
               <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-stone-100 text-[11px] sm:text-xs">
+
                 <span className="text-amber-800 font-medium flex items-center gap-1">
+
                   ⚠️ No manufacturer selected yet
+
                 </span>
+
                 <button
-                  type="button"
-                  onClick={() => setIsVendorModalOpen(true)}
-                  className="px-2.5 py-1 bg-[#831843] text-white text-[10px] font-bold rounded-lg shadow-2xs hover:bg-[#701a75]"
+
+type="button"
+
+onClick={() => setIsVendorModalOpen(true)}
+
+className="px-2.5 py-1 bg-[#831843] text-white text-[10px] font-bold rounded-lg shadow-2xs hover:bg-[#701a75]"
+
                 >
+
                   Select Manufacturer
+
                 </button>
+
               </div>
+
             )}
+
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-start">
 
-            {/* Desktop Sticky Sidebar Filter */}
+            {/* {/ Desktop Sticky Sidebar Filter /} */}
+
             <div className="hidden md:block md:col-span-3 space-y-4 md:sticky md:top-24">
-              {/* Vendor Filters */}
+
+              {/* {/ Vendor Filters /} */}
+
               <aside className="bg-white rounded-xl px-4 py-5 border border-stone-200 shadow-sm">
+
                 <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+
                   <span className="font-serif text-sm font-bold text-stone-900 flex items-center gap-1.5">
+
                     <SlidersHorizontal className="w-4 h-4 text-[#831843]" /> Filter Catalogue
+
                   </span>
+
                   {activeFiltersCount > 0 && (
+
                     <button
-                      onClick={resetFilters}
-                      className="text-[11px] text-rose-900 font-semibold hover:underline flex items-center gap-1"
+
+onClick={resetFilters}
+
+className="text-[11px] text-rose-900 font-semibold hover:underline flex items-center gap-1"
+
                     >
+
                       <RotateCcw className="w-3 h-3" /> Reset
+
                     </button>
+
                   )}
+
                 </div>
 
                 <div className="space-y-1.5 pt-3">
+
                   <label className="font-bold text-stone-500 uppercase tracking-wider text-[10px] block">
+
                     Vendor ({vendors.length})
+
                   </label>
+
                   <div className="max-h-64 overflow-y-auto space-y-0.5 -mx-1 pr-1">
+
                     <button
-                      type="button"
-                      onClick={() => handleVendorChange(ALL_SELLERS)}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md transition text-xs flex items-center justify-between ${selectedVendor === ALL_SELLERS
+
+type="button"
+
+onClick={() => handleVendorChange(ALL_SELLERS)}
+
+className={`w-full text-left px-2.5 py-1.5 rounded-md transition text-xs flex items-center justify-between ${selectedVendor === ALL_SELLERS
+
                         ? 'bg-[#831843] text-white font-semibold'
+
                         : 'text-stone-600 hover:bg-stone-100'
+
                         }`}
+
                     >
+
                       <span className="block truncate">All Sellers</span>
+
                       {allProductCount ? (
+
                         <span className={`text-[10px] ${selectedVendor === ALL_SELLERS ? 'text-rose-200' : 'text-stone-400'}`}>
+
                           {allProductCount}
+
                         </span>
+
                       ) : null}
+
                     </button>
+
                     {vendors.map(v => (
+
                       <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => handleVendorChange(v.id)}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-md transition text-xs flex items-center justify-between ${selectedVendor === v.id
+
+key={v.id}
+
+type="button"
+
+onClick={() => handleVendorChange(v.id)}
+
+className={`w-full text-left px-2.5 py-1.5 rounded-md transition text-xs flex items-center justify-between ${selectedVendor === v.id
+
                           ? 'bg-[#831843] text-white font-semibold'
+
                           : 'text-stone-600 hover:bg-stone-100'
+
                           }`}
+
                       >
+
                         <span className="block truncate">{v.name}</span>
+
                         {v.productCount ? (
+
                           <span className={`text-[10px] ${selectedVendor === v.id ? 'text-rose-200' : 'text-stone-400'}`}>
+
                             {v.productCount}
+
                           </span>
+
                         ) : null}
+
                       </button>
+
                     ))}
+
                   </div>
+
                 </div>
+
               </aside>
 
-              {/* Category Filters (only categories that have products) */}
+              {/* {/ Category Filters (only categories that have products) /} */}
+
               {categories.length > 0 && (
+
                 <aside className="bg-white rounded-xl px-4 py-5 border border-stone-200 shadow-sm">
+
                   <div className="space-y-1.5">
+
                     <label className="font-bold text-stone-500 uppercase tracking-wider text-[10px] block">
+
                       Category ({categories.length})
+
                     </label>
+
                     <div className="max-h-96 overflow-y-auto space-y-0.5 -mx-1 pr-1">
+
                       <button
-                        type="button"
-                        onClick={() => setSelectedCategory('all')}
-                        className={`w-full text-left px-2.5 py-1 rounded-md transition text-xs ${selectedCategory === 'all'
+
+type="button"
+
+onClick={() => setSelectedCategory('all')}
+
+className={`w-full text-left px-2.5 py-1 rounded-md transition text-xs ${selectedCategory === 'all'
+
                           ? 'bg-stone-900 text-white font-semibold'
+
                           : 'text-stone-600 hover:bg-stone-100'
+
                           }`}
+
                       >
+
                         All Categories
+
                       </button>
+
                       {categories.map(c => (
+
                         <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setSelectedCategory(c.id)}
-                          className={`w-full text-left px-2.5 py-1 rounded-md transition text-xs ${selectedCategory === c.id
+
+key={c.id}
+
+type="button"
+
+onClick={() => setSelectedCategory(c.id)}
+
+className={`w-full text-left px-2.5 py-1 rounded-md transition text-xs ${selectedCategory === c.id
+
                             ? 'bg-[#831843] text-white font-semibold'
+
                             : 'text-stone-600 hover:bg-stone-100'
+
                             }`}
+
                         >
+
                           <span className="block truncate">{c.name}</span>
+
                         </button>
+
                       ))}
+
                     </div>
+
                   </div>
+
                 </aside>
+
               )}
+
             </div>
 
-            {/* Mobile Filter Bottom-Sheet Drawer */}
+            {/* {/ Mobile Filter Bottom-Sheet Drawer /} */}
+
             {isMobileFilterOpen && (
+
               <div
-                className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs md:hidden"
-                onClick={() => setIsMobileFilterOpen(false)}
+
+className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs md:hidden"
+
+onClick={() => setIsMobileFilterOpen(false)}
+
               >
+
                 <div
-                  className="bg-white w-full max-h-[82vh] rounded-t-2xl p-4 overflow-y-auto space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200"
-                  onClick={e => e.stopPropagation()}
+
+className="bg-white w-full max-h-[82vh] rounded-t-2xl p-4 overflow-y-auto space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200"
+
+onClick={e => e.stopPropagation()}
+
                 >
+
                   <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+
                     <span className="font-serif text-base font-bold text-stone-900 flex items-center gap-1.5">
+
                       <SlidersHorizontal className="w-4 h-4 text-[#831843]" /> Filter Catalogue
+
                     </span>
+
                     <div className="flex items-center gap-3">
+
                       {activeFiltersCount > 0 && (
+
                         <button
-                          onClick={resetFilters}
-                          className="text-xs text-rose-900 font-semibold hover:underline flex items-center gap-1"
+
+onClick={resetFilters}
+
+className="text-xs text-rose-900 font-semibold hover:underline flex items-center gap-1"
+
                         >
+
                           <RotateCcw className="w-3 h-3" /> Reset
+
                         </button>
+
                       )}
+
                       <button
-                        onClick={() => setIsMobileFilterOpen(false)}
-                        className="w-7 h-7 rounded-full bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center"
+
+onClick={() => setIsMobileFilterOpen(false)}
+
+className="w-7 h-7 rounded-full bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center"
+
                       >
+
                         <X className="w-4 h-4" />
+
                       </button>
+
                     </div>
+
                   </div>
 
-                  {/* Vendor list in mobile modal */}
+                  {/* {/ Vendor list in mobile modal /} */}
+
                   <div className="space-y-1.5">
+
                     <label className="font-bold text-stone-500 uppercase tracking-wider text-[10px] block">
+
                       Vendor ({vendors.length})
+
                     </label>
+
                     <div className="max-h-48 overflow-y-auto space-y-1 -mx-1 pr-1">
+
                       <button
-                        type="button"
-                        onClick={() => {
+
+type="button"
+
+onClick={() => {
+
                           handleVendorChange(ALL_SELLERS);
+
                           setIsMobileFilterOpen(false);
+
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center justify-between ${selectedVendor === ALL_SELLERS
+
+className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center justify-between ${selectedVendor === ALL_SELLERS
+
                           ? 'bg-[#831843] text-white font-semibold'
+
                           : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+
                           }`}
+
                       >
+
                         <span className="truncate">All Sellers</span>
+
                         {allProductCount ? (
+
                           <span className={`text-[10px] ${selectedVendor === ALL_SELLERS ? 'text-rose-200' : 'text-stone-400'}`}>
+
                             {allProductCount} designs
+
                           </span>
+
                         ) : null}
+
                       </button>
+
                       {vendors.map(v => (
+
                         <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => {
+
+key={v.id}
+
+type="button"
+
+onClick={() => {
+
                             handleVendorChange(v.id);
+
                             setIsMobileFilterOpen(false);
+
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center justify-between ${selectedVendor === v.id
+
+className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center justify-between ${selectedVendor === v.id
+
                             ? 'bg-[#831843] text-white font-semibold'
+
                             : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+
                             }`}
+
                         >
+
                           <span className="truncate">{v.name}</span>
+
                           {v.productCount ? (
+
                             <span className={`text-[10px] ${selectedVendor === v.id ? 'text-rose-200' : 'text-stone-400'}`}>
+
                               {v.productCount} designs
+
                             </span>
+
                           ) : null}
+
                         </button>
+
                       ))}
+
                     </div>
+
                   </div>
 
-                  {/* Category list in mobile modal */}
+                  {/* {/ Category list in mobile modal /} */}
+
                   {categories.length > 0 && (
+
                     <div className="space-y-1.5 pt-2 border-t border-stone-100">
+
                       <label className="font-bold text-stone-500 uppercase tracking-wider text-[10px] block">
+
                         Category ({categories.length})
+
                       </label>
+
                       <div className="max-h-48 overflow-y-auto space-y-1 -mx-1 pr-1">
+
                         <button
-                          type="button"
-                          onClick={() => {
+
+type="button"
+
+onClick={() => {
+
                             setSelectedCategory('all');
+
                             setIsMobileFilterOpen(false);
+
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-lg transition text-xs ${selectedCategory === 'all'
+
+className={`w-full text-left px-3 py-2 rounded-lg transition text-xs ${selectedCategory === 'all'
+
                             ? 'bg-stone-900 text-white font-semibold'
+
                             : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+
                             }`}
+
                         >
+
                           All Categories
+
                         </button>
+
                         {categories.map(c => (
+
                           <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => {
+
+key={c.id}
+
+type="button"
+
+onClick={() => {
+
                               setSelectedCategory(c.id);
+
                               setIsMobileFilterOpen(false);
+
                             }}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition text-xs ${selectedCategory === c.id
+
+className={`w-full text-left px-3 py-2 rounded-lg transition text-xs ${selectedCategory === c.id
+
                               ? 'bg-[#831843] text-white font-semibold'
+
                               : 'bg-stone-50 text-stone-700 hover:bg-stone-100'
+
                               }`}
+
                           >
+
                             <span className="truncate">{c.name}</span>
+
                           </button>
+
                         ))}
+
                       </div>
+
                     </div>
+
                   )}
 
                   <button
-                    type="button"
-                    onClick={() => setIsMobileFilterOpen(false)}
-                    className="w-full py-2.5 bg-[#831843] text-white font-bold text-xs rounded-xl shadow-xs"
+
+type="button"
+
+onClick={() => setIsMobileFilterOpen(false)}
+
+className="w-full py-2.5 bg-[#831843] text-white font-bold text-xs rounded-xl shadow-xs"
+
                   >
+
                     Apply & View Designs
+
                   </button>
+
                 </div>
+
               </div>
+
             )}
 
             {/* =========================================================
+
                 MOBILE FLOATING VENDOR SELECTOR MODAL
+
                 Applies to mobile view only. Displays first when no vendor is selected.
+
             ========================================================= */}
+
             {isVendorModalOpen && (
+
               <div
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/45 backdrop-blur-md p-2.5 sm:p-6 animate-in fade-in duration-200"
-                onClick={closeVendorPicker}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="catalogue-vendor-picker-title"
+
+className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/45 backdrop-blur-md p-2.5 sm:p-6 animate-in fade-in duration-200"
+
+onClick={closeVendorPicker}
+
+role="dialog"
+
+aria-modal="true"
+
+aria-labelledby="catalogue-vendor-picker-title"
+
               >
+
                 <div
-                  className="bg-white/95 backdrop-blur-2xl w-full max-w-5xl max-h-[90dvh] rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 overflow-hidden flex flex-col shadow-2xl border border-white/90 animate-in zoom-in-95 duration-200"
-                  onClick={e => e.stopPropagation()}
+
+className="bg-white/95 backdrop-blur-2xl w-full max-w-5xl max-h-[90dvh] rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 overflow-hidden flex flex-col shadow-2xl border border-white/90 animate-in zoom-in-95 duration-200"
+
+onClick={e => e.stopPropagation()}
+
                 >
-                  {/* Header */}
+
+                  {/* {/ Header /} */}
+
                   <div className="flex items-center justify-between pb-3 border-b border-stone-100 shrink-0">
+
                     <div className="flex items-center gap-2">
+
                       <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-[#831843] shadow-2xs">
+
                         <Store className="w-4 h-4" />
+
                       </div>
+
                       <div>
+
                         <h3 id="catalogue-vendor-picker-title" className="font-serif text-lg sm:text-2xl font-bold text-stone-900 leading-tight">
+
                           Choose a Seller
+
                         </h3>
+
                         <p className="text-xs text-stone-500 mt-0.5">
+
                           Pick a seller to browse their products. Close to view all sellers.
+
                         </p>
+
                       </div>
+
                     </div>
 
                     <button
-                      type="button"
-                      onClick={closeVendorPicker}
-                      className="w-10 h-10 rounded-full bg-white/80 border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white flex items-center justify-center transition"
-                      aria-label="Close"
+
+type="button"
+
+onClick={closeVendorPicker}
+
+className="w-10 h-10 rounded-full bg-white/80 border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white flex items-center justify-center transition"
+
+aria-label="Close"
+
                     >
+
                       <X className="w-4 h-4" />
+
                     </button>
+
                   </div>
 
-                  {/* Vendor List */}
+                  {/* {/ Vendor List /} */}
+
                   <div className="overflow-y-auto py-3 sm:py-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4 flex-1 pr-1">
+
                     {vendors.map((v) => {
+
                       const isSelected = selectedVendor === v.id;
+
                       const initials = v.name
+
                         .split(' ')
+
                         .map((w) => w[0])
+
                         .filter(Boolean)
+
                         .slice(0, 2)
+
                         .join('')
+
                         .toUpperCase();
 
                       return (
+
                         <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => handleVendorChange(v.id)}
-                          className={`min-h-28 sm:aspect-square sm:min-h-0 w-full text-left sm:text-center p-3 sm:p-6 rounded-2xl border transition-all flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-3 sm:gap-4 cursor-pointer group ${isSelected
+
+key={v.id}
+
+type="button"
+
+onClick={() => handleVendorChange(v.id)}
+
+className={`min-h-28 sm:aspect-square sm:min-h-0 w-full text-left sm:text-center p-3 sm:p-6 rounded-2xl border transition-all flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-3 sm:gap-4 cursor-pointer group ${isSelected
+
                               ? 'border-[#831843] bg-rose-50/90 shadow-md ring-1 ring-[#831843]/20'
+
                               : 'border-stone-200 bg-white/80 hover:border-[#831843]/50 hover:bg-white hover:shadow-md'
+
                             }`}
+
                         >
+
                           <div className="flex flex-1 min-w-0 items-center gap-3 sm:w-full sm:flex-col sm:justify-center sm:gap-3">
-                            {/* Avatar */}
+
+                            {/* {/ Avatar /} */}
+
                             <div className="relative shrink-0">
+
                               <div className={`w-12 h-12 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full overflow-hidden border transition-transform ${isSelected
+
                                   ? 'border-[#831843] ring-1 ring-rose-400/40'
+
                                   : 'border-stone-200'
+
                                 }`}>
+
                                 {v.imageUrl ? (
+
                                   <img
-                                    src={v.imageUrl}
-                                    alt={v.name}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
+
+src={v.imageUrl}
+
+alt={v.name}
+
+className="w-full h-full object-cover"
+
+loading="lazy"
+
                                   />
+
                                 ) : (
+
                                   <div className="w-full h-full bg-gradient-to-br from-[#831843] to-[#9a3412] text-white flex items-center justify-center font-bold text-base tracking-wider">
+
                                     {initials || <Store className="w-4 h-4" />}
+
                                   </div>
+
                                 )}
+
                               </div>
 
                               {isSelected && (
+
                                 <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#831843] text-white border border-white flex items-center justify-center shadow-xs">
+
                                   <Check className="w-2.5 h-2.5 stroke-[3]" />
+
                                 </span>
+
                               )}
+
                             </div>
 
-                            {/* Text info */}
+                            {/* {/ Text info /} */}
+
                             <div className="min-w-0 flex-1 space-y-1 text-left sm:w-full sm:flex-none sm:space-y-2 sm:text-center">
+
                               <h4 className="font-serif font-bold text-sm sm:text-lg text-stone-900 group-hover:text-[#831843] transition-colors line-clamp-2">
+
                                 {v.name}
+
                               </h4>
+
                               <span className="block sm:mx-auto w-fit max-w-full text-[10px] sm:text-xs font-semibold text-rose-900 bg-rose-100/70 border border-rose-200/80 px-2 py-1 rounded-lg whitespace-normal leading-snug line-clamp-2">
+
                                 {v.specialty || 'Wholesale Collections'}
+
                               </span>
+
                               <span className="block text-[10px] sm:text-[11px] text-stone-500 font-medium">
+
                                 {v.productCount ? `${v.productCount} designs` : 'Active'}
+
                               </span>
+
                             </div>
+
                           </div>
 
                           <div className="shrink-0 flex items-center gap-1">
+
                             <span className={`text-[9px] sm:text-[10px] font-semibold px-2 sm:px-2.5 py-1 rounded-lg ${isSelected
+
                                 ? 'bg-[#831843] text-white'
+
                                 : 'bg-stone-100 text-stone-700 group-hover:bg-[#831843] group-hover:text-white transition-colors'
+
                               }`}>
+
                               {isSelected ? 'Selected' : 'Select'}
+
                             </span>
+
                           </div>
+
                         </button>
+
                       );
+
                     })}
+
                   </div>
+
                 </div>
+
               </div>
+
             )}
 
             <div className="md:col-span-9 space-y-3">
+
               <div className="flex items-center justify-between text-[11px] text-stone-500 gap-4">
+
                 <span>
+
                   {selectedVendor
+
                     ? <>Showing <strong>{products.length}</strong> wholesale designs</>
+
                     : <>Select a manufacturer to view designs</>}
+
                 </span>
+
               </div>
 
               {!selectedVendor ? (
+
                 <div className="p-8 sm:p-14 bg-white rounded-2xl sm:rounded-3xl border border-stone-200 text-center space-y-3 shadow-2xs">
+
                   <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-[#831843] flex items-center justify-center mx-auto shadow-2xs">
+
                     <Store className="w-6 h-6" />
+
                   </div>
+
                   <h4 className="font-serif text-base sm:text-lg font-bold text-stone-800">
+
                     Select a Wholesale Manufacturer
+
                   </h4>
+
                   <p className="text-xs text-stone-500 max-w-sm mx-auto">
+
                     Please choose a manufacturer from the floating window to browse their exclusive wholesale collection.
+
                   </p>
+
                   <button
-                    type="button"
-                    onClick={() => setIsVendorModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#831843] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#701a75] transition"
+
+type="button"
+
+onClick={() => setIsVendorModalOpen(true)}
+
+className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#831843] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#701a75] transition"
+
                   >
+
                     <Store className="w-4 h-4" />
+
                     <span>Choose Manufacturer</span>
+
                   </button>
+
                 </div>
+
               ) : loading ? (
+
                 <div className="p-16 bg-white rounded-3xl border border-stone-200 text-center text-xs text-stone-500">
+
                   Loading live wholesale inventory...
+
                 </div>
+
               ) : products.length > 0 ? (
+
                 <>
+
                   <div
-                    ref={gridRef}
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                    onClickCapture={rememberPositionForReturn}
+
+ref={gridRef}
+
+className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+
+onClickCapture={rememberPositionForReturn}
+
                   >
+
                     {products.map(product => (
+
                       <RetailerProductCard
-                        key={product.id}
-                        product={product}
-                        cartItem={cartItemsById.get(product.id)}
-                        onCartChanged={refreshCart}
+
+key={product.id}
+
+product={product}
+
+cartItem={cartItemsById.get(product.id)}
+
+onCartChanged={refreshCart}
+
                       />
+
                     ))}
+
                   </div>
 
                   {nextCursor ? (
+
                     <div ref={sentinelRef} className="flex justify-center items-center py-6 h-16">
+
                       {loadingMore && (
+
                         <span className="inline-flex items-center gap-2 text-xs text-stone-500">
+
                           <Loader2 className="w-4 h-4 animate-spin" /> Loading more designs...
+
                         </span>
+
                       )}
+
                     </div>
+
                   ) : (
+
                     <p className="text-center text-[11px] text-stone-400 py-6">
+
                       You&apos;ve reached the end of the catalogue
+
                     </p>
+
                   )}
+
                 </>
+
               ) : (
+
                 <div className="p-16 bg-white rounded-3xl border border-stone-200 text-center space-y-3">
+
                   <Boxes className="w-10 h-10 text-stone-300 mx-auto" />
+
                   <h4 className="font-serif text-lg font-bold text-stone-800">No designs match your filters</h4>
+
                   <p className="text-xs text-stone-500">Try clearing one or more filters or searching by a different term.</p>
+
                   <button
-                    onClick={resetFilters}
-                    className="px-4 py-2 bg-[#831843] text-white text-xs font-semibold rounded-xl shadow"
+
+onClick={resetFilters}
+
+className="px-4 py-2 bg-[#831843] text-white text-xs font-semibold rounded-xl shadow"
+
                   >
+
                     Reset All Filters
+
                   </button>
+
                 </div>
+
               )}
+
             </div>
 
           </div>
 
         </div>
+
       </main>
 
       <Footer />
+
     </div>
+
   );
+
 }
 
 export default function RetailerCataloguePage() {
+
   return (
+
     <Suspense fallback={null}>
+
       <RetailerCatalogueContent />
+
     </Suspense>
+
   );
+
 }
