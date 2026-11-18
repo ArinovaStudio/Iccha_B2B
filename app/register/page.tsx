@@ -105,7 +105,7 @@ export default function RegisterPage() {
     email: '',
     address: '',
     billingAddress: '',
-    billingAddressSameAsBusiness: false,
+    billingAddressSameAsBusiness: true,
   });
   const [gstin, setGstin] = useState('');
   const [password, setPassword] = useState('');
@@ -293,7 +293,7 @@ export default function RegisterPage() {
             <section className="space-y-4">
               <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">2. Business address</h2>
               <div>
-                <label className={labelClass}>Address (including state) *</label>
+                <label className={labelClass}>{formData.billingAddressSameAsBusiness ? 'Billing address *' : 'Address (including state) *'}</label>
                 <textarea className={inputClass} required rows={3} maxLength={300} value={formData.address} onChange={(e) => updateForm('address', e.target.value)} placeholder="Shop / building, street, city, state, pincode" />
                 <p className="mt-1 text-[11px] text-stone-500">Enter your complete address with the state name in one place.</p>
               </div>
@@ -307,24 +307,21 @@ export default function RegisterPage() {
                   />
                   <span>Billing address is the same as business address</span>
                 </label>
-                <div>
-                  <label className={labelClass}>Billing address *</label>
-                  <textarea
-                    className={`${inputClass} ${formData.billingAddressSameAsBusiness ? 'cursor-not-allowed bg-stone-100 text-stone-500' : ''}`}
-                    required
-                    rows={3}
-                    maxLength={500}
-                    readOnly={formData.billingAddressSameAsBusiness}
-                    value={formData.billingAddressSameAsBusiness ? formData.address : formData.billingAddress}
-                    onChange={(event) => updateForm('billingAddress', event.target.value)}
-                    placeholder="Enter billing address including state and pincode"
-                  />
-                  <p className="mt-1 text-[11px] text-stone-500">
-                    {formData.billingAddressSameAsBusiness
-                      ? 'This follows your business address. Uncheck above to enter a different billing address.'
-                      : 'Enter the complete billing address, including state and pincode.'}
-                  </p>
-                </div>
+                {!formData.billingAddressSameAsBusiness && (
+                  <div>
+                    <label className={labelClass}>Billing address *</label>
+                    <textarea
+                      className={inputClass}
+                      required
+                      rows={3}
+                      maxLength={500}
+                      value={formData.billingAddress}
+                      onChange={(event) => updateForm('billingAddress', event.target.value)}
+                      placeholder="Enter billing address including state and pincode"
+                    />
+                    <p className="mt-1 text-[11px] text-stone-500">Enter the complete billing address, including state and pincode.</p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -349,7 +346,7 @@ export default function RegisterPage() {
               <h2 className="border-b border-stone-100 pb-2 font-serif text-lg font-bold text-stone-900">4. Login password</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><label className={labelClass}><Lock className="mr-1 inline h-3.5 w-3.5" /> Password (optional)</label><input className={inputClass} type="password" minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to use mobile number" /></div>
-                <div><label className={labelClass}>Confirm password</label><input className={inputClass} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" /></div>
+                <div><label className={labelClass}>Confirm password</label><input className={`${inputClass} disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500`} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" disabled={!password} /></div>
               </div>
               <p className="text-[11px] text-stone-500">After approval, you can log in using {formData.email.trim() || formData.mobile || 'your email or mobile number'} and your password.</p>
               <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><strong>Note:</strong> If you do not enter a password, your 10-digit mobile number will be your password. You can change it after logging in.</p>

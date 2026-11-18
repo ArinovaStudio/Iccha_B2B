@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
           status: true,
           gstin: true,
           businessType: true,
+          mobile: true,
           addresses: {
             where: { isDefault: true },
             take: 1,
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      vendorProfile: { select: { businessName: true, gstin: true, isActive: true } },
+      vendorProfile: { select: { businessName: true, gstin: true, isActive: true, mobile: true } },
     },
   });
 
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
       id: u.id,
       email: u.email,
       name: u.name,
+      mobile: u.vendorProfile?.mobile || u.retailerProfile?.mobile || null,
       role: u.role,
       businessName: u.vendorProfile?.businessName || u.retailerProfile?.businessName || null,
       retailerStatus: u.retailerProfile?.status || null,
