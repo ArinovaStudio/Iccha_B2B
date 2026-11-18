@@ -1733,9 +1733,8 @@ export default function AdminProductsPage() {
                 </div> */}
 
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">Colors *</label>
+                  <label className="block font-bold text-stone-800 mb-1">Colors (optional)</label>
                   <MultiColorInput
-                    required
                     value={formData.color}
                     onChange={color => setFormData({ ...formData, color })}
                     missingImageColors={missingImageColors}
