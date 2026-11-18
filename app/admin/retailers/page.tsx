@@ -38,6 +38,21 @@ export default function AdminRetailersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creatingRetailer, setCreatingRetailer] = useState(false);
   const [applicantNameError, setApplicantNameError] = useState("");
+  const [globalMoqSets, setGlobalMoqSets] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/admin/moq-rules', { cache: 'no-store' })
+      .then(async res => {
+        const result = await res.json();
+        if (!res.ok || !result.success) throw new Error(result.error || 'Could not load the global MOQ.');
+        if (active) setGlobalMoqSets(Number(result.data.minSets));
+      })
+      .catch(error => {
+        if (active) addToast({ type: 'error', title: 'Could not load global MOQ', message: error instanceof Error ? error.message : 'Please refresh and try again.' });
+      });
+    return () => { active = false; };
+  }, [addToast]);
 
   const fetchRetailers = async (cursor?: string | null, query = search) => {
     if (cursor) setLoadingMore(true);
@@ -149,7 +164,7 @@ export default function AdminRetailersPage() {
       addToast({
         type: 'success',
         title: 'MOQ Override Updated',
-        message: `${retailer.businessName} minimum set rule changed to ${permittedMinSets ? permittedMinSets + ' Sets' : 'Default (4 Sets)'}.`
+        message: `${retailer.businessName} minimum set rule changed to ${permittedMinSets ? `${permittedMinSets} Sets` : globalMoqSets === null ? 'the current global default' : `Default (${globalMoqSets} Sets)`}.`
       });
       setSelectedRetailer(null);
       await fetchRetailers();
@@ -370,7 +385,7 @@ export default function AdminRetailersPage() {
                         </td>
                         <td className="p-4 whitespace-nowrap">
                           <strong className={ret.moqOverride ? 'text-amber-800 font-bold' : 'text-stone-700'}>
-                            {ret.moqOverride ? `Custom (${ret.customMoqSets} Sets)` : 'Default (4 Sets)'}
+                            {ret.moqOverride ? `Custom (${ret.customMoqSets} Sets)` : globalMoqSets === null ? 'Default MOQ' : `Default (${globalMoqSets} Sets)`}
                           </strong>
                         </td>
                         <td className="p-4 text-right">
@@ -429,7 +444,7 @@ export default function AdminRetailersPage() {
               </button>
             </div>
             <p className="text-stone-600 leading-relaxed">
-              Default system MOQ is <strong>4 garment sets</strong> per order. Granting an override allows boutique sample testing.
+              Default system MOQ is <strong>{globalMoqSets === null ? 'loading' : globalMoqSets} garment sets</strong> per order. Granting an override allows boutique sample testing.
             </p>
             <div className="space-y-3">
               <button
@@ -439,7 +454,7 @@ export default function AdminRetailersPage() {
                 className={`w-full p-3 rounded-xl border text-left font-medium transition disabled:opacity-60 ${!selectedRetailer.moqOverride ? 'bg-rose-50 border-rose-300 text-[#831843] font-bold' : 'bg-stone-50 border-stone-200'
                   }`}
               >
-                <div>Standard Policy: 4 Sets MOQ</div>
+                <div>Standard Policy: {globalMoqSets === null ? 'Loading…' : `${globalMoqSets} Sets`} MOQ</div>
                 <span className="text-[10px] text-stone-500">Standard wholesale lot policy.</span>
               </button>
               <button
