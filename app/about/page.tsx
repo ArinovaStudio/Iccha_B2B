@@ -245,6 +245,17 @@ export default function IcchaStoreAbout() {
     }).catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    const receivePreview = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== window.parent) return;
+      if (event.data?.type === "about-content-preview" && event.data.content) {
+        setContent(event.data.content as AboutContent);
+      }
+    };
+    window.addEventListener("message", receivePreview);
+    return () => window.removeEventListener("message", receivePreview);
+  }, []);
+
   const story = useInView<HTMLDivElement>();
   const numbers = useInView<HTMLDivElement>(0.4);
   const work = useInView<HTMLDivElement>(0.2);

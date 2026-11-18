@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
@@ -26,6 +26,7 @@ export default function SiteContentEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const previewFrame = useRef<HTMLIFrameElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,6 +45,14 @@ export default function SiteContentEditor() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (key !== "about") return;
+    previewFrame.current?.contentWindow?.postMessage(
+      { type: "about-content-preview", content },
+      window.location.origin,
+    );
+  }, [content, key]);
 
   const setField = (field: string, value: unknown) =>
     setContent((old) => ({ ...old, [field]: value }));
@@ -265,7 +274,8 @@ export default function SiteContentEditor() {
     <div className="flex h-screen max-h-screen overflow-hidden bg-stone-100">
       <AdminSidebar activeTab="Content" />
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-5 md:p-8">
-        <div className="mx-auto max-w-5xl space-y-6">
+        <div className={isAbout ? "grid min-h-full gap-6 xl:grid-cols-2" : "mx-auto max-w-5xl space-y-6"}>
+          <div className={isAbout ? "min-w-0 space-y-6" : "contents"}>
           <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">
@@ -601,6 +611,25 @@ export default function SiteContentEditor() {
               {saving ? "Saving…" : "Save changes"}
             </button>
           </div> */}
+          </div>
+          {isAbout && (
+            <section className="min-w-0 space-y-2 xl:sticky xl:top-0 xl:h-[calc(100vh-4rem)]">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-stone-800">Live /about preview</h2>
+                <span className="text-xs text-stone-500">Updates as you edit</span>
+              </div>
+              <iframe
+                ref={previewFrame}
+                src="/about?editorPreview=1"
+                title="Live About page preview"
+                onLoad={() => previewFrame.current?.contentWindow?.postMessage(
+                  { type: "about-content-preview", content },
+                  window.location.origin,
+                )}
+                className="h-[65vh] w-full rounded-xl border border-stone-300 bg-white shadow-sm xl:h-[calc(100%-2rem)]"
+              />
+            </section>
+          )}
         </div>
       </main>
     </div>
