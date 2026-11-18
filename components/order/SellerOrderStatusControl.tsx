@@ -4,8 +4,7 @@ import React, { useState } from "react";
 import { CheckCircle2, Loader2, Save } from "lucide-react";
 import { useApp } from "@/lib/context/AppContext";
 import { SellerOrderStatus } from "@prisma/client";
-
-export const SELLER_ORDER_STATUSES = Object.values(SellerOrderStatus);
+import { SELLER_ORDER_STATUSES } from "@/lib/order-status";
 
 type Props = {
   sellerOrderId: string;

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { useApp } from "@/lib/context/AppContext";
+import { ORDER_STATUS_FILTER_OPTIONS } from "@/lib/order-status";
 
 type Vendor = {
   id: string;
@@ -79,23 +80,9 @@ type Order = {
   items: Item[];
 };
 
-const ORDER_STATUSES = [
-  "ALL",
-  "ENQUIRY_RECEIVED",
-  "UNDER_REVIEW",
-  "SELLER_CONTACTED",
-  "ESTIMATE_GENERATED",
-  "CONFIRMED",
-  "AWAITING_PAYMENT",
-  "PROCESSING",
-  "READY_FOR_DISPATCH",
-  "DISPATCHED",
-  "COMPLETED",
-  "CANCELLED",
-];
-
 const statusClass: Record<string, string> = {
   ENQUIRY_RECEIVED: "bg-amber-50 text-amber-700 border-amber-200",
+  ORDER_ACCEPTED: "bg-emerald-50 text-emerald-700 border-emerald-200",
   UNDER_REVIEW: "bg-blue-50 text-blue-700 border-blue-200",
   SELLER_CONTACTED: "bg-violet-50 text-violet-700 border-violet-200",
   ESTIMATE_GENERATED: "bg-indigo-50 text-indigo-700 border-indigo-200",
@@ -522,7 +509,7 @@ export default function AdminOrdersPage() {
             onChange={(e) => handleStatusChange(e.target.value)}
             className="appearance-none w-1/4 rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-700 shadow-sm outline-none transition-all hover:border-gray-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
           >
-            {ORDER_STATUSES.map((status) => (
+            {ORDER_STATUS_FILTER_OPTIONS.map((status) => (
               <option
                 key={status}
                 value={status}

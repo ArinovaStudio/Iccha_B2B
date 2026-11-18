@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireStaff, requireVendor } from "@/lib/auth/guard";
+import { ORDER_ENQUIRY_STATUSES, SELLER_ORDER_STATUSES } from "@/lib/order-status";
 
 function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-const VALID_STATUSES = new Set([
-  "ENQUIRY_RECEIVED",
-  "UNDER_REVIEW",
-  "SELLER_CONTACTED",
-  "ESTIMATE_GENERATED",
-  "CONFIRMED",
-  "AWAITING_PAYMENT",
-  "PROCESSING",
-  "READY_FOR_DISPATCH",
-  "DISPATCHED",
-  "COMPLETED",
-  "CANCELLED",
-]);
+const VALID_STATUSES = new Set([...ORDER_ENQUIRY_STATUSES, ...SELLER_ORDER_STATUSES]);
+const SELLER_ORDER_STATUS_SET = new Set<string>(SELLER_ORDER_STATUSES);
 
 async function getAuth(request: NextRequest) {
   const staff = await requireStaff(request);
@@ -179,24 +169,34 @@ export async function GET(request: NextRequest) {
         ? { vendorId: null }
         : undefined;
 
-    // The status shown in the list is the seller's status (sellerOrders[0]),
-    // falling back to the order's own status when there is no seller order.
-    // Filter on exactly the same rule so results match what the UI displays.
-    // Uses AND so it doesn't collide with the search `where.OR` above.
+    // The displayed status uses the seller status when one exists, and otherwise
+    // falls back to the parent enquiry status. Keep the filter aligned with that
+    // behavior while respecting the two distinct Prisma enum types.
     if (status !== "ALL") {
-      where.AND = [
-        {
-          OR: [
-            { sellerOrders: { some: { ...(sellerOrderWhere || {}), status } } },
-            {
-              AND: [
-                { sellerOrders: { none: sellerOrderWhere || {} } },
-                { status },
-              ],
-            },
-          ],
-        },
-      ];
+      if (SELLER_ORDER_STATUS_SET.has(status)) {
+        where.AND = [
+          {
+            OR: [
+              { sellerOrders: { some: { ...(sellerOrderWhere || {}), status } } },
+              {
+                AND: [
+                  { sellerOrders: { none: sellerOrderWhere || {} } },
+                  { status },
+                ],
+              },
+            ],
+          },
+        ];
+      } else {
+        // This status exists only on the parent enquiry. It can match only when
+        // there is no seller-specific order whose status takes precedence.
+        where.AND = [
+          {
+            sellerOrders: { none: sellerOrderWhere || {} },
+            status,
+          },
+        ];
+      }
     }
 
     const orders = await prisma.orderEnquiry.findMany({
