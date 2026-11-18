@@ -40,17 +40,24 @@ function useInView<T extends HTMLElement>(threshold = 0.25) {
 }
 
 function useCountUp(target: number, active: boolean, duration = 1100) {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(() => (active ? target : 0));
   useEffect(() => {
     if (!active) {
+      setValue(0);
       return;
     }
+    const safeTarget = Number.isFinite(target) ? target : 0;
+    if (duration <= 0) {
+      setValue(safeTarget);
+      return;
+    }
+    setValue(0);
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(target * eased));
+      setValue(Math.round(safeTarget * eased));
       if (progress < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -578,16 +585,21 @@ function Stat({
   label,
   active,
 }: {
-  value: number;
+  value: number | string;
   suffix: string;
   label: string;
   active: boolean;
 }) {
-  const count = useCountUp(value, active);
+  const numericValue = typeof value === "number" ? value : Number(value);
+  const safeValue = Number.isFinite(numericValue) ? numericValue : 0;
+  const isEditorPreview =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("editorPreview");
+  const count = useCountUp(safeValue, active && !isEditorPreview);
   return (
     <div className="border-l border-[var(--paper)]/20 pl-4 first:border-l-0 first:pl-0">
       <div className="[font-family:var(--font-display)] text-3xl text-[var(--paper)] sm:text-4xl">
-        {count.toLocaleString()}
+        {isEditorPreview || !active ? safeValue.toLocaleString() : count.toLocaleString()}
         {suffix}
       </div>
       <div className="mt-1 text-sm text-[var(--paper)]/70">{label}</div>
